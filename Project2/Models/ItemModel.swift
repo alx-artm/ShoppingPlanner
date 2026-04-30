@@ -2,7 +2,6 @@
 //  Models.swift
 //  Project #2
 //
-//  Created by Yelisei Kadol on 14/05/2025.
 //
 
 import SwiftData

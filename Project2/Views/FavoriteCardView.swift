@@ -19,7 +19,6 @@ struct FavoriteCardView: View {
             VStack(alignment: .leading, spacing: 16)  {
                 ZStack(alignment: .center) {
                     
-                    // ВОПРОС ЧТО С ЭТИМ ДЕЛАТЬ
                     Circle()
                     
                         .fill(.gray.gradient.opacity(0.1))
@@ -28,7 +27,7 @@ struct FavoriteCardView: View {
                     
                     Text(list.iconName)
                         .font(.title)
-                    
+
                 }
                 
                 VStack(alignment: .leading, spacing: 8) {
@@ -37,8 +36,6 @@ struct FavoriteCardView: View {
                             .lineLimit(1)
                             .font(.headline)
                             .foregroundStyle(.black) // Changed .tint to .foregroundStyle for text
-                        
-                        
                     }
                     
                     // Используем свойства ListModel напрямую, которые теперь реактивны
@@ -46,24 +43,25 @@ struct FavoriteCardView: View {
                           in: 0...(list.totalAmount.doubleValue == 0 ? 1 : list.totalAmount.doubleValue)) {
                         // Label content
                     } currentValueLabel: {
-                        HStack {
-                            Text(list.remainingAmount, format: .number.precision(.fractionLength(2)))
-                                .foregroundStyle(.black.secondary)
-                        }
+                        
+                        Text(list.remainingAmount, format: .number.precision(.fractionLength(2)))
+                            .foregroundStyle(.black.secondary)
+                        
                     }
                     .gaugeStyle(.accessoryLinearCapacity)
+                    .opacity(list.totalAmount == 0 ? 0 : 1)
                 }
             }
             .padding()
             .background(
                 // ЭТО ПОМОГАЕТ СОХРАНИТЬ ЦВЕТ .quaternary В ТЕМНОЙ И СВЕТЛОЙ ТЕМАХ ОДИНАКОВЫМ
                 Group {
-                        ZStack{
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(.white)
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(list.color.color.quaternary)
-                        }
+                    ZStack{
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(.white)
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(list.color.color.quaternary)
+                    }
                 }
             )
         }

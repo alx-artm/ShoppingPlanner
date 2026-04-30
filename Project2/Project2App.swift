@@ -10,6 +10,9 @@ import SwiftData
 
 @main
 struct Project2App: App {
+    
+    @AppStorage("selectedTheme") private var selectedTheme: AppTheme = .system
+    
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             ItemModel.self,
@@ -30,7 +33,7 @@ struct Project2App: App {
         WindowGroup {
             ContentView()
                 .modelContainer(sharedModelContainer)
-            
+                .preferredColorScheme(selectedTheme.colorScheme)
         }
         
     }

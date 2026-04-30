@@ -2,7 +2,6 @@
 //  NewGroupHeaderView.swift
 //  Project #2
 //
-//  Created by Yelisei Kadol on 14/05/2025.
 //
 
 import SwiftUI
@@ -36,7 +35,7 @@ struct GroupHeaderView: View {
                 HStack {
                     Text(group.name)
                         .lineLimit(1)
-                    Image(systemName: "square.and.pencil")
+                    Image(systemName: "pencil")
                         .foregroundStyle(.secondary)
                         .font(.subheadline)
                     

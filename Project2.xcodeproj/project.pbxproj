@@ -10,6 +10,7 @@
 		5F3BAC242DFB04F3000F5146 /* QuickItemRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F3BAC232DFB04F3000F5146 /* QuickItemRowView.swift */; };
 		5F68D2C32E13E3CB001A97B1 /* FavoriteCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F68D2C22E13E3CB001A97B1 /* FavoriteCardView.swift */; };
 		5F68D3092E151EDC001A97B1 /* FavoriteColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F68D3082E151EA7001A97B1 /* FavoriteColor.swift */; };
+		5F68E2062E6593810009A20C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F68E2052E6593810009A20C /* SettingsView.swift */; };
 		5FCB6D2E2DF976930099AB52 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5FCB6D272DF976930099AB52 /* Assets.xcassets */; };
 		5FCB6D2F2DF976930099AB52 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D282DF976930099AB52 /* ContentView.swift */; };
 		5FCB6D302DF976930099AB52 /* QuickItemModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D192DF976930099AB52 /* QuickItemModel.swift */; };
@@ -26,7 +27,6 @@
 		5FCB6D3C2DF976930099AB52 /* ListEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D212DF976930099AB52 /* ListEditView.swift */; };
 		5FCB6D3D2DF976930099AB52 /* ListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D182DF976930099AB52 /* ListModel.swift */; };
 		5FCB6D3E2DF976930099AB52 /* Project2App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D292DF976930099AB52 /* Project2App.swift */; };
-		5FCB88612E420B2D0054B8C9 /* LinkIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB88602E420B2D0054B8C9 /* LinkIconView.swift */; };
 		5FFACC5B2E1F962E005C5F6B /* HomeTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FFACC5A2E1F9628005C5F6B /* HomeTab.swift */; };
 /* End PBXBuildFile section */
 
@@ -35,6 +35,7 @@
 		5F3BAC232DFB04F3000F5146 /* QuickItemRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickItemRowView.swift; sourceTree = "<group>"; };
 		5F68D2C22E13E3CB001A97B1 /* FavoriteCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteCardView.swift; sourceTree = "<group>"; };
 		5F68D3082E151EA7001A97B1 /* FavoriteColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteColor.swift; sourceTree = "<group>"; };
+		5F68E2052E6593810009A20C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		5FCB6D162DF976930099AB52 /* GroupModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupModel.swift; sourceTree = "<group>"; };
 		5FCB6D172DF976930099AB52 /* ItemModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemModel.swift; sourceTree = "<group>"; };
 		5FCB6D182DF976930099AB52 /* ListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListModel.swift; sourceTree = "<group>"; };
@@ -52,7 +53,6 @@
 		5FCB6D282DF976930099AB52 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		5FCB6D292DF976930099AB52 /* Project2App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Project2App.swift; sourceTree = "<group>"; };
 		5FCB6D2B2DF976930099AB52 /* Project2.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Project2.xcodeproj; sourceTree = "<group>"; };
-		5FCB88602E420B2D0054B8C9 /* LinkIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkIconView.swift; sourceTree = "<group>"; };
 		5FFACC5A2E1F9628005C5F6B /* HomeTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeTab.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -106,9 +106,9 @@
 				5FCB6D1F2DF976930099AB52 /* ItemRowView.swift */,
 				5FFACC5A2E1F9628005C5F6B /* HomeTab.swift */,
 				5FCB6D202DF976930099AB52 /* ItemView.swift */,
+				5F68E2052E6593810009A20C /* SettingsView.swift */,
 				5FCB6D212DF976930099AB52 /* ListEditView.swift */,
 				5FCB6D222DF976930099AB52 /* ListRowView.swift */,
-				5FCB88602E420B2D0054B8C9 /* LinkIconView.swift */,
 				5F68D2C22E13E3CB001A97B1 /* FavoriteCardView.swift */,
 				5FCB6D232DF976930099AB52 /* ListViewInside.swift */,
 				5FCB6D252DF976930099AB52 /* QuickListView.swift */,
@@ -164,7 +164,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1630;
-				LastUpgradeCheck = 1640;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					5F259C042DCCA51B000C6B7C = {
 						CreatedOnToolsVersion = 16.3;
@@ -212,6 +212,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5F68E2062E6593810009A20C /* SettingsView.swift in Sources */,
 				5FCB6D2F2DF976930099AB52 /* ContentView.swift in Sources */,
 				5FCB6D302DF976930099AB52 /* QuickItemModel.swift in Sources */,
 				5FCB6D312DF976930099AB52 /* QuickListView.swift in Sources */,
@@ -223,7 +224,6 @@
 				5FCB6D362DF976930099AB52 /* ItemView.swift in Sources */,
 				5FCB6D372DF976930099AB52 /* GroupEditView.swift in Sources */,
 				5FCB6D382DF976930099AB52 /* SampleData.swift in Sources */,
-				5FCB88612E420B2D0054B8C9 /* LinkIconView.swift in Sources */,
 				5FCB6D3A2DF976930099AB52 /* ItemRowView.swift in Sources */,
 				5FCB6D3B2DF976930099AB52 /* ItemModel.swift in Sources */,
 				5F68D2C32E13E3CB001A97B1 /* FavoriteCardView.swift in Sources */,
@@ -297,6 +297,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -354,6 +355,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};

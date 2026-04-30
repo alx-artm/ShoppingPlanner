@@ -21,6 +21,10 @@ struct ContentView: View {
             Tab("Quick List", systemImage: "bolt") {
                 QuickListView()
             }
+            Tab("Settings", systemImage: "switch.2") {
+                SettingsView()
+            }
+            
         }
         
     }

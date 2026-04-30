@@ -2,7 +2,6 @@
 //  ListRowView.swift
 //  Project #2
 //
-//  Created by Yelisei Kadol on 15/05/2025.
 //
 
 import SwiftUI
