@@ -18,9 +18,6 @@ struct ContentView: View {
             Tab("Shopping Lists", systemImage: "checkmark.rectangle.stack") {
                 HomeTab()
             }
-            Tab("Quick List", systemImage: "bolt") {
-                QuickListView()
-            }
             Tab("Settings", systemImage: "switch.2") {
                 SettingsView()
             }
