@@ -25,6 +25,7 @@
 		5FCB6D3D2DF976930099AB52 /* ListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D182DF976930099AB52 /* ListModel.swift */; };
 		5FCB6D3E2DF976930099AB52 /* Project2App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D292DF976930099AB52 /* Project2App.swift */; };
 		5FFACC5B2E1F962E005C5F6B /* HomeTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FFACC5A2E1F9628005C5F6B /* HomeTab.swift */; };
+		5FA0C0DE2EA5000100000002 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 5FA0C0DE2EA5000100000001 /* Localizable.xcstrings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -48,6 +49,7 @@
 		5FCB6D292DF976930099AB52 /* Project2App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Project2App.swift; sourceTree = "<group>"; };
 		5FCB6D2B2DF976930099AB52 /* Project2.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Project2.xcodeproj; sourceTree = "<group>"; };
 		5FFACC5A2E1F9628005C5F6B /* HomeTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeTab.swift; sourceTree = "<group>"; };
+		5FA0C0DE2EA5000100000001 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -114,6 +116,7 @@
 				5FCB6D1B2DF976930099AB52 /* Models */,
 				5FCB6D262DF976930099AB52 /* Views */,
 				5FCB6D272DF976930099AB52 /* Assets.xcassets */,
+				5FA0C0DE2EA5000100000001 /* Localizable.xcstrings */,
 				5FCB6D282DF976930099AB52 /* ContentView.swift */,
 				5FCB6D292DF976930099AB52 /* Project2App.swift */,
 			);
@@ -168,6 +171,7 @@
 			knownRegions = (
 				en,
 				Base,
+				ru,
 			);
 			mainGroup = 5F259BFC2DCCA51A000C6B7C;
 			minimizedProjectReferenceProxies = 1;
@@ -193,6 +197,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5FCB6D2E2DF976930099AB52 /* Assets.xcassets in Resources */,
+				5FA0C0DE2EA5000100000002 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

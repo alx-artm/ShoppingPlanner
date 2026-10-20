@@ -1,0 +1,135 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    "%@" : {
+
+    },
+    "%@ completed" : {
+
+    },
+    "%lld" : {
+
+    },
+    "Add group" : {
+
+    },
+    "Add new item..." : {
+
+    },
+    "Add to favorites" : {
+
+    },
+    "All groups and items in this list will disappear forever." : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Close" : {
+
+    },
+    "Color" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete Group" : {
+
+    },
+    "Delete group? \nAll items in this group will disappear forever." : {
+
+    },
+    "Delete item" : {
+
+    },
+    "Delete list" : {
+
+    },
+    "Delete list %@?" : {
+
+    },
+    "Delete list?\nAll groups and items in this list will disappear forever." : {
+
+    },
+    "Edit group" : {
+
+    },
+    "Edit list" : {
+
+    },
+    "Favourite" : {
+
+    },
+    "Link" : {
+
+    },
+    "Lists" : {
+
+    },
+    "New group" : {
+
+    },
+    "New list" : {
+
+    },
+    "No Groups" : {
+
+    },
+    "No Lists" : {
+
+    },
+    "Note" : {
+
+    },
+    "Note: %@" : {
+
+    },
+    "Price" : {
+
+    },
+    "Quantity" : {
+
+    },
+    "Remove from favorites" : {
+
+    },
+    "Select emoji" : {
+
+    },
+    "Select one emoji" : {
+
+    },
+    "Settings" : {
+
+    },
+    "Shopping Lists" : {
+
+    },
+    "Start by adding your first group.\nTap the folder icon above." : {
+
+    },
+    "Start by adding your first list.\nTap the plus button above." : {
+
+    },
+    "Theme" : {
+
+    },
+    "Title" : {
+
+    },
+    "Title & Price" : {
+
+    },
+    "Total" : {
+
+    },
+    "Total:" : {
+
+    }
+  },
+  "version" : "1.0"
+}
