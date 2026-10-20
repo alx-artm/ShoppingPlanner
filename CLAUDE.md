@@ -1,10 +1,12 @@
 # Project2 — shopping list app (SwiftUI + SwiftData)
 
-iPhone app: shopping lists → groups → items (price × quantity, totals, completion), a separate Quick List, and a theme setting. Goal: publish to the App Store and use as a portfolio project.
+Purchase planner with budget control: lists → groups → items (price × quantity, totals, completion). Goal: publish to the App Store and use as a portfolio project. Working title "Shopping Planner" (final name decided before release).
 
-- Project: `Project2.xcodeproj`, scheme `Project2`, iOS 18.4+, iPhone only.
-- Code: `Project2/Models` (SwiftData `@Model`s), `Project2/Views` (SwiftUI).
-- Product docs: `docs/product/` (specs, `ROADMAP.md`).
+- Project: `Project2.xcodeproj`, scheme `Project2`, iOS 26+, iPhone + iPad, Swift 6 strict concurrency.
+- Code: `Project2/Models` (SwiftData `@Model`s), `Project2/Views` (SwiftUI). Tests: `Project2Tests` (Swift Testing), `Project2UITests` (XCUITest).
+- Product docs (local only, git-ignored): `docs/product/ROADMAP.md` (milestones M0–M8), `docs/product/specs/` (numbered acceptance criteria), `docs/design/UX_REVIEW.md`.
+- Apple team: free Personal Team `X9MAKYZ36V` — CloudKit, App Groups and App Store release need the paid Developer Program (required from M6).
+- Git: one branch per milestone/fix, PRs into `main`; never push or merge without the owner's request.
 
 ## Team (subagents in `.claude/agents/`)
 - `product-manager` — vision, research, prioritization, specs with acceptance criteria. No code.

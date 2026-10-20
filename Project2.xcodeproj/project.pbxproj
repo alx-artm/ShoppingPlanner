@@ -64,7 +64,6 @@
 		5FCB6D272DF976930099AB52 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		5FCB6D282DF976930099AB52 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		5FCB6D292DF976930099AB52 /* Project2App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Project2App.swift; sourceTree = "<group>"; };
-		5FCB6D2B2DF976930099AB52 /* Project2.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Project2.xcodeproj; sourceTree = "<group>"; };
 		5FFACC5A2E1F9628005C5F6B /* HomeTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeTab.swift; sourceTree = "<group>"; };
 		5FA0C0DE2EA5000100000001 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		5FA0C0DE2EA5000200000001 /* Project2Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Project2Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -115,7 +114,6 @@
 				5FCB6D2A2DF976930099AB52 /* Project2 */,
 				5FA0C0DE2EA5000200000003 /* Project2Tests */,
 				5FA0C0DE2EA5000200000004 /* Project2UITests */,
-				5FCB6D2B2DF976930099AB52 /* Project2.xcodeproj */,
 				5F259C062DCCA51B000C6B7C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -171,11 +169,6 @@
 				5FCB6D292DF976930099AB52 /* Project2App.swift */,
 			);
 			path = Project2;
-			sourceTree = "<group>";
-		};
-		5FCB6D2C2DF976930099AB52 /* Products */ = {
-			isa = PBXGroup;
-			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -282,12 +275,6 @@
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5F259C062DCCA51B000C6B7C /* Products */;
 			projectDirPath = "";
-			projectReferences = (
-				{
-					ProductGroup = 5FCB6D2C2DF976930099AB52 /* Products */;
-					ProjectRef = 5FCB6D2B2DF976930099AB52 /* Project2.xcodeproj */;
-				},
-			);
 			projectRoot = "";
 			targets = (
 				5F259C042DCCA51B000C6B7C /* Project2 */,
