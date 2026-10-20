@@ -10,9 +10,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build
-    runs-on: macos-latest
+  build-and-test:
+    name: Build & Test
+    runs-on: macos-26
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -21,12 +22,50 @@ jobs:
         with:
           xcode-version: latest-stable
 
+      - name: Pick iPhone simulator
+        id: sim
+        run: |
+          # Newest available iOS runtime, first iPhone device on it.
+          UDID=$(xcrun simctl list devices available --json | jq -r '
+            .devices | to_entries
+            | map(select(.key | startswith("com.apple.CoreSimulator.SimRuntime.iOS-")))
+            | sort_by(.key | sub(".*iOS-"; "") | split("-") | map(tonumber))
+            | reverse
+            | map(.value[] | select(.name | startswith("iPhone")))
+            | first | .udid // empty')
+          if [ -z "$UDID" ]; then
+            echo "::error::No available iPhone simulator found"
+            xcrun simctl list devices available
+            exit 1
+          fi
+          xcrun simctl list devices available | grep "$UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
       - name: Build
         run: |
           set -o pipefail
-          xcodebuild build \
+          xcodebuild build-for-testing \
             -project Project2.xcodeproj \
             -scheme Project2 \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath DerivedData \
             CODE_SIGNING_ALLOWED=NO \
             | xcbeautify --renderer github-actions
+
+      - name: Test
+        run: |
+          set -o pipefail
+          xcodebuild test-without-building \
+            -project Project2.xcodeproj \
+            -scheme Project2 \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath DerivedData \
+            -resultBundlePath TestResults.xcresult \
+            | xcbeautify --renderer github-actions
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults
+          path: TestResults.xcresult
