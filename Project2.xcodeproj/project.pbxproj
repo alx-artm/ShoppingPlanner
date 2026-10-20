@@ -10,6 +10,14 @@
 		5F68D2C32E13E3CB001A97B1 /* FavoriteCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F68D2C22E13E3CB001A97B1 /* FavoriteCardView.swift */; };
 		5F68D3092E151EDC001A97B1 /* FavoriteColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F68D3082E151EA7001A97B1 /* FavoriteColor.swift */; };
 		5F68E2062E6593810009A20C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F68E2052E6593810009A20C /* SettingsView.swift */; };
+		5FA0C0DE2EA5000100000002 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 5FA0C0DE2EA5000100000001 /* Localizable.xcstrings */; };
+		5FB1C0DE2EB5000100000003 /* SchemaV1.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB1C0DE2EB5000100000002 /* SchemaV1.swift */; };
+		5FB1C0DE2EB5000100000005 /* BudgetCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB1C0DE2EB5000100000004 /* BudgetCalculator.swift */; };
+		5FB1C0DE2EB5000100000007 /* PlannerOrdering.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB1C0DE2EB5000100000006 /* PlannerOrdering.swift */; };
+		5FB1C0DE2EB5000100000009 /* ListIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB1C0DE2EB5000100000008 /* ListIconView.swift */; };
+		5FB1C0DE2EB500010000000B /* Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB1C0DE2EB500010000000A /* Persistence.swift */; };
+		5FB1C0DE2EB500010000000D /* LocalUIState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB1C0DE2EB500010000000C /* LocalUIState.swift */; };
+		5FB1C0DE2EB500010000000F /* PlannerStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB1C0DE2EB500010000000E /* PlannerStore.swift */; };
 		5FCB6D2E2DF976930099AB52 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5FCB6D272DF976930099AB52 /* Assets.xcassets */; };
 		5FCB6D2F2DF976930099AB52 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D282DF976930099AB52 /* ContentView.swift */; };
 		5FCB6D322DF976930099AB52 /* ListViewInside.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D232DF976930099AB52 /* ListViewInside.swift */; };
@@ -25,7 +33,6 @@
 		5FCB6D3D2DF976930099AB52 /* ListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D182DF976930099AB52 /* ListModel.swift */; };
 		5FCB6D3E2DF976930099AB52 /* Project2App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D292DF976930099AB52 /* Project2App.swift */; };
 		5FFACC5B2E1F962E005C5F6B /* HomeTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FFACC5A2E1F9628005C5F6B /* HomeTab.swift */; };
-		5FA0C0DE2EA5000100000002 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 5FA0C0DE2EA5000100000001 /* Localizable.xcstrings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -50,6 +57,16 @@
 		5F68D2C22E13E3CB001A97B1 /* FavoriteCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteCardView.swift; sourceTree = "<group>"; };
 		5F68D3082E151EA7001A97B1 /* FavoriteColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteColor.swift; sourceTree = "<group>"; };
 		5F68E2052E6593810009A20C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		5FA0C0DE2EA5000100000001 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		5FA0C0DE2EA5000200000001 /* Project2Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Project2Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5FA0C0DE2EA5000200000002 /* Project2UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Project2UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5FB1C0DE2EB5000100000002 /* SchemaV1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemaV1.swift; sourceTree = "<group>"; };
+		5FB1C0DE2EB5000100000004 /* BudgetCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetCalculator.swift; sourceTree = "<group>"; };
+		5FB1C0DE2EB5000100000006 /* PlannerOrdering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlannerOrdering.swift; sourceTree = "<group>"; };
+		5FB1C0DE2EB5000100000008 /* ListIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListIconView.swift; sourceTree = "<group>"; };
+		5FB1C0DE2EB500010000000A /* Persistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence.swift; sourceTree = "<group>"; };
+		5FB1C0DE2EB500010000000C /* LocalUIState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalUIState.swift; sourceTree = "<group>"; };
+		5FB1C0DE2EB500010000000E /* PlannerStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlannerStore.swift; sourceTree = "<group>"; };
 		5FCB6D162DF976930099AB52 /* GroupModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupModel.swift; sourceTree = "<group>"; };
 		5FCB6D172DF976930099AB52 /* ItemModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemModel.swift; sourceTree = "<group>"; };
 		5FCB6D182DF976930099AB52 /* ListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListModel.swift; sourceTree = "<group>"; };
@@ -65,9 +82,6 @@
 		5FCB6D282DF976930099AB52 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		5FCB6D292DF976930099AB52 /* Project2App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Project2App.swift; sourceTree = "<group>"; };
 		5FFACC5A2E1F9628005C5F6B /* HomeTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeTab.swift; sourceTree = "<group>"; };
-		5FA0C0DE2EA5000100000001 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
-		5FA0C0DE2EA5000200000001 /* Project2Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Project2Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		5FA0C0DE2EA5000200000002 /* Project2UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Project2UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -129,6 +143,16 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		5FB1C0DE2EB5000100000001 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				5FB1C0DE2EB500010000000A /* Persistence.swift */,
+				5FB1C0DE2EB500010000000C /* LocalUIState.swift */,
+				5FB1C0DE2EB500010000000E /* PlannerStore.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
 		5FCB6D1B2DF976930099AB52 /* Models */ = {
 			isa = PBXGroup;
 			children = (
@@ -137,6 +161,9 @@
 				5FCB6D182DF976930099AB52 /* ListModel.swift */,
 				5F68D3082E151EA7001A97B1 /* FavoriteColor.swift */,
 				5FCB6D1A2DF976930099AB52 /* SampleData.swift */,
+				5FB1C0DE2EB5000100000002 /* SchemaV1.swift */,
+				5FB1C0DE2EB5000100000004 /* BudgetCalculator.swift */,
+				5FB1C0DE2EB5000100000006 /* PlannerOrdering.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -154,6 +181,7 @@
 				5FCB6D222DF976930099AB52 /* ListRowView.swift */,
 				5F68D2C22E13E3CB001A97B1 /* FavoriteCardView.swift */,
 				5FCB6D232DF976930099AB52 /* ListViewInside.swift */,
+				5FB1C0DE2EB5000100000008 /* ListIconView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -163,6 +191,7 @@
 			children = (
 				5FCB6D1B2DF976930099AB52 /* Models */,
 				5FCB6D262DF976930099AB52 /* Views */,
+				5FB1C0DE2EB5000100000001 /* Services */,
 				5FCB6D272DF976930099AB52 /* Assets.xcassets */,
 				5FA0C0DE2EA5000100000001 /* Localizable.xcstrings */,
 				5FCB6D282DF976930099AB52 /* ContentView.swift */,
@@ -325,6 +354,13 @@
 				5FCB6D362DF976930099AB52 /* ItemView.swift in Sources */,
 				5FCB6D372DF976930099AB52 /* GroupEditView.swift in Sources */,
 				5FCB6D382DF976930099AB52 /* SampleData.swift in Sources */,
+				5FB1C0DE2EB5000100000003 /* SchemaV1.swift in Sources */,
+				5FB1C0DE2EB5000100000005 /* BudgetCalculator.swift in Sources */,
+				5FB1C0DE2EB5000100000007 /* PlannerOrdering.swift in Sources */,
+				5FB1C0DE2EB5000100000009 /* ListIconView.swift in Sources */,
+				5FB1C0DE2EB500010000000B /* Persistence.swift in Sources */,
+				5FB1C0DE2EB500010000000D /* LocalUIState.swift in Sources */,
+				5FB1C0DE2EB500010000000F /* PlannerStore.swift in Sources */,
 				5FCB6D3A2DF976930099AB52 /* ItemRowView.swift in Sources */,
 				5FCB6D3B2DF976930099AB52 /* ItemModel.swift in Sources */,
 				5F68D2C32E13E3CB001A97B1 /* FavoriteCardView.swift in Sources */,

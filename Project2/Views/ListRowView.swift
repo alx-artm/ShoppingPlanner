@@ -5,13 +5,9 @@
 //
 
 import SwiftUI
-import SwiftData
 
 struct ListRowView: View {
-    @Environment(\.modelContext) var context
-    @Bindable var list: ListModel
-    @State private var showDeleteConfirmationDialog = false
-    @State private var showEditListView: ListModel?
+    let list: ListModel
     
     var body: some View {
         NavigationLink {
@@ -26,14 +22,14 @@ struct ListRowView: View {
                     Circle()
                         .fill(list.color.color.quaternary)
                         .frame(width: 36)
-                    Text(list.iconName)
+                    ListIconView(list: list)
                 }
                 
                 Text(list.name)
                 
                 Spacer()
                 
-                Text(list.remainingAmount, format: .number)
+                Text(list.summary.toBuy, format: .number)
                 
                 Image(systemName: "chevron.right")
                     .font(.footnote)
@@ -44,6 +40,6 @@ struct ListRowView: View {
         .padding(.leading, 4)
         .padding(.vertical, 6)
         .foregroundStyle(.primary)
-        
+        .accessibilityIdentifier("home.listRow.\(list.name)")
     }
 }
