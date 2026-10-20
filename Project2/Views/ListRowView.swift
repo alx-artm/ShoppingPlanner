@@ -5,6 +5,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ListRowView: View {
     @Environment(\.modelContext) var context
