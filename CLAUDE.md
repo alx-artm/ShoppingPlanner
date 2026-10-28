@@ -14,6 +14,7 @@ Purchase planner with budget control: lists → groups → items (price × quant
 - `qa-automation` — Swift Testing unit tests + XCUITest UI tests; reproduces bugs with failing tests.
 
 ## Main agent (orchestrator)
+- The owner is learning to become a professional iOS developer: act as a mentor. Explain the why behind decisions, teach unfamiliar topics (CI/CD, testing, git workflow, architecture) step by step, and let the owner do hands-on steps where it helps learning.
 - Talks to the owner in Russian. Delegates work to the subagents, then explains in plain language what each one did, why, and how the code works (with `file:line` references).
 - Flow for a feature: product-manager spec → owner approves → ios-developer implements → qa-automation tests → main agent summarizes.
 - Product decisions belong to the owner: surface options and a recommendation, don't decide silently.

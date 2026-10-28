@@ -9,10 +9,11 @@ import SwiftUI
 
 struct FavoriteCardView: View {
     
-    @Bindable var list: ListModel
-    
+    let list: ListModel
+
     var body: some View {
-        
+        let summary = list.summary
+
         NavigationLink {
             ListViewInside(list: list)
         } label: {
@@ -23,9 +24,9 @@ struct FavoriteCardView: View {
                     
                         .fill(.gray.gradient.opacity(0.1))
                     
-                        .frame(width: 48).opacity(list.iconName.isEmpty ? 0 : 1)
-                    
-                    Text(list.iconName)
+                        .frame(width: 48)
+
+                    ListIconView(list: list)
                         .font(.title)
 
                 }
@@ -38,18 +39,17 @@ struct FavoriteCardView: View {
                             .foregroundStyle(.black) // Changed .tint to .foregroundStyle for text
                     }
                     
-                    // Используем свойства ListModel напрямую, которые теперь реактивны
-                    Gauge(value: list.totalAmount.doubleValue == 0 ? 0 : list.completedAmount.doubleValue,
-                          in: 0...(list.totalAmount.doubleValue == 0 ? 1 : list.totalAmount.doubleValue)) {
+                    // Totals come from BudgetCalculator (see ListModel.summary).
+                    Gauge(value: summary.boughtFraction.doubleValue) {
                         // Label content
                     } currentValueLabel: {
-                        
-                        Text(list.remainingAmount, format: .number.precision(.fractionLength(2)))
+
+                        Text(summary.toBuy, format: .number.precision(.fractionLength(2)))
                             .foregroundStyle(.black.secondary)
                         
                     }
                     .gaugeStyle(.accessoryLinearCapacity)
-                    .opacity(list.totalAmount == 0 ? 0 : 1)
+                    .opacity(summary.planned == 0 ? 0 : 1)
                 }
             }
             .padding()
@@ -65,6 +65,7 @@ struct FavoriteCardView: View {
                 }
             )
         }
+        .accessibilityIdentifier("home.listCard.\(list.name)")
     }
 }
 
@@ -73,8 +74,9 @@ struct FavoriteCardView: View {
         List{
             FavoriteCardView(list: SampleData.shared.victoriaList)
                 .listRowSeparator(.hidden)
-            
+
         }
         .listStyle(.plain)
     }
+    .sampleDataEnvironment()
 }
