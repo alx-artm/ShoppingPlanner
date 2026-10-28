@@ -61,7 +61,7 @@ struct HomeTab: View {
                             .padding()
                     }
                     // центрирование
-                    .frame(minHeight: UIScreen.main.bounds.height * 0.6)
+                    .containerRelativeFrame(.vertical) { length, _ in length * 0.6 }
                     
                 } else {
                     LazyVGrid(columns: colomnsFirstGrid) {

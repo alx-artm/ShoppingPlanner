@@ -39,7 +39,7 @@ check them off as you buy, and always see what's spent and what's left.
 ## Requirements
 
 - Xcode 26 or later
-- iOS 18.4+ (v1.0 will target iOS 26)
+- iOS 26.0+ (iPhone and iPad)
 
 ## Getting started
 
@@ -49,7 +49,7 @@ cd ShoppingPlanner
 open Project2.xcodeproj
 ```
 
-Select the `Project2` scheme and an iPhone simulator, then run (⌘R).
+Select the `Project2` scheme and an iPhone simulator, then run (⌘R). Run the unit and UI tests with ⌘U.
 To run on a device, set your own team in *Signing & Capabilities*.
 
 ## Project structure
@@ -58,6 +58,8 @@ To run on a device, set your own team in *Signing & Capabilities*.
 Project2/
 ├── Models/   SwiftData models and sample data
 └── Views/    SwiftUI screens and components
+Project2Tests/    Unit tests (Swift Testing)
+Project2UITests/  UI tests (XCUITest)
 ```
 
 ## License

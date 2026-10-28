@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ListViewInside: View {
     @Environment(\.modelContext) private var context
@@ -29,7 +30,7 @@ struct ListViewInside: View {
                         .multilineTextAlignment(.center)
                         .padding()
                 }
-                .frame(minHeight: UIScreen.main.bounds.height * 0.6) // центрирование
+                .containerRelativeFrame(.vertical) { length, _ in length * 0.6 } // центрирование
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
             }

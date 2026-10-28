@@ -18,7 +18,6 @@ struct Project2App: App {
             ItemModel.self,
             GroupModel.self,
             ListModel.self,
-            QuickItemModel.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         

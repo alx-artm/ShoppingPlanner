@@ -7,6 +7,7 @@
 
 
 import SwiftUI
+import SwiftData
 import UIKit
 
 struct ItemRowView: View {
@@ -128,14 +129,4 @@ struct ItemRowView: View {
             ItemView(item: item)
         }
     }
-    
-    
-    #warning("take a look")// MARK: - это нигде сейчас не применяется, мб сделать это в стоимости в айтем прайс?
-    static let quantityFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.minimumFractionDigits = 0
-        formatter.maximumFractionDigits = 2
-        return formatter
-    }()
 }

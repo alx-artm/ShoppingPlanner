@@ -16,18 +16,11 @@ class SampleData {
     var victoriaList: ListModel
     var alexList: ListModel
     
-    // MARK: NEW, Добавляем переменные для быстрого листа
-    var quickItem1: QuickItemModel
-    var quickItem2: QuickItemModel
-    
     private init() {
         let schema = Schema([
             ItemModel.self,
             GroupModel.self,
             ListModel.self,
-            
-            // MARK: NEW
-            QuickItemModel.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         
@@ -97,17 +90,9 @@ class SampleData {
             )
 
             
-            // MARK: NEW
-            quickItem1 = QuickItemModel(name: "Orange", quantity: 3)
-            quickItem2 = QuickItemModel(name: "Apples", quantity: 5)
-            
             context.insert(evaList)
             context.insert(victoriaList)
             context.insert(alexList)
-            
-            // MARK: NEW
-            context.insert(quickItem1)
-            context.insert(quickItem2)
             
             try context.save()
         } catch {
