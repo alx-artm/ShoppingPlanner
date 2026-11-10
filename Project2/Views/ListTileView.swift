@@ -98,7 +98,7 @@ struct BudgetText: View {
     let status: ListStatusText
     let form: Form
 
-    /// A `Text`, so the row can embed it in one wrapping line with the progress part.
+    /// The budget words as a `Text`; red with ⚠ when over budget.
     var text: Text {
         let words = form == .short ? status.budgetShort : status.budgetFull
         if status.isOverBudget {

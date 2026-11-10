@@ -4,8 +4,8 @@
 //
 //  A row of Home's "All Lists" section (spec 02 "Row"). Also used for pinned
 //  lists at accessibility text sizes and in Edit mode, where tiles become rows.
-//  Name with the status "progress · budget" under it, "to buy" on the right
-//  (HM-30); the texts come from `ListStatusText`.
+//  Name and "to buy" on the first line, progress and budget on their own lines
+//  under it (HM-30); the texts come from `ListStatusText`.
 //
 
 import SwiftUI
@@ -32,14 +32,17 @@ struct ListRowView: View {
             }
             .padding(.vertical, 4)
         } else {
+            // The amount shares the name's line, so the status lines get the full width.
             HStack(spacing: 12) {
                 ListIconBadge(list: list, diameter: badgeDiameter)
                 VStack(alignment: .leading, spacing: 2) {
-                    name
+                    HStack(alignment: .firstTextBaseline) {
+                        name
+                        Spacer(minLength: 8)
+                        amount(status)
+                    }
                     statusLine(status)
                 }
-                Spacer(minLength: 8)
-                amount(status)
             }
             .padding(.vertical, 2)
         }
@@ -56,17 +59,21 @@ struct ListRowView: View {
             .accessibilityIdentifier("home.listRow.toBuy.\(list.name)")
     }
 
-    /// "13% bought · $160.00 to spare of $500.00", "0% bought · ⚠ plan €15.00 over budget",
-    /// "3 items · budget €500.00". Only the budget part turns red (HM-22); up to 2 lines (HM-25).
+    /// Progress and budget on their own lines, so every row has the same height and a
+    /// budget phrase never breaks mid-way: "13% bought" / "$160.00 to spare of $500.00",
+    /// "0% bought" / "⚠ plan €15.00 over budget". Only the budget part turns red (HM-22).
     private func statusLine(_ status: ListStatusText) -> some View {
-        let budget = BudgetText(status: status, form: .full)
-        return Text("\(status.progressText) · \(budget.text)")
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .lineLimit(2)
-            // Narrow rows (Edit mode handles, small iPhones) shrink a little before truncating.
-            .minimumScaleFactor(0.8)
-            .accessibilityIdentifier("home.listRow.status.\(list.name)")
+        VStack(alignment: .leading, spacing: 0) {
+            Text(verbatim: status.progressText)
+            BudgetText(status: status, form: .full).text
+        }
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        // Narrow rows (Edit mode handles, small iPhones) shrink a little before truncating.
+        .minimumScaleFactor(0.8)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("home.listRow.status.\(list.name)")
     }
 }
 
