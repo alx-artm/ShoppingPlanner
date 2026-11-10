@@ -269,8 +269,8 @@ struct ListDraftTests {
 
 // MARK: - Budget field parsing (LI-08)
 
-/// List Info binds the budget to `TextField(value:format: MoneyFormat.style(currencyCode: list currency, locale:))`.
-/// These tests pin down what that format style accepts, with explicit locales.
+/// List Info binds the budget to `TextField(value:format: MoneyInputFormat(currencyCode: list currency, locale:))`.
+/// These tests pin down what that format accepts, with explicit locales.
 @Suite("List Info budget parsing", .tags(.listInfo, .money))
 struct BudgetParsingTests {
 
@@ -285,7 +285,7 @@ struct BudgetParsingTests {
     }
 
     static func parse(_ c: Case) -> Decimal? {
-        let style = MoneyFormat.style(currencyCode: c.currency, locale: Locale(identifier: c.locale))
+        let style = MoneyInputFormat(currencyCode: c.currency, locale: Locale(identifier: c.locale))
         return try? style.parseStrategy.parse(c.input)
     }
 
@@ -299,6 +299,22 @@ struct BudgetParsingTests {
         Case(input: "250", currency: "EUR", locale: "en_US", expected: "250"),
         Case(input: "1234.5", currency: "USD", locale: "en_US", expected: "1234.5"),
         Case(input: "250,5", currency: "EUR", locale: "ru_RU", expected: "250.5"),
+        // BUG-28: "," and "." both work as the decimal separator, grouping follows the locale.
+        Case(input: "250.5", currency: "EUR", locale: "ru_RU", expected: "250.5"),
+        Case(input: "1 500,25", currency: "EUR", locale: "ru_RU", expected: "1500.25"),
+        Case(input: "1\u{00A0}500,25", currency: "EUR", locale: "ru_RU", expected: "1500.25"),
+        Case(input: "1 500.25", currency: "EUR", locale: "ru_RU", expected: "1500.25"),
+        Case(input: "1,500.25", currency: "USD", locale: "en_US", expected: "1500.25"),
+        Case(input: "250,5", currency: "USD", locale: "en_US", expected: "250.5"),
+        Case(input: "1,500", currency: "USD", locale: "en_US", expected: "1500"),  // en_US grouping
+        Case(input: "1.500,25", currency: "EUR", locale: "en_US", expected: "1500.25"),
+        Case(input: "1.234", currency: "EUR", locale: "de_DE", expected: "1234"),  // de_DE grouping
+        Case(input: "12.5", currency: "EUR", locale: "de_DE", expected: "12.5"),
+        // Ambiguous text is rejected rather than read with lost digits.
+        Case(input: "1,2,3", currency: "EUR", locale: "ru_RU", expected: nil),
+        Case(input: "1.5.0", currency: "USD", locale: "en_US", expected: nil),
+        Case(input: "1,500.25.5", currency: "USD", locale: "en_US", expected: nil),
+        Case(input: "12-5", currency: "USD", locale: "en_US", expected: nil),
         // 0 is a valid budget (LI-08).
         Case(input: "0", currency: "USD", locale: "en_US", expected: "0"),
         // A negative value parses; ListDraft.hasValidBudget then blocks ✓.
@@ -329,16 +345,30 @@ struct BudgetParsingTests {
         #expect(draft.hasValidBudget == false)
     }
 
-    /// BUG-28 (new): in ru_RU a "." is not a decimal separator, and "250.5" silently
-    /// becomes 250 instead of being rejected or read as 250.5. Users get "." from a
-    /// hardware keyboard or paste. Same family as BUG-26 (the plan there: accept both
-    /// "," and "."). Kept as a known issue until the M4 money input lands.
-    @Test("BUG-28 ru_RU '250.5' must not silently become 250", .tags(.regression))
+    /// BUG-28: in ru_RU a "." used to be no separator at all, and "250.5" silently
+    /// became 250. Users get "." from a hardware keyboard, a paste or habit.
+    /// `DecimalInput` accepts both "," and "." (the same parser will fix BUG-26 in M4).
+    @Test("BUG-28 ru_RU '250.5' is 250.5, never silently 250", .tags(.regression))
     func ruDotSeparator() {
-        let parsed = Self.parse(Case(input: "250.5", currency: "EUR", locale: "ru_RU", expected: nil))
-        withKnownIssue("BUG-28: ru_RU drops the fraction after '.' (parses as 250)") {
-            #expect(parsed == dec("250.5") || parsed == nil,
-                    "parsed \(String(describing: parsed)); the fraction was lost silently")
+        let parsed = Self.parse(Case(input: "250.5", currency: "EUR", locale: "ru_RU", expected: "250.5"))
+        #expect(parsed == dec("250.5"))
+    }
+
+    @Test("BUG-28 every value the field shows parses back to itself",
+          arguments: ["en_US", "ru_RU", "de_DE", "fr_FR", "de_CH", "ja_JP"])
+    func roundTrip(locale identifier: String) {
+        let locale = Locale(identifier: identifier)
+        for currency in ["EUR", "USD", "JPY", "RUB"] {
+            let style = MoneyInputFormat(currencyCode: currency, locale: locale)
+            for value in ["0", "0.5", "12.34", "1234.5", "1234567.89"].map(dec) {
+                let text = style.format(value)
+                let parsed = try? style.parseStrategy.parse(text)
+                #expect(parsed != nil, "\(text) in \(identifier)")
+                // Same value as the strict locale parser, where that one can read it.
+                if let strict = try? MoneyFormat.style(currencyCode: currency, locale: locale).parseStrategy.parse(text) {
+                    #expect(parsed == strict, "\(text) in \(identifier)")
+                }
+            }
         }
     }
 }

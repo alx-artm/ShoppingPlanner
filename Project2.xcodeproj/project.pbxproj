@@ -24,6 +24,7 @@
 		5FB3C0DE2ED5000100000002 /* IconCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000001 /* IconCatalog.swift */; };
 		5FB3C0DE2ED5000100000004 /* ListTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000003 /* ListTemplate.swift */; };
 		5FB3C0DE2ED5000100000006 /* ListDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000005 /* ListDraft.swift */; };
+		5FB4C0DE2EE5000100000002 /* DecimalInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB4C0DE2EE5000100000001 /* DecimalInput.swift */; };
 		5FB3C0DE2ED5000100000008 /* HomeSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000007 /* HomeSections.swift */; };
 		5FB3C0DE2ED500010000000A /* ListStatusText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000009 /* ListStatusText.swift */; };
 		5FB3C0DE2ED500010000000C /* ListShareText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED500010000000B /* ListShareText.swift */; };
@@ -86,6 +87,7 @@
 		5FB3C0DE2ED5000100000001 /* IconCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconCatalog.swift; sourceTree = "<group>"; };
 		5FB3C0DE2ED5000100000003 /* ListTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListTemplate.swift; sourceTree = "<group>"; };
 		5FB3C0DE2ED5000100000005 /* ListDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListDraft.swift; sourceTree = "<group>"; };
+		5FB4C0DE2EE5000100000001 /* DecimalInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecimalInput.swift; sourceTree = "<group>"; };
 		5FB3C0DE2ED5000100000007 /* HomeSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSections.swift; sourceTree = "<group>"; };
 		5FB3C0DE2ED5000100000009 /* ListStatusText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListStatusText.swift; sourceTree = "<group>"; };
 		5FB3C0DE2ED500010000000B /* ListShareText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListShareText.swift; sourceTree = "<group>"; };
@@ -197,6 +199,7 @@
 				5FB3C0DE2ED5000100000001 /* IconCatalog.swift */,
 				5FB3C0DE2ED5000100000003 /* ListTemplate.swift */,
 				5FB3C0DE2ED5000100000005 /* ListDraft.swift */,
+				5FB4C0DE2EE5000100000001 /* DecimalInput.swift */,
 				5FB3C0DE2ED5000100000007 /* HomeSections.swift */,
 				5FB3C0DE2ED5000100000009 /* ListStatusText.swift */,
 				5FB3C0DE2ED500010000000B /* ListShareText.swift */,
@@ -412,6 +415,7 @@
 				5FB3C0DE2ED5000100000002 /* IconCatalog.swift in Sources */,
 				5FB3C0DE2ED5000100000004 /* ListTemplate.swift in Sources */,
 				5FB3C0DE2ED5000100000006 /* ListDraft.swift in Sources */,
+				5FB4C0DE2EE5000100000002 /* DecimalInput.swift in Sources */,
 				5FB3C0DE2ED5000100000008 /* HomeSections.swift in Sources */,
 				5FB3C0DE2ED500010000000A /* ListStatusText.swift in Sources */,
 				5FB3C0DE2ED500010000000C /* ListShareText.swift in Sources */,

@@ -271,8 +271,9 @@ struct ListInfoView: View {
     private var budgetSection: some View {
         Section {
             LabeledContent("Budget") {
+                // Accepts "," and "." as the decimal separator in any locale (BUG-28).
                 TextField("None", value: $draft.budget,
-                          format: MoneyFormat.style(currencyCode: draft.currencyCode, locale: locale))
+                          format: MoneyInputFormat(currencyCode: draft.currencyCode, locale: locale))
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
                     .accessibilityIdentifier("listEdit.budgetField")
