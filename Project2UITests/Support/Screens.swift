@@ -50,8 +50,9 @@ struct HomeScreen {
 
     /// Long press → "Delete list" → confirm.
     func deleteFromContextMenu(row name: String) {
-        row(name).waitToAppear().press(forDuration: 1.0)
-        app.buttons["home.menu.delete"].waitAndTap()
+        row(name).perform("Long press", until: app.buttons["home.menu.delete"]) {
+            $0.press(forDuration: 1.5)
+        }.waitAndTap()
         // Alert buttons expose their identifier twice; take the first match.
         app.buttons["home.deleteAlert.confirmButton"].firstMatch.waitAndTap()
     }
@@ -64,7 +65,9 @@ struct ListDetailScreen {
     var addGroupButton: XCUIElement { app.buttons["listDetail.addGroupButton"] }
     var menuButton: XCUIElement { app.buttons["listDetail.menuButton"] }
     var total: XCUIElement { app.staticTexts["listDetail.total"] }
-    var backButton: XCUIElement { app.navigationBars.buttons["BackButton"] }
+    /// Not scoped to `navigationBars`: on some devices (iPhone Duo) the system
+    /// renders the back button in a side rail outside the navigation bar.
+    var backButton: XCUIElement { app.buttons["BackButton"].firstMatch }
 
     func groupHeader(_ group: String) -> XCUIElement { app.buttons["group.editButton.\(group)"] }
     func groupTotal(_ group: String) -> XCUIElement { app.staticTexts["group.total.\(group)"] }
@@ -126,11 +129,13 @@ struct ListDetailScreen {
 
     /// Swipe left on a row and tap the system "Delete" action.
     func swipeToDelete(_ item: String) {
-        itemRow(item).waitToAppear().swipeLeft()
-        app.buttons["Delete"].firstMatch.waitAndTap()
+        itemRow(item).perform("Swipe left", until: app.buttons["Delete"].firstMatch) {
+            $0.swipeLeft()
+        }.waitAndTap()
     }
 
     /// Menu → "Delete list" → confirm. The screen pops back to Home.
+    @discardableResult
     func deleteList() -> HomeScreen {
         menuButton.waitAndTap()
         app.buttons["listDetail.menu.delete"].waitAndTap()

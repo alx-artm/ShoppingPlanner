@@ -56,6 +56,46 @@ extension XCUIElement {
         waitToAppear(timeout: timeout, file: file, line: line).tap()
     }
 
+    /// Waits until the element exists *and* is hittable (on screen, not covered,
+    /// not mid-animation). Gestures sent before that can be silently lost.
+    @MainActor
+    @discardableResult
+    func waitToBeHittable(timeout: TimeInterval = uiTimeout,
+                          file: StaticString = #filePath, line: UInt = #line) -> XCUIElement {
+        let predicate = NSPredicate(format: "exists == true AND hittable == true")
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: self)
+        XCTAssertEqual(XCTWaiter().wait(for: [expectation], timeout: timeout), .completed,
+                       "\(self) is not hittable after \(timeout)s", file: file, line: line)
+        return self
+    }
+
+    /// Performs a gesture on this element until `result` appears, at most `attempts` times.
+    ///
+    /// Gestures (long press, swipe) are timing-sensitive: on a slow machine (CI) the
+    /// system can drop one that lands while the view is still settling. A tap is
+    /// re-sent automatically by XCTest, a gesture is not, so we retry it ourselves.
+    /// Each attempt waits for the element to be hittable first; no sleeps.
+    @MainActor
+    @discardableResult
+    func perform(_ gestureName: String,
+                 until result: XCUIElement,
+                 attempts: Int = 3,
+                 resultTimeout: TimeInterval = 5,
+                 file: StaticString = #filePath, line: UInt = #line,
+                 _ gesture: (XCUIElement) -> Void) -> XCUIElement {
+        for _ in 1...max(attempts, 1) {
+            // A late result from the previous attempt counts, and pressing again
+            // on top of an open menu would dismiss it.
+            if result.exists { return result }
+            waitToBeHittable(file: file, line: line)
+            gesture(self)
+            if result.waitForExistence(timeout: resultTimeout) { return result }
+        }
+        XCTFail("\(gestureName) on \(self) did not reveal \(result) after \(attempts) attempts "
+                + "(\(resultTimeout)s each)", file: file, line: line)
+        return result
+    }
+
     /// Waits until `label` equals `expected` (labels update asynchronously after a tap).
     @MainActor
     func waitForLabel(_ expected: String, timeout: TimeInterval = uiTimeout,
