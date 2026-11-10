@@ -124,8 +124,15 @@
     "Title & Price" : {
 
     },
-    "Total" : {
-
+    "To buy" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Осталось купить"
+          }
+        }
+      }
     },
     "Total:" : {
 

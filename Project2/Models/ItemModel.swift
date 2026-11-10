@@ -73,6 +73,11 @@ extension ItemModel {
         group?.list
     }
 
+    /// The currency the item's totals are shown in: the one of its list.
+    var listCurrencyCode: String {
+        parentList?.currencyCode ?? ListModel.fallbackCurrencyCode
+    }
+
     /// Value snapshot for `BudgetCalculator`, which knows nothing about SwiftData.
     var budgetLine: BudgetLine {
         BudgetLine(
@@ -89,7 +94,7 @@ extension ItemModel {
     var lineTotal: Decimal? {
         BudgetCalculator.lineTotal(
             of: budgetLine,
-            listCurrencyCode: parentList?.currencyCode ?? ListModel.fallbackCurrencyCode
+            listCurrencyCode: listCurrencyCode
         )
     }
 

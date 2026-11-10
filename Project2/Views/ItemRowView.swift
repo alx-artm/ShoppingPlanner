@@ -107,11 +107,12 @@ struct ItemRowView: View {
                     // No price → nothing is shown, not "0" (BUG-07).
                     Group {
                         if let total = item.lineTotal {
-                            Text(total, format: .number)
+                            MoneyText(total, currencyCode: item.listCurrencyCode)
                         }
                     }
-                    .frame(maxWidth: 64, alignment: .trailing)
                     .lineLimit(1)
+                    // The name wraps instead of the amount being cut ("$3…").
+                    .fixedSize()
                     .accessibilityIdentifier("item.total.\(item.name)")
                 }
                 .foregroundColor(item.isComplete ? .secondary : .primary)

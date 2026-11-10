@@ -29,7 +29,14 @@ struct ListRowView: View {
                 
                 Spacer()
                 
-                Text(list.summary.toBuy, format: .number)
+                VStack(alignment: .trailing, spacing: 0) {
+                    MoneyText(list.summary.toBuy, currencyCode: list.currencyCode)
+                        .accessibilityIdentifier("home.listRow.toBuy.\(list.name)")
+                    // What the number means (BUG-08).
+                    Text("To buy")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 
                 Image(systemName: "chevron.right")
                     .font(.footnote)
