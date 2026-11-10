@@ -10,10 +10,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-test:
-    name: Build & Test
+  # One job definition, run twice in parallel by the matrix: "Unit Tests" and
+  # "UI Tests". Each instance gets its own runner and simulator, so the fast unit
+  # tests report in a few minutes while the slow UI tests are still running, and
+  # a failure in one doesn't hide the result of the other (fail-fast: false).
+  # The matrix keeps the shared steps (Xcode, simulator, build) in one place;
+  # only the test target and the artifact name differ.
+  test:
+    name: ${{ matrix.name }}
     runs-on: macos-26
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Unit Tests
+            target: Project2Tests
+            artifact: UnitTestResults
+          - name: UI Tests
+            target: Project2UITests
+            artifact: UITestResults
     steps:
       - uses: actions/checkout@v7
 
@@ -52,7 +68,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             | xcbeautify --renderer github-actions
 
-      - name: Test
+      - name: Test (${{ matrix.target }})
         run: |
           set -o pipefail
           xcodebuild test-without-building \
@@ -60,6 +76,7 @@ jobs:
             -scheme Project2 \
             -destination "id=${{ steps.sim.outputs.udid }}" \
             -derivedDataPath DerivedData \
+            -only-testing:${{ matrix.target }} \
             -resultBundlePath TestResults.xcresult \
             -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 180 \
@@ -69,5 +86,5 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: TestResults
+          name: ${{ matrix.artifact }}
           path: TestResults.xcresult
