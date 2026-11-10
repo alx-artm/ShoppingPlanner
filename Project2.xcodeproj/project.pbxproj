@@ -38,6 +38,12 @@
 		5FCB6D3D2DF976930099AB52 /* ListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D182DF976930099AB52 /* ListModel.swift */; };
 		5FCB6D3E2DF976930099AB52 /* Project2App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D292DF976930099AB52 /* Project2App.swift */; };
 		5FFACC5B2E1F962E005C5F6B /* HomeTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FFACC5A2E1F9628005C5F6B /* HomeTab.swift */; };
+		5FB3C0DE2ED5000100000004 /* ListTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000003 /* ListTemplate.swift */; };
+		5FB3C0DE2ED5000100000006 /* ListDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000005 /* ListDraft.swift */; };
+		5FB3C0DE2ED5000100000008 /* HomeSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000007 /* HomeSections.swift */; };
+		5FB3C0DE2ED500010000000A /* ListStatusText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000009 /* ListStatusText.swift */; };
+		5FB3C0DE2ED500010000000C /* ListShareText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED500010000000B /* ListShareText.swift */; };
+		5FB3C0DE2ED500010000000E /* AppNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED500010000000D /* AppNavigation.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -92,6 +98,12 @@
 		5FCB6D282DF976930099AB52 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		5FCB6D292DF976930099AB52 /* Project2App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Project2App.swift; sourceTree = "<group>"; };
 		5FFACC5A2E1F9628005C5F6B /* HomeTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeTab.swift; sourceTree = "<group>"; };
+		5FB3C0DE2ED5000100000003 /* ListTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListTemplate.swift; sourceTree = "<group>"; };
+		5FB3C0DE2ED5000100000005 /* ListDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListDraft.swift; sourceTree = "<group>"; };
+		5FB3C0DE2ED5000100000007 /* HomeSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSections.swift; sourceTree = "<group>"; };
+		5FB3C0DE2ED5000100000009 /* ListStatusText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListStatusText.swift; sourceTree = "<group>"; };
+		5FB3C0DE2ED500010000000B /* ListShareText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListShareText.swift; sourceTree = "<group>"; };
+		5FB3C0DE2ED500010000000D /* AppNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNavigation.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -160,6 +172,7 @@
 				5FB1C0DE2EB500010000000C /* LocalUIState.swift */,
 				5FB1C0DE2EB500010000000E /* PlannerStore.swift */,
 				5FB2C0DE2EC5000100000007 /* AppSettings.swift */,
+				5FB3C0DE2ED500010000000D /* AppNavigation.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -177,6 +190,11 @@
 				5FB1C0DE2EB5000100000006 /* PlannerOrdering.swift */,
 				5FB2C0DE2EC5000100000001 /* MoneyFormat.swift */,
 				5FB2C0DE2EC5000100000005 /* CurrencyCatalog.swift */,
+				5FB3C0DE2ED5000100000003 /* ListTemplate.swift */,
+				5FB3C0DE2ED5000100000005 /* ListDraft.swift */,
+				5FB3C0DE2ED5000100000007 /* HomeSections.swift */,
+				5FB3C0DE2ED5000100000009 /* ListStatusText.swift */,
+				5FB3C0DE2ED500010000000B /* ListShareText.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -388,6 +406,12 @@
 				5FB2C0DE2EC5000100000006 /* CurrencyCatalog.swift in Sources */,
 				5FB2C0DE2EC5000100000008 /* AppSettings.swift in Sources */,
 				5FB2C0DE2EC500010000000A /* CurrencyPickerView.swift in Sources */,
+				5FB3C0DE2ED5000100000004 /* ListTemplate.swift in Sources */,
+				5FB3C0DE2ED5000100000006 /* ListDraft.swift in Sources */,
+				5FB3C0DE2ED5000100000008 /* HomeSections.swift in Sources */,
+				5FB3C0DE2ED500010000000A /* ListStatusText.swift in Sources */,
+				5FB3C0DE2ED500010000000C /* ListShareText.swift in Sources */,
+				5FB3C0DE2ED500010000000E /* AppNavigation.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

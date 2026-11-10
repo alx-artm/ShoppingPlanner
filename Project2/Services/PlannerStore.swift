@@ -29,6 +29,8 @@ protocol PlannerStoring: AnyObject {
     @discardableResult
     func createList(name: String, iconName: String?, iconKind: ListIconKind, color: FavoriteColor,
                     isPinned: Bool, budget: Decimal?, currencyCode: String?) -> ListModel
+    @discardableResult func createList(from draft: ListDraft) -> ListModel
+    func updateList(_ list: ListModel, with draft: ListDraft)
     func renameList(_ list: ListModel, to name: String)
     func setIcon(_ iconName: String, kind: ListIconKind, for list: ListModel)
     func setColor(_ color: FavoriteColor, for list: ListModel)
@@ -155,7 +157,7 @@ final class PlannerStore: PlannerStoring {
             iconKind: iconKind,
             color: color,
             isPinned: isPinned,
-            sortIndex: PlannerOrdering.indexAfter(lists(pinned: isPinned).map(\.sortIndex)),
+            sortIndex: newListSortIndex(pinned: isPinned),
             budget: Self.validBudget(budget) ?? nil,
             currencyCode: currencyCode ?? defaultCurrencyCode,
             createdAt: now()
@@ -163,6 +165,45 @@ final class PlannerStore: PlannerStoring {
         context.insert(list)
         save()
         return list
+    }
+
+    /// Creates the list from List Info (spec 03), with the template's empty groups in order.
+    @discardableResult
+    func createList(from draft: ListDraft) -> ListModel {
+        let list = createList(
+            name: draft.name,
+            iconName: draft.iconName,
+            iconKind: draft.iconKind,
+            color: draft.color,
+            isPinned: draft.isPinned,
+            budget: draft.budget,
+            currencyCode: draft.currencyCode
+        )
+        for name in draft.groupNames {
+            createGroup(name: name, in: list)
+        }
+        return list
+    }
+
+    /// Applies List Info's ✓ to an existing list in one save (LI-02).
+    /// The currency is not changed (v1.1); a negative budget keeps the old one.
+    func updateList(_ list: ListModel, with draft: ListDraft) {
+        list.name = Self.normalizedName(draft.name) ?? String(localized: "Untitled list")
+        if draft.iconName.isEmpty {
+            list.iconName = "cart"
+            list.iconKind = .symbol
+        } else {
+            list.iconName = draft.iconName
+            list.iconKind = draft.iconKind
+        }
+        list.color = draft.color
+        if let budget = Self.validBudget(draft.budget) {
+            list.budget = budget
+        }
+        if list.isPinned != draft.isPinned {
+            movePin(of: list, to: draft.isPinned)
+        }
+        save()
     }
 
     func renameList(_ list: ListModel, to name: String) {
@@ -195,13 +236,9 @@ final class PlannerStore: PlannerStoring {
         return true
     }
 
-    /// Pins/unpins and puts the list at the end of the section it moves into.
+    /// Pins/unpins and puts the list at the end of the section it moves into (HM-08).
     func togglePin(_ list: ListModel) {
-        let target = !list.isPinned
-        list.sortIndex = PlannerOrdering.indexAfter(
-            lists(pinned: target).filter { $0 !== list }.map(\.sortIndex)
-        )
-        list.isPinned = target
+        movePin(of: list, to: !list.isPinned)
         save()
     }
 
@@ -211,6 +248,7 @@ final class PlannerStore: PlannerStoring {
     }
 
     /// Copies the list with all groups and items (DM-19). Items come back not completed.
+    /// The copy is not pinned and comes first in "All Lists" (HM-11).
     @discardableResult
     func duplicateList(_ list: ListModel) -> ListModel {
         let copy = ListModel(
@@ -218,8 +256,8 @@ final class PlannerStore: PlannerStoring {
             iconName: list.iconName,
             iconKind: list.iconKind,
             color: list.color,
-            isPinned: list.isPinned,
-            sortIndex: PlannerOrdering.indexAfter(lists(pinned: list.isPinned).map(\.sortIndex)),
+            isPinned: false,
+            sortIndex: newListSortIndex(pinned: false),
             budget: list.budget,
             currencyCode: list.currencyCode,
             createdAt: now()
@@ -386,6 +424,20 @@ final class PlannerStore: PlannerStoring {
             Self.logger.error("Fetching lists failed: \(error.localizedDescription, privacy: .public)")
             return []
         }
+    }
+
+    /// A new list goes first in "All Lists" (HM-03), or last in "Pinned".
+    private func newListSortIndex(pinned: Bool) -> Double {
+        let section = lists(pinned: pinned).map(\.sortIndex)
+        return pinned ? PlannerOrdering.indexAfter(section) : PlannerOrdering.indexBefore(section)
+    }
+
+    /// Moves the list to the end of the pinned / all section. Doesn't save.
+    private func movePin(of list: ListModel, to pinned: Bool) {
+        list.sortIndex = PlannerOrdering.indexAfter(
+            lists(pinned: pinned).filter { $0 !== list }.map(\.sortIndex)
+        )
+        list.isPinned = pinned
     }
 
     /// `.some(value)` when acceptable (including `nil` = "no price"), `.none` when negative.

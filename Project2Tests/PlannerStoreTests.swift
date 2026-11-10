@@ -74,16 +74,17 @@ struct PlannerStoreTests {
             #expect(euro.store.createList(name: "B", currencyCode: "JPY").currencyCode == "JPY")
         }
 
-        @Test("DM-06 new lists are appended to the end of their Home section", .tags(.ordering))
-        func appendToSection() {
+        @Test("HM-03 a new list comes first in All Lists; a new pinned list goes last in Pinned", .tags(.ordering))
+        func newListPlacement() {
             let a = f.store.createList(name: "A")
             let b = f.store.createList(name: "B")
-            let pinned = f.store.createList(name: "P", isPinned: true)
+            let p1 = f.store.createList(name: "P1", isPinned: true)
+            _ = f.store.createList(name: "P2", isPinned: true)
 
-            #expect(f.store.lists(pinned: false).map(\.name) == ["A", "B"])
-            #expect(f.store.lists(pinned: true).map(\.name) == ["P"])
-            #expect(b.sortIndex > a.sortIndex)
-            #expect(pinned.sortIndex == 0)
+            #expect(f.store.lists(pinned: false).map(\.name) == ["B", "A"])
+            #expect(f.store.lists(pinned: true).map(\.name) == ["P1", "P2"])
+            #expect(b.sortIndex < a.sortIndex)
+            #expect(p1.sortIndex == 0)
         }
 
         @Test("togglePin moves the list to the end of the other section", .tags(.ordering))
@@ -104,11 +105,13 @@ struct PlannerStoreTests {
 
         @Test("DM-07 moveList reorders a section", .tags(.ordering))
         func moveList() {
+            // Each new list comes first, so the section starts as C, B, A.
             for name in ["A", "B", "C"] { f.store.createList(name: name) }
+            #expect(f.store.lists(pinned: false).map(\.name) == ["C", "B", "A"])
 
             f.store.moveList(in: f.store.lists(pinned: false), fromOffsets: [2], toOffset: 0)
 
-            #expect(f.store.lists(pinned: false).map(\.name) == ["C", "A", "B"])
+            #expect(f.store.lists(pinned: false).map(\.name) == ["A", "C", "B"])
         }
 
         @Test("setIcon: empty icon resets to the default symbol; setColor stores the color")
