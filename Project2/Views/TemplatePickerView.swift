@@ -41,6 +41,7 @@ struct TemplatePickerView: View {
                     Text("A template fills in the name, icon and empty groups. You can change all of it.")
                 }
             }
+            .accessibilityIdentifier("templates.list")
             .navigationTitle("Start from Template")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

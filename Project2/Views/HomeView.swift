@@ -299,6 +299,8 @@ struct HomeView: View {
             Button("Start from Template") { sheet = .templates }
                 .accessibilityIdentifier("home.emptyState.templateButton")
         }
+        // .contain keeps the buttons' own identifiers (otherwise they inherit this one).
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("home.emptyState")
     }
 }

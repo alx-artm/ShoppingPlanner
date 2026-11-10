@@ -76,6 +76,7 @@ struct ListInfoView: View {
                     }
                 }
             }
+            .accessibilityIdentifier("listEdit.form")
             .navigationTitle(isNew ? Text("New List") : Text("List Info"))
             .navigationBarTitleDisplayMode(.inline)
             .scrollDismissesKeyboard(.interactively)

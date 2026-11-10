@@ -87,6 +87,20 @@ extension XCUIElement {
         return self
     }
 
+    /// Like `scrollIntoView`, for lazy containers (Form, LazyVGrid) where the element
+    /// is not even in the hierarchy until it is scrolled near the screen.
+    @MainActor
+    @discardableResult
+    func scrollIntoViewLazily(within container: XCUIElement, maxSwipes: Int = 6,
+                              file: StaticString = #filePath, line: UInt = #line) -> XCUIElement {
+        var swipes = 0
+        while !(exists && isHittable) && swipes < maxSwipes {
+            container.swipeUp(velocity: .slow)
+            swipes += 1
+        }
+        return waitToBeHittable(file: file, line: line)
+    }
+
     /// Performs a gesture on this element until `result` appears, at most `attempts` times.
     ///
     /// Gestures (long press, swipe) are timing-sensitive: on a slow machine (CI) the
