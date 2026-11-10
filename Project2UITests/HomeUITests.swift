@@ -41,7 +41,7 @@ final class HomeUITests: XCTestCase {
         let evaTile = home.card("Eva").frame
         XCTAssertTrue(evaTile.minY > alexTile.minY || evaTile.minX > alexTile.minX, "Eva comes after Alex")
 
-        // The first tile's menu (see BUG-28 for the others).
+        // The first tile's menu (see BUG-27 for the others).
         home.unpinFromContextMenu(card: "Alex")
         home.row("Alex").waitToAppear()
         home.card("Alex").waitToDisappear()
@@ -50,7 +50,7 @@ final class HomeUITests: XCTestCase {
                              "an unpinned list goes to the end of All Lists")
     }
 
-    /// BUG-28 (new): with two or more tiles, the context menu of any tile acts on the
+    /// BUG-27 (new): with two or more tiles, the context menu of any tile acts on the
     /// first tile. Long press Eva (2nd tile) → Unpin unpins Alex; Edit opens Alex.
     @MainActor
     func testContextMenuOfSecondTileActsOnThatTile() {
@@ -64,7 +64,7 @@ final class HomeUITests: XCTestCase {
         // Wait for whichever list was unpinned, then check it was the long-pressed one.
         app.buttons.matching(NSPredicate(format: "identifier IN %@",
                                          ["home.listRow.Eva", "home.listRow.Alex"])).firstMatch.waitToAppear()
-        XCTExpectFailure("BUG-28: a tile's context menu acts on the first tile in the Pinned grid")
+        XCTExpectFailure("BUG-27: a tile's context menu acts on the first tile in the Pinned grid")
         XCTAssertTrue(home.row("Eva").exists, "Eva should be a row again")
         XCTAssertTrue(home.card("Alex").exists, "Alex should stay pinned")
     }

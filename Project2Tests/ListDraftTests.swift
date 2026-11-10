@@ -329,14 +329,14 @@ struct BudgetParsingTests {
         #expect(draft.hasValidBudget == false)
     }
 
-    /// BUG-27 (new): in ru_RU a "." is not a decimal separator, and "250.5" silently
+    /// BUG-28 (new): in ru_RU a "." is not a decimal separator, and "250.5" silently
     /// becomes 250 instead of being rejected or read as 250.5. Users get "." from a
     /// hardware keyboard or paste. Same family as BUG-26 (the plan there: accept both
     /// "," and "."). Kept as a known issue until the M4 money input lands.
-    @Test("BUG-27 ru_RU '250.5' must not silently become 250", .tags(.regression))
+    @Test("BUG-28 ru_RU '250.5' must not silently become 250", .tags(.regression))
     func ruDotSeparator() {
         let parsed = Self.parse(Case(input: "250.5", currency: "EUR", locale: "ru_RU", expected: nil))
-        withKnownIssue("BUG-27: ru_RU drops the fraction after '.' (parses as 250)") {
+        withKnownIssue("BUG-28: ru_RU drops the fraction after '.' (parses as 250)") {
             #expect(parsed == dec("250.5") || parsed == nil,
                     "parsed \(String(describing: parsed)); the fraction was lost silently")
         }
