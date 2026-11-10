@@ -80,7 +80,7 @@ struct HomeSectionsTests {
         #expect(sections.others.map(\.name) == ["Yankee", "Zulu", "alpha", "Mike"])
     }
 
-    @Test("HM-08 pinning moves a list to the end of Pinned and out of All Lists", .tags(.ordering))
+    @Test("HM-08/HM-26 pinning moves a list to the end of Pinned; unpinning puts it first in All Lists", .tags(.ordering))
     func pinMovesSection() throws {
         f.store.createList(name: "P1", isPinned: true)
         let a = f.store.createList(name: "A")
@@ -94,7 +94,7 @@ struct HomeSectionsTests {
         f.store.togglePin(a)
         sections = HomeSections(lists: try allLists())
         #expect(sections.pinned.map(\.name) == ["P1"])
-        #expect(sections.others.map(\.name) == ["B", "A"])
+        #expect(sections.others.map(\.name) == ["A", "B"])
     }
 
     @Test("HM-11 a duplicate is unpinned and comes first in All Lists", .tags(.ordering))

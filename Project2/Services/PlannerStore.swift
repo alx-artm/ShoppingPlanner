@@ -236,7 +236,7 @@ final class PlannerStore: PlannerStoring {
         return true
     }
 
-    /// Pins/unpins and puts the list at the end of the section it moves into (HM-08).
+    /// Pins (last in Pinned, HM-08) or unpins (first in All Lists, HM-26).
     func togglePin(_ list: ListModel) {
         movePin(of: list, to: !list.isPinned)
         save()
@@ -432,11 +432,12 @@ final class PlannerStore: PlannerStoring {
         return pinned ? PlannerOrdering.indexAfter(section) : PlannerOrdering.indexBefore(section)
     }
 
-    /// Moves the list to the end of the pinned / all section. Doesn't save.
+    /// Moves the list into the other Home section. Doesn't save.
+    /// A pinned list goes last in Pinned (HM-08); an unpinned one goes first in
+    /// All Lists, where the user looks for it right after unpinning (HM-26).
     private func movePin(of list: ListModel, to pinned: Bool) {
-        list.sortIndex = PlannerOrdering.indexAfter(
-            lists(pinned: pinned).filter { $0 !== list }.map(\.sortIndex)
-        )
+        let section = lists(pinned: pinned).filter { $0 !== list }.map(\.sortIndex)
+        list.sortIndex = pinned ? PlannerOrdering.indexAfter(section) : PlannerOrdering.indexBefore(section)
         list.isPinned = pinned
     }
 

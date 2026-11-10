@@ -29,7 +29,7 @@ final class HomeUITests: XCTestCase {
     }
 
     /// HM-08: swipe → Pin makes a tile, last in Pinned; HM-09: context menu → Unpin makes a row again,
-    /// at the end of All Lists.
+    /// first in All Lists (HM-26).
     @MainActor
     func testPinWithSwipeThenUnpinFromContextMenu() {
         let home = HomeScreen(app: Launch.app()).waitUntilShown()
@@ -46,8 +46,8 @@ final class HomeUITests: XCTestCase {
         home.row("Alex").waitToAppear()
         home.card("Alex").waitToDisappear()
         home.card("Eva").waitToAppear()
-        XCTAssertGreaterThan(home.top(of: home.row("Alex")), home.top(of: home.row("Victoria")),
-                             "an unpinned list goes to the end of All Lists")
+        XCTAssertLessThan(home.top(of: home.row("Alex")), home.top(of: home.row("Victoria")),
+                          "an unpinned list goes to the top of All Lists (HM-26)")
     }
 
     /// BUG-27 (new): with two or more tiles, the context menu of any tile acts on the

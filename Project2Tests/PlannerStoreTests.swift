@@ -87,7 +87,7 @@ struct PlannerStoreTests {
             #expect(p1.sortIndex == 0)
         }
 
-        @Test("togglePin moves the list to the end of the other section", .tags(.ordering))
+        @Test("togglePin: last in Pinned (HM-08), first in All Lists when unpinned (HM-26)", .tags(.ordering))
         func togglePin() {
             _ = f.store.createList(name: "P1", isPinned: true)
             let a = f.store.createList(name: "A")
@@ -100,7 +100,7 @@ struct PlannerStoreTests {
             #expect(f.store.lists(pinned: false).map(\.name) == ["B"])
 
             f.store.togglePin(a)
-            #expect(f.store.lists(pinned: false).map(\.name) == ["B", "A"])
+            #expect(f.store.lists(pinned: false).map(\.name) == ["A", "B"])
         }
 
         @Test("DM-07 moveList reorders a section", .tags(.ordering))

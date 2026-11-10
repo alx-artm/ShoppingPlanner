@@ -235,7 +235,7 @@ struct ListDraftTests {
         #expect(list.currencyCode == "EUR")
     }
 
-    @Test("LI-09 'Pin to Home' on ✓ moves the list to the end of Pinned and back to the end of All Lists",
+    @Test("LI-09 'Pin to Home' on ✓ moves the list to the end of Pinned; unpinning puts it first in All Lists (HM-26)",
           .tags(.home, .ordering))
     func updatePin() {
         f.store.createList(name: "P1", isPinned: true)
@@ -251,7 +251,7 @@ struct ListDraftTests {
 
         draft.isPinned = false
         f.store.updateList(a, with: draft)
-        #expect(f.store.lists(pinned: false).map(\.name) == ["B", "A"])
+        #expect(f.store.lists(pinned: false).map(\.name) == ["A", "B"])
     }
 
     @Test("updateList without a pin change keeps the position in the section", .tags(.ordering))
