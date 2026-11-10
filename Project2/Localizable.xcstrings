@@ -13,6 +13,16 @@
     "%lld" : {
 
     },
+    "About" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "О приложении"
+          }
+        }
+      }
+    },
     "Add group" : {
 
     },
@@ -22,8 +32,28 @@
     "Add to favorites" : {
 
     },
+    "All Currencies" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Все валюты"
+          }
+        }
+      }
+    },
     "All groups and items in this list will disappear forever." : {
 
+    },
+    "Appearance" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Оформление"
+          }
+        }
+      }
     },
     "Cancel" : {
 
@@ -31,8 +61,38 @@
     "Close" : {
 
     },
+    "Code, name or symbol" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Код, название или символ"
+          }
+        }
+      }
+    },
     "Color" : {
 
+    },
+    "Dark" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Тёмное"
+          }
+        }
+      }
+    },
+    "Data stays on this device." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Данные хранятся только на этом устройстве."
+          }
+        }
+      }
     },
     "Delete" : {
 
@@ -64,11 +124,51 @@
     "Favourite" : {
 
     },
+    "General" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Основные"
+          }
+        }
+      }
+    },
+    "Light" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Светлое"
+          }
+        }
+      }
+    },
     "Link" : {
 
     },
     "Lists" : {
 
+    },
+    "Main Currency" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Основная валюта"
+          }
+        }
+      }
+    },
+    "Match device" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Как на устройстве"
+          }
+        }
+      }
     },
     "New group" : {
 
@@ -88,6 +188,26 @@
     "Note: %@" : {
 
     },
+    "Off" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выкл."
+          }
+        }
+      }
+    },
+    "Popular" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Популярные"
+          }
+        }
+      }
+    },
     "Price" : {
 
     },
@@ -104,7 +224,14 @@
 
     },
     "Settings" : {
-
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Настройки"
+          }
+        }
+      }
     },
     "Shopping Lists" : {
 
@@ -115,8 +242,15 @@
     "Start by adding your first list.\nTap the plus button above." : {
 
     },
-    "Theme" : {
-
+    "Suggested" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рекомендуемые"
+          }
+        }
+      }
     },
     "Title" : {
 
@@ -136,6 +270,36 @@
     },
     "Total:" : {
 
+    },
+    "Used for new lists. Existing lists keep their currency." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Используется для новых списков. У существующих списков валюта не меняется."
+          }
+        }
+      }
+    },
+    "Version" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Версия"
+          }
+        }
+      }
+    },
+    "iCloud Sync" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Синхронизация iCloud"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
