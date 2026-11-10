@@ -9,6 +9,10 @@
 //  number of fraction digits of the currency (JPY 0, EUR 2). Rounding happens
 //  only here, at display time; `BudgetCalculator` never rounds (DM-25).
 //
+//  Ties round half-up, away from zero ("¥2.5 → ¥3"), like people round by hand.
+//  ICU's default would be half-even ("banker's rounding", ¥2.5 → ¥2), which
+//  looks like a bug in a shopping app (owner decision after the M2 review).
+//
 
 import Foundation
 
@@ -19,6 +23,7 @@ enum MoneyFormat {
     ///   Views pass `@Environment(\.locale)`; tests pass a fixed locale.
     static func style(currencyCode: String, locale: Locale = .autoupdatingCurrent) -> Decimal.FormatStyle.Currency {
         Decimal.FormatStyle.Currency(code: currencyCode, locale: locale)
+            .rounded(rule: .toNearestOrAwayFromZero)
     }
 
     /// `1234.5` + `"EUR"` → `"€1,234.50"` in en_US, `"1 234,50 €"` in ru_RU.
