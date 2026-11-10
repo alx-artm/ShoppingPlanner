@@ -34,6 +34,7 @@ struct Project2App: App {
                         .modelContainer(environment.container)
                         .environment(environment.store)
                         .environment(environment.uiState)
+                        .environment(environment.settings)
                 case .failure(let error):
                     StartupErrorView(error: error)
                 }
@@ -49,6 +50,7 @@ struct AppEnvironment {
     let container: ModelContainer
     let store: PlannerStore
     let uiState: LocalUIState
+    let settings: AppSettings
 
     /// Normal launch: on-disk store. `-UITests`: in-memory store with `SeedData`.
     static func make() throws -> AppEnvironment {
@@ -57,19 +59,20 @@ struct AppEnvironment {
             if !LaunchConfiguration.wantsEmptyStore {
                 try SeedData.populate(container.mainContext)
             }
-            return AppEnvironment(
-                container: container,
-                store: PlannerStore(context: container.mainContext),
-                uiState: .inMemory()
-            )
+            // Volatile settings: the main currency comes from the test's -AppleLocale.
+            return make(container: container, uiState: .inMemory(), settings: .inMemory())
         }
 
         let container = try Persistence.makeContainer(inMemory: false)
-        return AppEnvironment(
-            container: container,
-            store: PlannerStore(context: container.mainContext),
-            uiState: LocalUIState()
+        return make(container: container, uiState: LocalUIState(), settings: AppSettings())
+    }
+
+    private static func make(container: ModelContainer, uiState: LocalUIState, settings: AppSettings) -> AppEnvironment {
+        let store = PlannerStore(
+            context: container.mainContext,
+            mainCurrencyCode: { [settings] in settings.mainCurrencyCode }
         )
+        return AppEnvironment(container: container, store: store, uiState: uiState, settings: settings)
     }
 }
 
