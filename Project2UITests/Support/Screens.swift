@@ -305,10 +305,21 @@ extension HomeScreen {
 
     /// Long press a tile → "Unpin" (HM-09).
     func unpinFromContextMenu(card name: String) {
+        openContextMenu(card: name, until: app.buttons["home.menu.togglePin"]).waitAndTap()
+    }
+
+    /// Long press a tile → Edit → List Info of that list (HM-09, BUG-27).
+    func editFromContextMenu(card name: String) -> ListInfoScreen {
+        openContextMenu(card: name, until: app.buttons["home.menu.edit"]).waitAndTap()
+        return ListInfoScreen(app: app).waitUntilShown()
+    }
+
+    /// Long press a tile until `item` of its context menu shows up; returns `item`.
+    private func openContextMenu(card name: String, until item: XCUIElement) -> XCUIElement {
         card(name).scrollIntoView(within: list)
-            .perform("Long press", until: app.buttons["home.menu.togglePin"]) {
+            .perform("Long press", until: item) {
                 $0.press(forDuration: 1.5)
-            }.waitAndTap()
+            }
     }
 
     /// Swipe left on a row → "Delete" → confirmation dialog (HM-10).

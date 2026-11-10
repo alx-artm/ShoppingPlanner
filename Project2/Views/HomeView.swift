@@ -7,6 +7,15 @@
 //  the split view (spec 08): tapping a list selects it, which pushes it on a
 //  compact iPhone and shows it in the detail column on iPad / iPhone Duo.
 //
+//  BUG-27: the tile grid is one `List` row, and `List` turns any `.contextMenu`
+//  inside a row into the context menu of the whole cell. With several tiles in
+//  the row, a long press lifted the whole grid and every tile's menu acted on
+//  one list. So a tile is not a `Button` + `.contextMenu` but a `Menu` with a
+//  `primaryAction`: tap opens the list, long press opens the menu of that tile.
+//  A `Menu` is its own control, so the cell never takes it over. Rows (All
+//  Lists, and Pinned in Edit mode or at accessibility sizes) keep the real
+//  `.contextMenu`, swipes and reordering: one list per cell, nothing to mix up.
+//
 
 import SwiftData
 import SwiftUI
@@ -15,7 +24,6 @@ struct HomeView: View {
     @Environment(PlannerStore.self) private var store
     @Environment(AppNavigation.self) private var navigation
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.locale) private var locale
 
@@ -33,7 +41,17 @@ struct HomeView: View {
         List(selection: $navigation.selectedListID) {
             if !sections.pinned.isEmpty {
                 Section {
-                    pinnedContent(sections.pinned)
+                    if showsPinnedAsRows {
+                        ForEach(sections.pinned) { list in
+                            row(list)
+                        }
+                        .onMove { store.moveList(in: sections.pinned, fromOffsets: $0, toOffset: $1) }
+                        .moveDisabled(isSearching)
+                    } else {
+                        pinnedGrid(sections.pinned)
+                            .listRowInsets(EdgeInsets())
+                            .listRowBackground(Color.clear)
+                    }
                 } header: {
                     Text("Pinned")
                 } footer: {
@@ -112,50 +130,51 @@ struct HomeView: View {
 
     // MARK: - Pinned
 
-    /// Tiles in an adaptive grid; plain rows at accessibility text sizes (HM-02)
-    /// and in Edit mode, where rows get the system reorder handles (HM-03).
-    @ViewBuilder
-    private func pinnedContent(_ pinned: [ListModel]) -> some View {
-        if dynamicTypeSize.isAccessibilitySize || editMode.isEditing {
-            ForEach(pinned) { list in
-                row(list)
-            }
-            .onMove { store.moveList(in: pinned, fromOffsets: $0, toOffset: $1) }
-            .moveDisabled(isSearching)
-        } else {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: minimumTileWidth), spacing: 12)], spacing: 12) {
-                ForEach(pinned) { list in
-                    tile(list)
+    /// Rows instead of tiles at accessibility text sizes (HM-02) and in Edit mode,
+    /// where rows get the system reorder handles (HM-03).
+    private var showsPinnedAsRows: Bool {
+        dynamicTypeSize.isAccessibilitySize || editMode.isEditing
+    }
+
+    /// Exactly 2 columns on every width (HM-02, AD-06). `Grid` gives both tiles of
+    /// a row the row's height, so tiles of one row are equal (HM-28).
+    private func pinnedGrid(_ pinned: [ListModel]) -> some View {
+        Grid(horizontalSpacing: 12, verticalSpacing: 12) {
+            ForEach(TileRow.rows(of: pinned)) { pair in
+                GridRow {
+                    tile(pair.first)
+                    if let second = pair.second {
+                        tile(second)
+                    } else {
+                        // Keeps a single tile at half the width.
+                        Color.clear.gridCellUnsizedAxes(.vertical)
+                    }
                 }
             }
-            .listRowInsets(EdgeInsets())
-            .listRowBackground(Color.clear)
         }
     }
 
-    /// 150 pt gives 2 columns on every iPhone (375–440 pt). In a regular-width
-    /// sidebar a smaller minimum lets a wide sidebar fit 3 or more (AD-06).
-    private var minimumTileWidth: CGFloat {
-        horizontalSizeClass == .regular ? 120 : 150
-    }
-
+    /// Tap opens the list, long press shows the tile's own menu (HM-04, HM-09, BUG-27).
     private func tile(_ list: ListModel) -> some View {
-        Button {
-            navigation.select(list)
+        Menu {
+            menu(for: list)
         } label: {
             // On a compact iPhone the selection is cleared when going back, so this
             // ring only shows while the list is open next to the sidebar.
             ListTileView(list: list, isSelected: navigation.isSelected(list))
+        } primaryAction: {
+            navigation.select(list)
         }
+        .menuStyle(.button)
         .buttonStyle(.plain)
+        .menuIndicator(.hidden)
         .accessibilityLabel(Text(verbatim: accessibilityLabel(of: list)))
         .accessibilityAddTraits(navigation.isSelected(list) ? .isSelected : [])
         .accessibilityIdentifier("home.listCard.\(list.name)")
-        // HM-16: the context menu actions, reachable without a long press.
+        // HM-16: the menu actions, reachable without a long press.
         .accessibilityAction(named: Text("Unpin")) { togglePin(list) }
         .accessibilityAction(named: Text("Edit")) { sheet = .editList(list) }
         .accessibilityAction(named: Text("Delete")) { listToDelete = list }
-        .contextMenu { menu(for: list) }
     }
 
     // MARK: - Rows
@@ -307,6 +326,20 @@ struct HomeView: View {
         // .contain keeps the buttons' own identifiers (otherwise they inherit this one).
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("home.emptyState")
+    }
+}
+
+/// One row of the 2-column tile grid: `[a, b, c]` → `(a, b), (c, nil)`.
+private struct TileRow: Identifiable {
+    let first: ListModel
+    let second: ListModel?
+
+    var id: UUID { first.uuid }
+
+    static func rows(of lists: [ListModel]) -> [TileRow] {
+        stride(from: 0, to: lists.count, by: 2).map { index in
+            TileRow(first: lists[index], second: index + 1 < lists.count ? lists[index + 1] : nil)
+        }
     }
 }
 

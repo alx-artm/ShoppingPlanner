@@ -41,7 +41,6 @@ final class HomeUITests: XCTestCase {
         let evaTile = home.card("Eva").frame
         XCTAssertTrue(evaTile.minY > alexTile.minY || evaTile.minX > alexTile.minX, "Eva comes after Alex")
 
-        // The first tile's menu (see BUG-27 for the others).
         home.unpinFromContextMenu(card: "Alex")
         home.row("Alex").waitToAppear()
         home.card("Alex").waitToDisappear()
@@ -50,23 +49,49 @@ final class HomeUITests: XCTestCase {
                           "an unpinned list goes to the top of All Lists (HM-26)")
     }
 
-    /// BUG-27 (new): with two or more tiles, the context menu of any tile acts on the
-    /// first tile. Long press Eva (2nd tile) → Unpin unpins Alex; Edit opens Alex.
+    /// BUG-27 / HM-27: with two tiles in one row, the context menu of the right tile
+    /// acts on that tile. Long press Eva (2nd tile) → Unpin unpins Eva; Alex stays pinned.
     @MainActor
     func testContextMenuOfSecondTileActsOnThatTile() {
         let app = Launch.app()
         let home = HomeScreen(app: app).waitUntilShown()
         home.pinWithSwipe(row: "Eva")
         home.card("Eva").waitToAppear()
+        XCTAssertEqual(home.card("Eva").frame.minY, home.card("Alex").frame.minY, accuracy: 1,
+                       "both tiles are in one grid row")
 
         home.unpinFromContextMenu(card: "Eva")
 
         // Wait for whichever list was unpinned, then check it was the long-pressed one.
         app.buttons.matching(NSPredicate(format: "identifier IN %@",
                                          ["home.listRow.Eva", "home.listRow.Alex"])).firstMatch.waitToAppear()
-        XCTExpectFailure("BUG-27: a tile's context menu acts on the first tile in the Pinned grid")
         XCTAssertTrue(home.row("Eva").exists, "Eva should be a row again")
         XCTAssertTrue(home.card("Alex").exists, "Alex should stay pinned")
+        XCTAssertFalse(home.row("Alex").exists)
+    }
+
+    /// BUG-27: Edit in the second tile's context menu opens List Info of that list, not the first one.
+    @MainActor
+    func testContextMenuEditOfSecondTileOpensThatList() {
+        let app = Launch.app()
+        let home = HomeScreen(app: app).waitUntilShown()
+        home.pinWithSwipe(row: "Victoria")
+        home.card("Victoria").waitToAppear()
+
+        let info = home.editFromContextMenu(card: "Victoria")
+        XCTAssertEqual(info.nameField.value as? String, "Victoria")
+        info.cancel().card("Alex").waitToAppear()
+    }
+
+    /// HM-28: tiles of one row have the same height, whatever their budget state
+    /// (Alex: to spare, Victoria: over budget).
+    @MainActor
+    func testTilesInOneRowHaveTheSameHeight() {
+        let home = HomeScreen(app: Launch.app()).waitUntilShown()
+        home.pinWithSwipe(row: "Victoria")
+        home.card("Victoria").waitToAppear()
+        XCTAssertEqual(home.card("Victoria").frame.height, home.card("Alex").frame.height, accuracy: 0.5)
+        XCTAssertEqual(home.card("Victoria").frame.minY, home.card("Alex").frame.minY, accuracy: 1)
     }
 
     /// HM-10: swipe → Delete asks first; the row is deleted only after confirming.
