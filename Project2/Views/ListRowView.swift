@@ -64,6 +64,8 @@ struct ListRowView: View {
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .lineLimit(2)
+            // Narrow rows (Edit mode handles, small iPhones) shrink a little before truncating.
+            .minimumScaleFactor(0.8)
             .accessibilityIdentifier("home.listRow.status.\(list.name)")
     }
 }
