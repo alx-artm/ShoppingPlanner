@@ -69,6 +69,24 @@ extension XCUIElement {
         return self
     }
 
+    /// Scrolls `container` until this element is hittable, at most `maxSwipes` times.
+    ///
+    /// An element can exist but sit under the floating tab bar or below the fold
+    /// (smaller screens, CI simulators); gestures on it would hit something else.
+    /// Each swipe is a deliberate scroll, so it stops as soon as the element is reachable.
+    @MainActor
+    @discardableResult
+    func scrollIntoView(within container: XCUIElement, maxSwipes: Int = 4,
+                        file: StaticString = #filePath, line: UInt = #line) -> XCUIElement {
+        waitToAppear(file: file, line: line)
+        var swipes = 0
+        while !isHittable && swipes < maxSwipes {
+            container.swipeUp(velocity: .slow)
+            swipes += 1
+        }
+        return self
+    }
+
     /// Performs a gesture on this element until `result` appears, at most `attempts` times.
     ///
     /// Gestures (long press, swipe) are timing-sensitive: on a slow machine (CI) the

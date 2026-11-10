@@ -53,7 +53,8 @@ struct HomeScreen {
 
     /// Long press → "Delete list" → confirm.
     func deleteFromContextMenu(row name: String) {
-        row(name).perform("Long press", until: app.buttons["home.menu.delete"]) {
+        row(name).scrollIntoView(within: app.scrollViews.firstMatch)
+            .perform("Long press", until: app.buttons["home.menu.delete"]) {
             $0.press(forDuration: 1.5)
         }.waitAndTap()
         // Alert buttons expose their identifier twice; take the first match.
@@ -132,7 +133,8 @@ struct ListDetailScreen {
 
     /// Swipe left on a row and tap the system "Delete" action.
     func swipeToDelete(_ item: String) {
-        itemRow(item).perform("Swipe left", until: app.buttons["Delete"].firstMatch) {
+        itemRow(item).scrollIntoView(within: app.collectionViews.firstMatch)
+            .perform("Swipe left", until: app.buttons["Delete"].firstMatch) {
             $0.swipeLeft()
         }.waitAndTap()
     }
