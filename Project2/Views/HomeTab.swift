@@ -9,50 +9,43 @@ import SwiftUI
 import SwiftData
 
 struct HomeTab: View {
-    
-    @Environment(\.modelContext) var context
-    
+
+    @Environment(PlannerStore.self) private var store
+
     // Namespace для matchedGeometryEffect. Он создает уникальный идентификатор,
     // который позволяет SwiftUI отслеживать одно и то же представление,
     // когда оно перемещается или меняет свою иерархию/внешний вид.
     @Namespace var listItemAnimation
-    
+
     @Query var lists: [ListModel]
-    @State private var newList: ListModel?
+    /// Not inserted into the context until the user taps Done in `ListEditView`.
+    @State private var draftList: ListModel?
     @State private var selectedListForEditing: ListModel?
     @State private var showDeleteConfirmationGrid = false
     @State private var listToDelete: ListModel?
-    
-    var sortedLists: [ListModel] {
-        lists.sorted { $0.name < $1.name }
+
+    var pinnedLists: [ListModel] {
+        PlannerOrdering.sortedLists(lists.filter(\.isPinned))
     }
-    
-    var favoriteLists: [ListModel] {
-        sortedLists
-            .filter { $0.isFavorited }
-            .sorted { $0.createdAt < $1.createdAt }
+
+    var unpinnedLists: [ListModel] {
+        PlannerOrdering.sortedLists(lists.filter { !$0.isPinned })
     }
-    
-    var nonFavoriteLists: [ListModel] {
-        sortedLists
-            .filter { !$0.isFavorited }
-            .sorted { $0.createdAt < $1.createdAt }
-    }
-    
+
     let colomnsFirstGrid: [GridItem] = [
         GridItem(.flexible(), spacing: nil, alignment: nil),
         GridItem(.flexible(), spacing: nil, alignment: nil),
     ]
-    
+
     var body: some View {
-        
+
         NavigationStack {
-            
+
             ScrollView {
-                
+
                 // MARK: - Favorite Lists Grid
                 if lists.isEmpty {
-                    
+
                     ContentUnavailableView {
                         Label("No Lists", systemImage: "plus")
                     } description: {
@@ -62,61 +55,49 @@ struct HomeTab: View {
                     }
                     // центрирование
                     .containerRelativeFrame(.vertical) { length, _ in length * 0.6 }
-                    
+                    .accessibilityIdentifier("home.emptyState")
+
                 } else {
                     LazyVGrid(columns: colomnsFirstGrid) {
-                        
-                        ForEach (favoriteLists) { list in
+
+                        ForEach (pinnedLists) { list in
                             FavoriteCardView(list: list)
                                 .id(list.id) // Важно: Уникальный ID для элемента
                             // isSource: true, когда это представление является "оригиналом" (избранной карточкой)
-                                .matchedGeometryEffect(id: list.id, in: listItemAnimation, isSource: list.isFavorited)
+                                .matchedGeometryEffect(id: list.id, in: listItemAnimation, isSource: list.isPinned)
                                 .transition(.asymmetric(insertion: .move(edge: .leading), removal: .scale))
                                 .contextMenu {
                                     Button("Remove from favorites", systemImage: "star.slash") {
                                         withAnimation(.bouncy){
-                                            list.isFavorited = false
+                                            store.togglePin(list)
                                         }
                                     }
-                                    Button("Edit list", systemImage: "pencil") {
-                                        selectedListForEditing = list
-                                    }
-                                    Button("Delete list", systemImage: "trash", role: .destructive) {
-                                        listToDelete = list
-                                        showDeleteConfirmationGrid = true
-                                    }
+                                    .accessibilityIdentifier("home.menu.togglePin")
+                                    listMenuCommonButtons(for: list)
                                 }
                         }
                     }
                     .padding()
                     // Анимация на LazyVGrid для общей компоновки
-                    .animation(.bouncy, value: favoriteLists.count)
+                    .animation(.bouncy, value: pinnedLists.count)
                 }
-                
+
                 // MARK: - Non-Favorite Lists
-                
+
                 VStack(spacing: 0) {
-                    ForEach(nonFavoriteLists) { list in
+                    ForEach(unpinnedLists) { list in
                         ListRowView(list: list)
                             .id(list.id) // Важно: Уникальный ID для элемента
-                        // isSource: false, когда это представление является "целью" (строкой списка)
-                        // False, потому что оно становится источником, когда isFavorited == false.
-                        // Но здесь оно является *целью* анимации, когда list.isFavorited меняется с true на false
-                            .matchedGeometryEffect(id: list.id, in: listItemAnimation, isSource: !list.isFavorited)
-                            .animation(nil, value: list.isFavorited)
+                            .matchedGeometryEffect(id: list.id, in: listItemAnimation, isSource: !list.isPinned)
+                            .animation(nil, value: list.isPinned)
                             .contextMenu {
                                 Button("Add to favorites", systemImage: "star") {
                                     withAnimation(.bouncy){
-                                        list.isFavorited = true
+                                        store.togglePin(list)
                                     }
                                 }
-                                Button("Edit list", systemImage: "pencil") {
-                                    selectedListForEditing = list
-                                }
-                                Button("Delete list", systemImage: "trash", role: .destructive) {
-                                    listToDelete = list
-                                    showDeleteConfirmationGrid = true
-                                }
+                                .accessibilityIdentifier("home.menu.togglePin")
+                                listMenuCommonButtons(for: list)
                             }
                         Divider()
                             .padding(.leading, 52)
@@ -124,20 +105,19 @@ struct HomeTab: View {
                 }
                 .padding(.horizontal)
                 // Анимация на VStack для общей компоновки
-                .animation(.bouncy, value: nonFavoriteLists.count)
-                
+                .animation(.bouncy, value: unpinnedLists.count)
+
             }
             .navigationTitle(Text("Lists"))
             .toolbar {
                 Button("New list", systemImage: "plus") {
-                    let newList = ListModel()
-                    context.insert(newList)
-                    self.newList = newList
+                    draftList = ListModel(currencyCode: store.defaultCurrencyCode)
                 }
+                .accessibilityIdentifier("home.newListButton")
             }
         }
         .scrollIndicators(.hidden)
-        .sheet(item: $newList) { list in
+        .sheet(item: $draftList) { list in
             NavigationStack {
                 ListEditView(list: list, isNew: true)
             }
@@ -151,19 +131,36 @@ struct HomeTab: View {
         .alert("Delete list \(listToDelete?.name ?? "")?", isPresented: $showDeleteConfirmationGrid) {
             Button("Delete", role: .destructive) {
                 if let list = listToDelete {
-                    context.delete(list)
+                    // The list is not open on another screen here, so it can be deleted right away.
+                    store.deleteList(list)
                 }
+                listToDelete = nil
             }
+            .accessibilityIdentifier("home.deleteAlert.confirmButton")
             Button("Cancel", role: .cancel) {
                 listToDelete = nil
             }
+            .accessibilityIdentifier("home.deleteAlert.cancelButton")
         } message: {
             Text("All groups and items in this list will disappear forever.")
         }
+    }
+
+    @ViewBuilder
+    private func listMenuCommonButtons(for list: ListModel) -> some View {
+        Button("Edit list", systemImage: "pencil") {
+            selectedListForEditing = list
+        }
+        .accessibilityIdentifier("home.menu.edit")
+        Button("Delete list", systemImage: "trash", role: .destructive) {
+            listToDelete = list
+            showDeleteConfirmationGrid = true
+        }
+        .accessibilityIdentifier("home.menu.delete")
     }
 }
 
 #Preview {
     HomeTab()
-        .modelContainer(SampleData.shared.modelContainer)
+        .sampleDataEnvironment()
 }

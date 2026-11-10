@@ -5,81 +5,57 @@
 //  Created by Alex on 15.05.25.
 //
 
-import SwiftData
 import Foundation
+import SwiftData
 
-@Model
-final class GroupModel {
-    var name: String
+extension SchemaV1 {
+    @Model
+    final class GroupModel {
+        /// Key for device-local UI state (collapsed or not), see `LocalUIState`.
+        var uuid: UUID = UUID()
+        var name: String = ""
+        var sortIndex: Double = 0
+        /// Per-group budget limit. UI arrives in v1.x; the field is in the schema already.
+        var budget: Decimal? = nil
+        var createdAt: Date = Date.now
 
-    var isExpanded: Bool
-    
-    var list: ListModel?
+        var list: ListModel? = nil
 
-    @Relationship(deleteRule: .cascade, inverse: \ItemModel.group)
-    var items: [ItemModel] = [ItemModel]()
+        @Relationship(deleteRule: .cascade, inverse: \ItemModel.group)
+        var items: [ItemModel]? = []
 
-    var sortedItems: [ItemModel] { items.sorted() }
-
-    var itemsNotComplete: [ItemModel] { sortedItems.filter { !$0.isComplete } }
-
-    // MARK: ИСПРАВЛЕНИЕ 1: totalAmount должен быть суммой ВСЕХ товаров в группе
-    var totalAmount: Decimal {
-        items.reduce(0) { $0 + $1.totalPrice }
-    }
-
-    // MARK: ИСПРАВЛЕНИЕ 2: Добавлено completedAmount для группы
-    var completedAmount: Decimal {
-        items.filter { $0.isComplete }.reduce(0) { $0 + $1.totalPrice }
-    }
-
-    var remainingAmount: Decimal {
-        totalAmount - completedAmount
-    }
-    
-    init(name: String = "", isExpanded: Bool = true, list: ListModel? = nil, items: [ItemModel] = []) {
-        self.name = name
-        self.isExpanded = isExpanded
-        self.list = list
-        self.items = items
-    }
-}
-
-
-
-/*
-- Сначала false < true, т.е. невыполненные выше.
-- Среди невыполненных: сортируем по createdAt ↑ (старее выше).
-- Среди выполненных: сортируем по completedAt ↑ (кто раньше выполнил — выше).
-- Если completedAt у кого-то nil (что в принципе не должно быть), мы ставим .distantFuture, чтобы они оказались в конце.
- */
-
-extension ItemModel: Comparable {
-    static func < (lhs: ItemModel, rhs: ItemModel) -> Bool {
-        switch (lhs.isComplete, rhs.isComplete) {
-        case (false, true):
-            return true
-        case (true, false):
-            return false
-        case (false, false):
-            return lhs.createdAt < rhs.createdAt
-        case (true, true):
-            // Безопасно сравним completedAt — если нет даты, считаем "меньше"
-            return (lhs.completedAt ?? .distantFuture) < (rhs.completedAt ?? .distantFuture)
+        init(
+            uuid: UUID = UUID(),
+            name: String = "",
+            sortIndex: Double = 0,
+            budget: Decimal? = nil,
+            createdAt: Date = .now
+        ) {
+            self.uuid = uuid
+            self.name = name
+            self.sortIndex = sortIndex
+            self.budget = budget
+            self.createdAt = createdAt
         }
     }
 }
 
-// важно для сравнения Bool, иначе расширение выше вообще не будет компилиться
-// тут  false < true
-extension Bool: @retroactive Comparable {
-    public static func <(lhs: Self, rhs: Self) -> Bool {
-        !lhs && rhs
+extension GroupModel {
+    /// Items in display order: not completed first (manual order), then completed.
+    var sortedItems: [ItemModel] {
+        PlannerOrdering.sortedItems(items ?? [])
     }
-}
 
-extension Decimal {
-    var doubleValue: Double {
-        (self as NSDecimalNumber).doubleValue
+    var incompleteItems: [ItemModel] {
+        sortedItems.filter { !$0.isComplete }
+    }
+
+    /// Totals of this group, in the currency of its list.
+    var summary: BudgetSummary {
+        BudgetCalculator.summary(
+            of: (items ?? []).map(\.budgetLine),
+            listCurrencyCode: list?.currencyCode ?? ListModel.fallbackCurrencyCode,
+            budget: budget
+        )
     }
 }

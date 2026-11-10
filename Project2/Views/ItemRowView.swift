@@ -7,22 +7,20 @@
 
 
 import SwiftUI
-import SwiftData
-import UIKit
 
 struct ItemRowView: View {
-    @Bindable var item: ItemModel
+    let item: ItemModel
     @State private var showDetails: Bool = false
     @State var showPicker: Bool = false
-    @Environment(\.modelContext) var context
+    @Environment(PlannerStore.self) private var store
     
     var body: some View {
         VStack (alignment: .leading, spacing: nil) {
             HStack {
                 Button {
                     withAnimation {
-                        item.isComplete.toggle()
-                        try? context.save()
+                        // Also sets / clears completedAt (BUG-03).
+                        store.toggleComplete(item)
                     }
                 } label: {
                     Image(systemName: item.isComplete ? "checkmark.circle.fill" : "circle")
@@ -30,6 +28,7 @@ struct ItemRowView: View {
                 }
                 .buttonStyle(.borderless)
                 .frame(width: 28)
+                .accessibilityIdentifier("item.checkbox.\(item.name)")
                 
                 HStack {
                     Text(item.name)
@@ -37,7 +36,7 @@ struct ItemRowView: View {
                         .background(Color.clear.contentShape(Rectangle()))
                         .lineLimit(3)
                     Group {
-                        if !item.url.isEmpty {
+                        if !item.urlString.isEmpty {
                             Image(systemName: "link")
                         }
                         
@@ -57,8 +56,12 @@ struct ItemRowView: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
+                    .accessibilityIdentifier("item.quantityButton.\(item.name)")
                     .sheet(isPresented: $showPicker) {
-                        Picker("Quantity", selection: $item.quantity) {
+                        Picker("Quantity", selection: Binding(
+                            get: { item.quantity },
+                            set: { store.setQuantity($0, for: item) }
+                        )) {
                             ForEach(1...99, id: \.self) { tag in
                                 Text("\(tag)").tag(tag)
                             }
@@ -101,9 +104,15 @@ struct ItemRowView: View {
                     //                        }
                     //                )
                     
-                    Text(item.totalPrice, format: .number)
-                        .frame(maxWidth: 64, alignment: .trailing)
-                        .lineLimit(1)
+                    // No price → nothing is shown, not "0" (BUG-07).
+                    Group {
+                        if let total = item.lineTotal {
+                            Text(total, format: .number)
+                        }
+                    }
+                    .frame(maxWidth: 64, alignment: .trailing)
+                    .lineLimit(1)
+                    .accessibilityIdentifier("item.total.\(item.name)")
                 }
                 .foregroundColor(item.isComplete ? .secondary : .primary)
         
@@ -111,6 +120,8 @@ struct ItemRowView: View {
                 .onTapGesture {
                     showDetails.toggle()
                 }
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("item.row.\(item.name)")
             }
             
             
