@@ -9,8 +9,10 @@
 
 import SwiftUI
 
+/// Presented as a sheet from Home's toolbar (spec 08: no tab bar).
 struct SettingsView: View {
     @Environment(AppSettings.self) private var settings
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.locale) private var locale
     @AppStorage("selectedTheme") private var selectedTheme: AppTheme = .system
 
@@ -64,6 +66,14 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done", systemImage: "checkmark", role: .confirm) {
+                        dismiss()
+                    }
+                    .accessibilityIdentifier("settings.doneButton")
+                }
+            }
         }
     }
 }

@@ -14,9 +14,10 @@ struct HomeScreen {
     let app: XCUIApplication
 
     var newListButton: XCUIElement { app.buttons["home.newListButton"] }
+    var settingsButton: XCUIElement { app.buttons["home.settingsButton"] }
     var emptyState: XCUIElement { app.descendants(matching: .any)["home.emptyState"].firstMatch }
 
-    /// Pinned lists are cards, the others are rows.
+    /// Pinned lists are tiles ("cards"), the others are rows.
     func card(_ name: String) -> XCUIElement { app.buttons["home.listCard.\(name)"] }
     func row(_ name: String) -> XCUIElement { app.buttons["home.listRow.\(name)"] }
     /// The formatted "to buy" amount of a card / row ("$340.00").
@@ -39,7 +40,7 @@ struct HomeScreen {
         return ListDetailScreen(app: app).waitUntilShown()
     }
 
-    /// Home → "+" → type a name → Done.
+    /// Home → "+" → List Info: type a name → Done.
     @discardableResult
     func createList(named name: String) -> HomeScreen {
         newListButton.waitAndTap()
@@ -51,13 +52,19 @@ struct HomeScreen {
         return self
     }
 
-    /// Long press → "Delete list" → confirm.
+    /// Long press → "Delete" → confirm.
+    /// Gear in the toolbar → Settings sheet (spec 08: no tab bar).
+    func openSettings() -> SettingsScreen {
+        settingsButton.waitAndTap()
+        return SettingsScreen(app: app).waitUntilShown()
+    }
+
     func deleteFromContextMenu(row name: String) {
-        row(name).scrollIntoView(within: app.scrollViews.firstMatch)
+        row(name).scrollIntoView(within: app.collectionViews.firstMatch)
             .perform("Long press", until: app.buttons["home.menu.delete"]) {
             $0.press(forDuration: 1.5)
         }.waitAndTap()
-        // Alert buttons expose their identifier twice; take the first match.
+        // Dialog buttons can expose their identifier twice; take the first match.
         app.buttons["home.deleteAlert.confirmButton"].firstMatch.waitAndTap()
     }
 }
@@ -198,26 +205,7 @@ struct GroupEditScreen {
     }
 }
 
-// MARK: - Tabs, Settings, currency picker (spec 07)
-
-/// The two tabs of `ContentView`.
-@MainActor
-struct TabBar {
-    let app: XCUIApplication
-
-    var listsTab: XCUIElement { app.tabBars.buttons["Shopping Lists"] }
-    var settingsTab: XCUIElement { app.tabBars.buttons["Settings"] }
-
-    func openSettings() -> SettingsScreen {
-        settingsTab.waitAndTap()
-        return SettingsScreen(app: app).waitUntilShown()
-    }
-
-    func openLists() -> HomeScreen {
-        listsTab.waitAndTap()
-        return HomeScreen(app: app).waitUntilShown()
-    }
-}
+// MARK: - Settings, currency picker (spec 07)
 
 @MainActor
 struct SettingsScreen {
@@ -228,11 +216,19 @@ struct SettingsScreen {
     var appearancePicker: XCUIElement { app.descendants(matching: .any)["settings.appearancePicker"].firstMatch }
     var icloudStatus: XCUIElement { app.descendants(matching: .any)["settings.icloudStatus"].firstMatch }
     var version: XCUIElement { app.descendants(matching: .any)["settings.version"].firstMatch }
+    var doneButton: XCUIElement { app.buttons["settings.doneButton"] }
 
     @discardableResult
     func waitUntilShown(file: StaticString = #filePath, line: UInt = #line) -> SettingsScreen {
         mainCurrency.waitToAppear(file: file, line: line)
         return self
+    }
+
+    /// Done → back to Home.
+    func close() -> HomeScreen {
+        doneButton.waitAndTap()
+        mainCurrency.waitToDisappear()
+        return HomeScreen(app: app).waitUntilShown()
     }
 
     func openCurrencyPicker() -> CurrencyPickerScreen {
@@ -267,7 +263,8 @@ struct CurrencyPickerScreen {
     @discardableResult
     func select(_ code: String) -> SettingsScreen {
         row(code).waitAndTap()
-        searchField.waitToDisappear()
+        // Not the search field: Home's own search field stays under the Settings sheet.
+        row(code).waitToDisappear()
         return SettingsScreen(app: app).waitUntilShown()
     }
 }

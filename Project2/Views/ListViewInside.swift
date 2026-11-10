@@ -10,12 +10,10 @@ import SwiftUI
 struct ListViewInside: View {
     @Environment(PlannerStore.self) private var store
     @Environment(LocalUIState.self) private var uiState
-    @Environment(\.dismiss) private var dismiss
+    @Environment(AppNavigation.self) private var navigation
     let list: ListModel
 
     @State private var showDeleteConfirmation: Bool = false
-    /// Set when the user confirmed deletion; the list is deleted after this screen is gone (DM-18).
-    @State private var isPendingDeletion = false
     @State private var newItemRequest: NewItemRequest?
     /// Not inserted into the context until the user taps Done in `GroupEditView`.
     @State private var draftGroup: GroupModel?
@@ -116,7 +114,7 @@ struct ListViewInside: View {
                 Button {
                     showEditList = true
                 } label: {
-                    Label("Edit list", systemImage: "pencil")
+                    Label("List Info", systemImage: "info.circle")
                 }
                 .accessibilityIdentifier("listDetail.menu.edit")
 
@@ -163,27 +161,18 @@ struct ListViewInside: View {
         }
 
         .sheet(isPresented: $showEditList) {
-            NavigationStack {
-                ListEditView(list: list)
-            }
+            ListInfoView(mode: .edit(list))
         }
 
         // если алерт = true, то появляется сообщение с кнопками
         .alert("Delete list?\nAll groups and items in this list will disappear forever.", isPresented: $showDeleteConfirmation) {
             Button("Delete", role: .destructive) {
-                // Close the screen first, delete when it is gone (BUG-04 / DM-18).
-                isPendingDeletion = true
-                dismiss()
+                // Closes this screen first (pop / empty detail), deletes when it is gone (DM-18).
+                navigation.requestDeletion(of: list, using: store)
             }
             .accessibilityIdentifier("listDetail.deleteAlert.confirmButton")
             Button("Cancel", role: .cancel) {}
                 .accessibilityIdentifier("listDetail.deleteAlert.cancelButton")
-        }
-        .onDisappear {
-            if isPendingDeletion {
-                isPendingDeletion = false
-                store.deleteList(list)
-            }
         }
     }
 }

@@ -7,11 +7,99 @@
     "%@" : {
 
     },
+    "%@ bought" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Куплено %@"
+          }
+        }
+      }
+    },
     "%@ completed" : {
 
     },
+    "%@ left of %@" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Осталось %1$@ из %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ left of %2$@"
+          }
+        }
+      }
+    },
     "%lld" : {
 
+    },
+    "%lld items" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld items"
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld товар"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld товара"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld товаров"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld товара"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "A template fills in the name, icon and empty groups. You can change all of it." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шаблон заполняет название, иконку и пустые группы. Всё это можно изменить."
+          }
+        }
+      }
     },
     "About" : {
       "localizations" : {
@@ -23,13 +111,20 @@
         }
       }
     },
+    "Accommodation" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Жильё"
+          }
+        }
+      }
+    },
     "Add group" : {
 
     },
     "Add new item..." : {
-
-    },
-    "Add to favorites" : {
 
     },
     "All Currencies" : {
@@ -42,8 +137,28 @@
         }
       }
     },
+    "All Lists" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Все списки"
+          }
+        }
+      }
+    },
     "All groups and items in this list will disappear forever." : {
 
+    },
+    "All groups and items will be deleted." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Все группы и товары будут удалены."
+          }
+        }
+      }
     },
     "Appearance" : {
       "localizations" : {
@@ -55,11 +170,98 @@
         }
       }
     },
+    "Appliances" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Техника"
+          }
+        }
+      }
+    },
+    "Back to School" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Снова в школу"
+          }
+        }
+      }
+    },
+    "Blue" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Синий"
+          }
+        }
+      }
+    },
+    "Books" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Книги"
+          }
+        }
+      }
+    },
+    "Budget" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бюджет"
+          }
+        }
+      }
+    },
+    "Budget: %@" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бюджет: %@"
+          }
+        }
+      }
+    },
     "Cancel" : {
-
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Отменить"
+          }
+        }
+      }
+    },
+    "Choose a list to see its groups and items." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выберите список, чтобы увидеть его группы и товары."
+          }
+        }
+      }
     },
     "Close" : {
 
+    },
+    "Clothes" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Одежда"
+          }
+        }
+      }
     },
     "Code, name or symbol" : {
       "localizations" : {
@@ -71,8 +273,35 @@
         }
       }
     },
+    "Colleagues" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Коллеги"
+          }
+        }
+      }
+    },
     "Color" : {
-
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Цвет"
+          }
+        }
+      }
+    },
+    "Currency" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Валюта"
+          }
+        }
+      }
     },
     "Dark" : {
       "localizations" : {
@@ -94,11 +323,38 @@
         }
       }
     },
+    "Decor" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Декор"
+          }
+        }
+      }
+    },
     "Delete" : {
-
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалить"
+          }
+        }
+      }
     },
     "Delete Group" : {
 
+    },
+    "Delete List" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалить список"
+          }
+        }
+      }
     },
     "Delete group? \nAll items in this group will disappear forever." : {
 
@@ -109,20 +365,151 @@
     "Delete list" : {
 
     },
-    "Delete list %@?" : {
-
-    },
     "Delete list?\nAll groups and items in this list will disappear forever." : {
 
+    },
+    "Delete “%@”?" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалить «%@»?"
+          }
+        }
+      }
+    },
+    "Done" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Готово"
+          }
+        }
+      }
+    },
+    "Duplicate" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дублировать"
+          }
+        }
+      }
+    },
+    "Edit" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Изменить"
+          }
+        }
+      }
     },
     "Edit group" : {
 
     },
-    "Edit list" : {
-
+    "Electronics" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Электроника"
+          }
+        }
+      }
     },
-    "Favourite" : {
-
+    "Emoji" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Эмодзи"
+          }
+        }
+      }
+    },
+    "Empty" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пусто"
+          }
+        }
+      }
+    },
+    "Enter a single emoji." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Введите один эмодзи."
+          }
+        }
+      }
+    },
+    "Family" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Семья"
+          }
+        }
+      }
+    },
+    "Food" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Еда"
+          }
+        }
+      }
+    },
+    "Friends" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Друзья"
+          }
+        }
+      }
+    },
+    "From Template" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Из шаблона"
+          }
+        }
+      }
+    },
+    "Furniture" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Мебель"
+          }
+        }
+      }
+    },
+    "Gear" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Снаряжение"
+          }
+        }
+      }
     },
     "General" : {
       "localizations" : {
@@ -130,6 +517,56 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Основные"
+          }
+        }
+      }
+    },
+    "Gifts" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Подарки"
+          }
+        }
+      }
+    },
+    "Gray" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Серый"
+          }
+        }
+      }
+    },
+    "Green" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Зелёный"
+          }
+        }
+      }
+    },
+    "Icon" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Иконка"
+          }
+        }
+      }
+    },
+    "Leave empty for no budget." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Оставьте пустым, если бюджета нет."
           }
         }
       }
@@ -144,11 +581,48 @@
         }
       }
     },
+    "Lighting" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Освещение"
+          }
+        }
+      }
+    },
     "Link" : {
 
     },
+    "List Info" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "О списке"
+          }
+        }
+      }
+    },
+    "List Name" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Название списка"
+          }
+        }
+      }
+    },
     "Lists" : {
-
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Списки"
+          }
+        }
+      }
     },
     "Main Currency" : {
       "localizations" : {
@@ -170,17 +644,81 @@
         }
       }
     },
-    "New group" : {
-
+    "Materials" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Материалы"
+          }
+        }
+      }
     },
-    "New list" : {
+    "Mint" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Мятный"
+          }
+        }
+      }
+    },
+    "Moving" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Переезд"
+          }
+        }
+      }
+    },
+    "New List" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Новый список"
+          }
+        }
+      }
+    },
+    "New group" : {
 
     },
     "No Groups" : {
 
     },
-    "No Lists" : {
-
+    "No Lists Yet" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Списков пока нет"
+          }
+        }
+      }
+    },
+    "No prices yet" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Цен пока нет"
+          }
+        }
+      }
+    },
+    "None" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нет"
+          }
+        }
+      }
     },
     "Note" : {
 
@@ -198,6 +736,116 @@
         }
       }
     },
+    "Orange" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Оранжевый"
+          }
+        }
+      }
+    },
+    "Other…" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Другой…"
+          }
+        }
+      }
+    },
+    "Over budget" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бюджет превышен"
+          }
+        }
+      }
+    },
+    "Over budget by %@" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бюджет превышен на %@"
+          }
+        }
+      }
+    },
+    "Packing" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Упаковка"
+          }
+        }
+      }
+    },
+    "Pin" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Закрепить"
+          }
+        }
+      }
+    },
+    "Pin to Home" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Закрепить на главном"
+          }
+        }
+      }
+    },
+    "Pink" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Розовый"
+          }
+        }
+      }
+    },
+    "Pinned" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Закреплённые"
+          }
+        }
+      }
+    },
+    "Plan purchases for a project, a trip or a celebration, and always see how much is left to buy." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Планируйте покупки для ремонта, поездки или праздника и всегда знайте, сколько осталось купить."
+          }
+        }
+      }
+    },
+    "Planned: %@" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Запланировано: %@"
+          }
+        }
+      }
+    },
     "Popular" : {
       "localizations" : {
         "ru" : {
@@ -211,17 +859,68 @@
     "Price" : {
 
     },
+    "Purple" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Фиолетовый"
+          }
+        }
+      }
+    },
     "Quantity" : {
 
     },
-    "Remove from favorites" : {
-
+    "Red" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Красный"
+          }
+        }
+      }
     },
-    "Select emoji" : {
-
+    "Room Renovation" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ремонт комнаты"
+          }
+        }
+      }
     },
-    "Select one emoji" : {
-
+    "Search Lists" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Поиск списков"
+          }
+        }
+      }
+    },
+    "Select a List" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выберите список"
+          }
+        }
+      }
+    },
+    "Services" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Услуги"
+          }
+        }
+      }
     },
     "Settings" : {
       "localizations" : {
@@ -233,14 +932,38 @@
         }
       }
     },
-    "Shopping Lists" : {
-
+    "Share as Text" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Поделиться текстом"
+          }
+        }
+      }
     },
     "Start by adding your first group.\nTap the folder icon above." : {
 
     },
-    "Start by adding your first list.\nTap the plus button above." : {
-
+    "Start from Template" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Начать с шаблона"
+          }
+        }
+      }
+    },
+    "Stationery" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Канцелярия"
+          }
+        }
+      }
     },
     "Suggested" : {
       "localizations" : {
@@ -248,6 +971,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Рекомендуемые"
+          }
+        }
+      }
+    },
+    "Symbols" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Символы"
+          }
+        }
+      }
+    },
+    "The budget can't be negative." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бюджет не может быть отрицательным."
+          }
+        }
+      }
+    },
+    "Tickets" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Билеты"
+          }
+        }
+      }
+    },
+    "Tip: Home stays tidy with up to 6 pinned lists." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Совет: главный экран выглядит аккуратнее, если закреплено не больше 6 списков."
           }
         }
       }
@@ -268,8 +1031,38 @@
         }
       }
     },
+    "To buy: %@" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Осталось купить: %@"
+          }
+        }
+      }
+    },
     "Total:" : {
 
+    },
+    "Trip" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Поездка"
+          }
+        }
+      }
+    },
+    "Unpin" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Открепить"
+          }
+        }
+      }
     },
     "Used for new lists. Existing lists keep their currency." : {
       "localizations" : {
@@ -291,12 +1084,32 @@
         }
       }
     },
+    "Yellow" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Жёлтый"
+          }
+        }
+      }
+    },
     "iCloud Sync" : {
       "localizations" : {
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Синхронизация iCloud"
+          }
+        }
+      }
+    },
+    "to buy %@" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "осталось купить %@"
           }
         }
       }

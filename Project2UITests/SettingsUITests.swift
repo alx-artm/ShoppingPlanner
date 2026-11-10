@@ -20,11 +20,10 @@ final class SettingsUITests: XCTestCase {
     @MainActor
     func testPickEuroThenNewListUsesEuroAndSeedListsKeepTheirCurrency() {
         let app = Launch.app()
-        let tabs = TabBar(app: app)
-        HomeScreen(app: app).waitUntilShown()
+        let start = HomeScreen(app: app).waitUntilShown()
 
         // Settings shows the locale default (SC-01: en_US → USD).
-        var settings = tabs.openSettings()
+        var settings = start.openSettings()
         settings.mainCurrency.waitForLabel(containing: "USD")
 
         // Picker: the current choice is checked; search "eur" → Euro → back.
@@ -37,10 +36,11 @@ final class SettingsUITests: XCTestCase {
         settings.mainCurrency.waitForLabel(containing: "EUR")
         settings.mainCurrency.waitForLabel(containing: "€")
 
-        // SC-05: a new list is in euros.
-        let home = tabs.openLists()
+        // SC-05: a new list is in euros. It has no prices yet, so Home shows "—"
+        // (HM-06; VoiceOver reads it as "No prices yet"). The euro amounts below prove the currency.
+        let home = settings.close()
         home.createList(named: "Trip")
-        home.rowToBuy("Trip").waitForLabel("€0.00")
+        home.rowToBuy("Trip").waitForLabel("No prices yet")
 
         let trip = home.open(row: "Trip")
         trip.addGroup(named: "Food")
@@ -62,7 +62,7 @@ final class SettingsUITests: XCTestCase {
     @MainActor
     func testSettingsRowsAndPickerSearchBySymbol() {
         let app = Launch.app()
-        let settings = TabBar(app: app).openSettings()
+        let settings = HomeScreen(app: app).waitUntilShown().openSettings()
 
         settings.appearancePicker.waitToAppear()
         settings.icloudStatus.waitToAppear()
