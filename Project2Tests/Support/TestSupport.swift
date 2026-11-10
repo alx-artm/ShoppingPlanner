@@ -23,6 +23,20 @@ extension Tag {
     @Tag static var schema: Self
     /// Regression test for an entry of 00-known-bugs.md.
     @Tag static var regression: Self
+    /// Main currency, currency picker and Settings (spec 07, SC-01...SC-13).
+    @Tag static var settings: Self
+}
+
+extension String {
+    /// The same string with every Unicode space (U+00A0 no-break space,
+    /// U+202F narrow no-break space, ...) replaced by a plain space.
+    ///
+    /// ICU puts no-break spaces between digit groups and before "€" in ru_RU/de_DE.
+    /// They are correct, but invisible in test source, so expectations are written
+    /// with plain spaces and the actual text is normalised before comparing.
+    var plainSpaces: String {
+        String(String.UnicodeScalarView(unicodeScalars.map { $0.properties.isWhitespace ? " " : $0 }))
+    }
 }
 
 /// Exact decimal from a string. `let x: Decimal = 0.1` goes through `Double`
