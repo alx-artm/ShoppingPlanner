@@ -17,6 +17,7 @@ struct HomeView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.locale) private var locale
 
     @Query private var lists: [ListModel]
 
@@ -147,8 +148,7 @@ struct HomeView: View {
             ListTileView(list: list, isSelected: navigation.isSelected(list))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text(ListStatusText.accessibilityLabel(
-            name: list.name, summary: list.summary, currencyCode: list.currencyCode)))
+        .accessibilityLabel(Text(verbatim: accessibilityLabel(of: list)))
         .accessibilityAddTraits(navigation.isSelected(list) ? .isSelected : [])
         .accessibilityIdentifier("home.listCard.\(list.name)")
         // HM-16: the context menu actions, reachable without a long press.
@@ -164,8 +164,7 @@ struct HomeView: View {
         NavigationLink(value: list.uuid) {
             ListRowView(list: list)
         }
-        .accessibilityLabel(Text(ListStatusText.accessibilityLabel(
-            name: list.name, summary: list.summary, currencyCode: list.currencyCode)))
+        .accessibilityLabel(Text(verbatim: accessibilityLabel(of: list)))
         .accessibilityIdentifier("home.listRow.\(list.name)")
         .swipeActions(edge: .leading) {
             Button {
@@ -195,6 +194,12 @@ struct HomeView: View {
             .accessibilityIdentifier("home.swipe.edit")
         }
         .contextMenu { menu(for: list) }
+    }
+
+    /// The same sentence for the tile and the row of a list (HM-16).
+    private func accessibilityLabel(of list: ListModel) -> String {
+        ListStatusText(list.summary, currencyCode: list.currencyCode, locale: locale)
+            .accessibilityLabel(name: list.name)
     }
 
     // MARK: - Menus and actions

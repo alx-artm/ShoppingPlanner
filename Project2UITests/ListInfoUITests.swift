@@ -36,7 +36,7 @@ final class ListInfoUITests: XCTestCase {
 
         // In All Lists, first (HM-03), with a status and "—" instead of "0" (HM-06).
         let row = home.row("Kids Room")
-        row.waitForLabel(containing: "Empty")
+        row.waitForLabel(containing: "empty")
         home.rowToBuy("Kids Room").waitForLabel("No prices yet")
         XCTAssertFalse(home.card("Kids Room").exists, "not pinned (LI-03)")
         XCTAssertLessThan(home.top(of: row), home.top(of: home.row("Eva")), "a new list comes first")
@@ -140,7 +140,7 @@ final class ListInfoUITests: XCTestCase {
         home.emptyStateNewListButton.waitAndTap()
         _ = ListInfoScreen(app: app).waitUntilShown().typeName("First").done()
 
-        home.row("First").waitForLabel(containing: "Empty")
+        home.row("First").waitForLabel(containing: "empty")
         home.emptyState.waitToDisappear()
     }
 }

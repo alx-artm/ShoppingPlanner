@@ -16,15 +16,15 @@ final class HomeUITests: XCTestCase {
         continueAfterFailure = false
     }
 
-    /// HM-01, HM-07: tiles for pinned lists, rows with a status for the others.
+    /// HM-01, HM-16, HM-20: tiles for pinned lists, rows with a status for the others.
     @MainActor
     func testSeedSectionsAndStatus() {
         let home = HomeScreen(app: Launch.app()).waitUntilShown()
 
-        home.card("Alex").waitForLabel(containing: "to buy $340.00")
+        home.card("Alex").waitForLabel(containing: "to buy $340.00, 8% bought, $130.00 to spare of $500.00 budget")
         XCTAssertFalse(home.row("Alex").exists)
-        home.row("Eva").waitForLabel(containing: "0% bought")
-        home.row("Victoria").waitForLabel(containing: "Over budget by €15.00")
+        home.row("Eva").waitForLabel(containing: "0% bought, no budget")
+        home.row("Victoria").waitForLabel(containing: "0% bought, plan €15.00 over budget")
         XCTAssertLessThan(home.top(of: home.row("Eva")), home.top(of: home.row("Victoria")))
     }
 

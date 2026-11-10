@@ -30,4 +30,15 @@ enum MoneyFormat {
     static func string(_ amount: Decimal, currencyCode: String, locale: Locale = .autoupdatingCurrent) -> String {
         amount.formatted(style(currencyCode: currencyCode, locale: locale))
     }
+
+    /// Without fraction digits, for compact places like a Home tile (spec 02 HM-29):
+    /// `160.99` → `"€160"` with `.down`, `15.01` → `"€16"` with `.up`.
+    static func wholeString(_ amount: Decimal, currencyCode: String, locale: Locale = .autoupdatingCurrent,
+                            rounding rule: FloatingPointRoundingRule) -> String {
+        amount.formatted(
+            Decimal.FormatStyle.Currency(code: currencyCode, locale: locale)
+                .precision(.fractionLength(0))
+                .rounded(rule: rule)
+        )
+    }
 }

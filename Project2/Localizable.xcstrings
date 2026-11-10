@@ -7,12 +7,15 @@
     "%@" : {
 
     },
+    "%@ %@" : {
+      "shouldTranslate" : false
+    },
     "%@ bought" : {
       "localizations" : {
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Куплено %@"
+            "value" : "куплено %@"
           }
         }
       }
@@ -20,21 +23,64 @@
     "%@ completed" : {
 
     },
-    "%@ left of %@" : {
+    "%@ over" : {
+      "comment" : "Home tile: the plan is over budget by this amount, without cents (\"€15 over\").",
       "localizations" : {
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Осталось %1$@ из %2$@"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ left of %2$@"
+            "value" : "%@ сверх"
           }
         }
       }
+    },
+    "%@ to spare" : {
+      "comment" : "Home tile: budget minus planned, without cents (\"€160 to spare\").",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ в запасе"
+          }
+        }
+      }
+    },
+    "%@ to spare of %@" : {
+      "comment" : "Home row: budget minus planned, then the budget.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ to spare of %2$@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "запас %1$@ из %2$@"
+          }
+        }
+      }
+    },
+    "%@ to spare of %@ budget" : {
+      "comment" : "VoiceOver: budget minus planned, then the budget.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ to spare of %2$@ budget"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "запас %1$@ из бюджета %2$@"
+          }
+        }
+      }
+    },
+    "%@ · %@" : {
+      "shouldTranslate" : false
     },
     "%lld" : {
 
@@ -147,6 +193,17 @@
         }
       }
     },
+    "All bought" : {
+      "comment" : "Home status: every item of the list is checked off.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Всё куплено"
+          }
+        }
+      }
+    },
     "All groups and items in this list will disappear forever." : {
 
     },
@@ -216,6 +273,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Бюджет"
+          }
+        }
+      }
+    },
+    "Budget %@" : {
+      "comment" : "Home tile, no prices yet: the budget, without cents (\"Budget €500\").",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бюджет %@"
           }
         }
       }
@@ -700,6 +768,17 @@
         }
       }
     },
+    "No budget" : {
+      "comment" : "Home tile: the list has no budget.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Без бюджета"
+          }
+        }
+      }
+    },
     "No prices yet" : {
       "localizations" : {
         "ru" : {
@@ -752,26 +831,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Другой…"
-          }
-        }
-      }
-    },
-    "Over budget" : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Бюджет превышен"
-          }
-        }
-      }
-    },
-    "Over budget by %@" : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Бюджет превышен на %@"
           }
         }
       }
@@ -1094,12 +1153,119 @@
         }
       }
     },
+    "budget %@" : {
+      "comment" : "Home row after \"3 items · \", no prices yet: the budget.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "бюджет %@"
+          }
+        }
+      }
+    },
     "iCloud Sync" : {
       "localizations" : {
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Синхронизация iCloud"
+          }
+        }
+      }
+    },
+    "plan %@ over budget" : {
+      "comment" : "Home row and VoiceOver: the plan is over budget by this amount.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "план больше бюджета на %@"
+          }
+        }
+      }
+    },
+    "status.row.noBudget" : {
+      "comment" : "Home row status after \"13% bought · \": the list has no budget.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No budget"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "без бюджета"
+          }
+        }
+      }
+    },
+    "status.voice.allBought" : {
+      "comment" : "VoiceOver, part of a sentence: every item is checked off.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "all bought"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "всё куплено"
+          }
+        }
+      }
+    },
+    "status.voice.empty" : {
+      "comment" : "VoiceOver, part of a sentence: the list has no items.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "empty"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "пусто"
+          }
+        }
+      }
+    },
+    "status.voice.noBudget" : {
+      "comment" : "VoiceOver, part of a sentence: the list has no budget.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no budget"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "без бюджета"
+          }
+        }
+      }
+    },
+    "status.voice.noPrices" : {
+      "comment" : "VoiceOver, part of a sentence: no item has a price.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no prices yet"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "цен пока нет"
           }
         }
       }
