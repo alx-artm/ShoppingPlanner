@@ -90,9 +90,10 @@ struct ListViewInside: View {
                 if summary.planned != 0 {
                     Section {} header: {
                         HStack {
-                            Text("Total")
+                            // The number is what is still left to buy, not the total (BUG-08).
+                            Text("To buy")
                             Spacer()
-                            Text(summary.toBuy, format: .number)
+                            MoneyText(summary.toBuy, currencyCode: list.currencyCode)
                                 .accessibilityIdentifier("listDetail.total")
                         }
                         .font(.title2)

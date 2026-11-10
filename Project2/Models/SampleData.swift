@@ -113,6 +113,7 @@ final class SampleData {
     let modelContainer: ModelContainer
     let store: PlannerStore
     let uiState = LocalUIState.inMemory()
+    let settings: AppSettings
 
     let evaList: ListModel
     let victoriaList: ListModel
@@ -129,7 +130,12 @@ final class SampleData {
             evaList = lists.eva
             victoriaList = lists.victoria
             alexList = lists.alex
-            store = PlannerStore(context: modelContainer.mainContext)
+            let settings = AppSettings.inMemory()
+            self.settings = settings
+            store = PlannerStore(
+                context: modelContainer.mainContext,
+                mainCurrencyCode: { settings.mainCurrencyCode }
+            )
         } catch {
             // Previews only: there is no user to show an error screen to.
             fatalError("Could not create preview data: \(error)")
@@ -138,11 +144,12 @@ final class SampleData {
 }
 
 extension View {
-    /// Injects the preview container, store and UI state, like the app does.
+    /// Injects the preview container, store, UI state and settings, like the app does.
     @MainActor
     func sampleDataEnvironment() -> some View {
         modelContainer(SampleData.shared.modelContainer)
             .environment(SampleData.shared.store)
             .environment(SampleData.shared.uiState)
+            .environment(SampleData.shared.settings)
     }
 }

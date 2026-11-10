@@ -19,6 +19,8 @@ struct ItemView: View {
     /// The group a new item is added to; `nil` when editing an existing item.
     private let newItemGroup: GroupModel?
     private var isNew: Bool { newItemGroup != nil }
+    /// A new item is not attached yet, so take the currency of the group it goes to.
+    private var currencyCode: String { newItemGroup?.listCurrencyCode ?? item.listCurrencyCode }
 
     /// Set when the user tapped Delete; the item is deleted after the sheet is gone (DM-18).
     @State private var isPendingDeletion = false
@@ -59,14 +61,14 @@ struct ItemView: View {
 
                         Group {
                             if let total = item.lineTotal {
-                                Text(total, format: .number)
+                                MoneyText(total, currencyCode: currencyCode)
                             } else {
                                 Text(verbatim: "—")
                             }
                         }
                         .bold()
-                        .frame(width: 60)
                         .lineLimit(1)
+                        .fixedSize()
                         .accessibilityIdentifier("itemEdit.total")
                     }
                 }

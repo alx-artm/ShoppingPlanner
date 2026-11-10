@@ -19,6 +19,9 @@ struct HomeScreen {
     /// Pinned lists are cards, the others are rows.
     func card(_ name: String) -> XCUIElement { app.buttons["home.listCard.\(name)"] }
     func row(_ name: String) -> XCUIElement { app.buttons["home.listRow.\(name)"] }
+    /// The formatted "to buy" amount of a card / row ("$340.00").
+    func cardToBuy(_ name: String) -> XCUIElement { app.staticTexts["home.listCard.toBuy.\(name)"] }
+    func rowToBuy(_ name: String) -> XCUIElement { app.staticTexts["home.listRow.toBuy.\(name)"] }
 
     @discardableResult
     func waitUntilShown(file: StaticString = #filePath, line: UInt = #line) -> HomeScreen {
@@ -50,7 +53,8 @@ struct HomeScreen {
 
     /// Long press → "Delete list" → confirm.
     func deleteFromContextMenu(row name: String) {
-        row(name).perform("Long press", until: app.buttons["home.menu.delete"]) {
+        row(name).scrollIntoView(within: app.scrollViews.firstMatch)
+            .perform("Long press", until: app.buttons["home.menu.delete"]) {
             $0.press(forDuration: 1.5)
         }.waitAndTap()
         // Alert buttons expose their identifier twice; take the first match.
@@ -129,7 +133,8 @@ struct ListDetailScreen {
 
     /// Swipe left on a row and tap the system "Delete" action.
     func swipeToDelete(_ item: String) {
-        itemRow(item).perform("Swipe left", until: app.buttons["Delete"].firstMatch) {
+        itemRow(item).scrollIntoView(within: app.collectionViews.firstMatch)
+            .perform("Swipe left", until: app.buttons["Delete"].firstMatch) {
             $0.swipeLeft()
         }.waitAndTap()
     }
@@ -190,5 +195,79 @@ struct GroupEditScreen {
         deleteButton.waitAndTap()
         app.buttons["groupEdit.deleteAlert.confirmButton"].firstMatch.waitAndTap()
         nameField.waitToDisappear()
+    }
+}
+
+// MARK: - Tabs, Settings, currency picker (spec 07)
+
+/// The two tabs of `ContentView`.
+@MainActor
+struct TabBar {
+    let app: XCUIApplication
+
+    var listsTab: XCUIElement { app.tabBars.buttons["Shopping Lists"] }
+    var settingsTab: XCUIElement { app.tabBars.buttons["Settings"] }
+
+    func openSettings() -> SettingsScreen {
+        settingsTab.waitAndTap()
+        return SettingsScreen(app: app).waitUntilShown()
+    }
+
+    func openLists() -> HomeScreen {
+        listsTab.waitAndTap()
+        return HomeScreen(app: app).waitUntilShown()
+    }
+}
+
+@MainActor
+struct SettingsScreen {
+    let app: XCUIApplication
+
+    /// Navigation row "Main Currency  Euro · EUR · €".
+    var mainCurrency: XCUIElement { app.buttons["settings.mainCurrency"] }
+    var appearancePicker: XCUIElement { app.descendants(matching: .any)["settings.appearancePicker"].firstMatch }
+    var icloudStatus: XCUIElement { app.descendants(matching: .any)["settings.icloudStatus"].firstMatch }
+    var version: XCUIElement { app.descendants(matching: .any)["settings.version"].firstMatch }
+
+    @discardableResult
+    func waitUntilShown(file: StaticString = #filePath, line: UInt = #line) -> SettingsScreen {
+        mainCurrency.waitToAppear(file: file, line: line)
+        return self
+    }
+
+    func openCurrencyPicker() -> CurrencyPickerScreen {
+        mainCurrency.waitAndTap()
+        return CurrencyPickerScreen(app: app).waitUntilShown()
+    }
+}
+
+@MainActor
+struct CurrencyPickerScreen {
+    let app: XCUIApplication
+
+    var list: XCUIElement { app.descendants(matching: .any)["currencyPicker.list"].firstMatch }
+    var searchField: XCUIElement { app.searchFields.firstMatch }
+
+    func row(_ code: String) -> XCUIElement { app.buttons["currencyPicker.row.\(code)"] }
+
+    @discardableResult
+    func waitUntilShown(file: StaticString = #filePath, line: UInt = #line) -> CurrencyPickerScreen {
+        searchField.waitToAppear(file: file, line: line)
+        return self
+    }
+
+    @discardableResult
+    func search(_ text: String) -> CurrencyPickerScreen {
+        searchField.waitAndTap()
+        searchField.typeText(text)
+        return self
+    }
+
+    /// Taps a currency; the picker pops back to Settings.
+    @discardableResult
+    func select(_ code: String) -> SettingsScreen {
+        row(code).waitAndTap()
+        searchField.waitToDisappear()
+        return SettingsScreen(app: app).waitUntilShown()
     }
 }

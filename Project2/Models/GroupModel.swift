@@ -50,11 +50,16 @@ extension GroupModel {
         sortedItems.filter { !$0.isComplete }
     }
 
+    /// The currency all amounts of this group are shown in: the one of its list.
+    var listCurrencyCode: String {
+        list?.currencyCode ?? ListModel.fallbackCurrencyCode
+    }
+
     /// Totals of this group, in the currency of its list.
     var summary: BudgetSummary {
         BudgetCalculator.summary(
             of: (items ?? []).map(\.budgetLine),
-            listCurrencyCode: list?.currencyCode ?? ListModel.fallbackCurrencyCode,
+            listCurrencyCode: listCurrencyCode,
             budget: budget
         )
     }

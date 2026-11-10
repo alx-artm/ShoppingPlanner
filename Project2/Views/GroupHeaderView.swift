@@ -46,7 +46,11 @@ struct GroupHeaderView: View {
 
                     Spacer()
 
-                    Text(group.summary.toBuy, format: .number)
+                    // What the number means (BUG-08); M4 switches the header to `planned` (LD-04).
+                    Text("To buy")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    MoneyText(group.summary.toBuy, currencyCode: group.listCurrencyCode)
                         .accessibilityIdentifier("group.total.\(group.name)")
                 }
                 .contentShape(Rectangle()) // Опять же, чтобы кликабельной была вся область

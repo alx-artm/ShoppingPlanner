@@ -43,10 +43,15 @@ struct FavoriteCardView: View {
                     Gauge(value: summary.boughtFraction.doubleValue) {
                         // Label content
                     } currentValueLabel: {
-
-                        Text(summary.toBuy, format: .number.precision(.fractionLength(2)))
-                            .foregroundStyle(.black.secondary)
-                        
+                        // The number is what is still left to buy, so say so (BUG-08).
+                        HStack(spacing: 4) {
+                            Text("To buy")
+                            MoneyText(summary.toBuy, currencyCode: list.currencyCode)
+                                .accessibilityIdentifier("home.listCard.toBuy.\(list.name)")
+                        }
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .foregroundStyle(.black.secondary)
                     }
                     .gaugeStyle(.accessoryLinearCapacity)
                     .opacity(summary.planned == 0 ? 0 : 1)

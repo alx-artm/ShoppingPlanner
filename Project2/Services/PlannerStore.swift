@@ -82,8 +82,13 @@ final class PlannerStore: PlannerStoring {
 
     @ObservationIgnored let context: ModelContext
     @ObservationIgnored private let now: () -> Date
-    /// Currency for new lists. Spec 07 (M2) will feed the user's main currency here.
-    @ObservationIgnored var defaultCurrencyCode: String
+    /// Reads the user's main currency (spec 07) at the moment a list is created.
+    @ObservationIgnored private let mainCurrencyCode: @MainActor () -> String
+
+    /// Currency copied into new lists: the main currency right now (SC-05).
+    var defaultCurrencyCode: String {
+        mainCurrencyCode()
+    }
 
     private static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "Project2",
@@ -92,15 +97,26 @@ final class PlannerStore: PlannerStoring {
 
     /// - Parameters:
     ///   - context: usually `container.mainContext`; tests pass an in-memory one.
+    ///   - mainCurrencyCode: asked on every `createList`, so a changed setting is
+    ///     used for the next list without rebuilding the store.
     ///   - now: clock, injectable so tests can control `completedAt` / `createdAt`.
     init(
+        context: ModelContext,
+        mainCurrencyCode: @escaping @MainActor () -> String,
+        now: @escaping () -> Date = { .now }
+    ) {
+        self.context = context
+        self.mainCurrencyCode = mainCurrencyCode
+        self.now = now
+    }
+
+    /// A store whose new lists always get `defaultCurrencyCode` (tests, previews).
+    convenience init(
         context: ModelContext,
         defaultCurrencyCode: String = ListModel.fallbackCurrencyCode,
         now: @escaping () -> Date = { .now }
     ) {
-        self.context = context
-        self.defaultCurrencyCode = defaultCurrencyCode
-        self.now = now
+        self.init(context: context, mainCurrencyCode: { defaultCurrencyCode }, now: now)
     }
 
     func clearError() {
