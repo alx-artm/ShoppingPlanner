@@ -25,6 +25,29 @@ extension Tag {
     @Tag static var regression: Self
     /// Main currency, currency picker and Settings (spec 07, SC-01...SC-13).
     @Tag static var settings: Self
+    /// Home screen: sections, ordering, search, status texts (spec 02, HM-01...HM-17).
+    @Tag static var home: Self
+    /// List Info, icons and templates (spec 03, LI-01...LI-14).
+    @Tag static var listInfo: Self
+    /// Split-view navigation and deleting an open list (spec 08 AD-xx, DM-18).
+    @Tag static var navigation: Self
+}
+
+/// The app's own strings (`String(localized:)`) are resolved in the language the
+/// test host runs in. Exact English texts are checked only when that language is
+/// English; amounts inside them always use an explicit `Locale`, so they don't
+/// depend on the machine's region.
+enum UILanguage {
+    static var isEnglish: Bool {
+        Bundle.main.preferredLocalizations.first?.hasPrefix("en") ?? false
+    }
+}
+
+extension Trait where Self == ConditionTrait {
+    /// Skips a test that compares whole English sentences when the host runs in another language.
+    static var englishUI: Self {
+        .enabled(if: UILanguage.isEnglish, "compares English UI texts")
+    }
 }
 
 extension String {

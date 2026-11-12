@@ -80,6 +80,11 @@ enum PlannerOrdering {
         (existing.max() ?? -1) + 1
     }
 
+    /// `sortIndex` for a new element inserted before `existing`: min − 1 (0 for an empty section).
+    static func indexBefore(_ existing: [Double]) -> Double {
+        (existing.min() ?? 1) - 1
+    }
+
     /// `sortIndex` for an element placed between two neighbours (`nil` = no neighbour on that side).
     /// Returns `nil` when the gap is too small and the section must be renumbered.
     static func indexBetween(_ lower: Double?, _ upper: Double?) -> Double? {

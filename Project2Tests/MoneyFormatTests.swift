@@ -69,18 +69,20 @@ struct MoneyFormatTests {
         #expect(text.plainSpaces == c.expected)
     }
 
-    /// Display-time rounding is ICU's default, half-even ("banker's rounding"):
-    /// a tie goes to the even neighbour. Documented here so a change is noticed;
-    /// whether the product wants half-up instead is an open question.
-    @Test("SC-09 rounding at display time is half-even", arguments: [
-        ("2.5", "JPY", "¥2"),
+    /// Display-time rounding is half-up, away from zero: a tie goes to the larger
+    /// absolute value ("¥2.5 → ¥3"), like people round by hand (owner decision
+    /// after the M2 review; ICU's default half-even would give "¥2").
+    @Test("SC-09 rounding at display time is half-up (away from zero)", arguments: [
+        ("2.5", "JPY", "¥3"),
         ("3.5", "JPY", "¥4"),
-        ("1234.5", "JPY", "¥1,234"),
-        ("0.005", "USD", "$0.00"),
+        ("2.4", "JPY", "¥2"),
+        ("1234.5", "JPY", "¥1,235"),
+        ("0.005", "USD", "$0.01"),
         ("0.015", "USD", "$0.02"),
-        ("0.0151", "USD", "$0.02"),
+        ("0.0149", "USD", "$0.01"),
+        ("-2.5", "JPY", "-¥3"),
     ])
-    func halfEvenRounding(amount: String, currency: String, expected: String) {
+    func halfUpRounding(amount: String, currency: String, expected: String) {
         let text = MoneyFormat.string(dec(amount), currencyCode: currency, locale: Locale(identifier: "en_US"))
         #expect(text == expected)
     }

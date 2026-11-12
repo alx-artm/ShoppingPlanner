@@ -114,6 +114,7 @@ final class SampleData {
     let store: PlannerStore
     let uiState = LocalUIState.inMemory()
     let settings: AppSettings
+    let navigation = AppNavigation()
 
     let evaList: ListModel
     let victoriaList: ListModel
@@ -151,5 +152,6 @@ extension View {
             .environment(SampleData.shared.store)
             .environment(SampleData.shared.uiState)
             .environment(SampleData.shared.settings)
+            .environment(SampleData.shared.navigation)
     }
 }

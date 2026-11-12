@@ -30,7 +30,8 @@ struct GroupHeaderView: View {
                 .animation(.interactiveSpring, value: isExpanded)
                 .fontWeight(.bold)
                 .imageScale(.medium)
-                .foregroundColor(Color(#colorLiteral(red: 0.2549019754, green: 0.2745098174, blue: 0.3019607961, alpha: 1)))
+                // A semantic color: readable in light and dark mode (BUG-09).
+                .foregroundStyle(.secondary)
             }
             .accessibilityIdentifier("group.expandButton.\(group.name)")
             Button {
