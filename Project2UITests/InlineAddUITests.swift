@@ -136,6 +136,26 @@ final class InlineAddUITests: XCTestCase {
         eva.itemDetail("Kite").waitForLabel("2 × $12.50")
     }
 
+    /// LD-15 / LP-08: [Link] opens a URL field in the row; the saved item shows the host chip
+    /// and its context menu offers "Open Link" (LD-09). The link isn't opened (Safari).
+    @MainActor
+    func testLinkFromAccessoryBar() {
+        let app = Launch.app()
+        let eva = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
+
+        let field = eva.startInline(in: "Toys")
+        field.typeText("Kite")
+        app.buttons["inline.accessory.link"].waitAndTap()
+        app.textFields["inline.linkField"].waitToAppear().typeText("www.kites.example.com/red")
+        eva.inlineDone()
+
+        eva.app.descendants(matching: .any)["item.link.Kite"].firstMatch.waitForLabel(containing: "kites.example.com")
+        eva.reveal(eva.itemRow("Kite")).perform("Long press", until: app.buttons["item.menu.openLink"]) {
+            $0.press(forDuration: 1.2)
+        }
+        XCTAssertFalse(app.buttons["item.menu.openLink"].firstMatch.label.isEmpty)
+    }
+
     /// LD-12: Done with an empty draft creates nothing.
     @MainActor
     func testEmptyDraftIsDropped() {

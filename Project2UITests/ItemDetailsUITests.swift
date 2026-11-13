@@ -45,6 +45,22 @@ final class ItemDetailsUITests: XCTestCase {
         eva.itemTotal("Scooter").waitForLabel("$25.00")
     }
 
+    /// BUG-30 / ID-03a: in en_US the "$" prefix belongs next to the amount. The price field fills
+    /// the row and right-aligns its text, so "$" sits by the label "Price per unit" and the
+    /// digits at the far right ("Price per unit $ ……… 60.00"). The symbol is hidden from
+    /// VoiceOver, so the test measures the field: it must hug its text, not span the row.
+    @MainActor
+    func testPricePrefixStaysNextToTheAmount() {
+        let eva = HomeScreen(app: Launch.app()).waitUntilShown().open(row: "Eva")
+        let editor = eva.openItem("Scooter")
+        let field = editor.priceField.waitToAppear().frame
+        let row = editor.form.frame
+        XCTExpectFailure("BUG-30: the price field spans the row, the $ prefix is far from the digits") {
+            XCTAssertLessThan(field.width, row.width / 3, "price field \(field.width) of \(row.width) pt")
+        }
+        editor.cancel()
+    }
+
     /// ID-04 / LD-08: an item without a price shows "—", not 0.
     @MainActor
     func testItemWithoutPriceShowsDash() {

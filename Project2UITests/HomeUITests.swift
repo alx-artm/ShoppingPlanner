@@ -83,6 +83,18 @@ final class HomeUITests: XCTestCase {
         info.cancel().card("Alex").waitToAppear()
     }
 
+    /// HM-30: rows have three lines (name + to buy / progress / budget) and the same height
+    /// whatever the budget state: Eva "No budget" next to Victoria "⚠ plan €15.00 over budget" (S5).
+    @MainActor
+    func testRowsHaveTheSameHeightInEveryBudgetState() {
+        let home = HomeScreen(app: Launch.app()).waitUntilShown()
+        let eva = home.row("Eva").waitToAppear()
+        let victoria = home.row("Victoria").waitToAppear()
+        XCTAssertEqual(eva.frame.height, victoria.frame.height, accuracy: 0.5)
+        XCTAssertFalse(home.app.staticTexts["home.listRow.status.Victoria"].label.contains("·"),
+                       "no '·' joining progress and budget")
+    }
+
     /// HM-28: tiles of one row have the same height, whatever their budget state
     /// (Alex: to spare, Victoria: over budget).
     @MainActor

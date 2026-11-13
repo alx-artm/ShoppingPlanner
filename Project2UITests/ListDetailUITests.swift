@@ -30,8 +30,13 @@ final class ListDetailUITests: XCTestCase {
         alex.groupCount("Vacation").waitForLabel("(3)")
         alex.groupTotal("Vacation").waitForLabel("$145.00")
 
-        alex.groupHeader("Vacation").tap()
-        alex.itemRow("Sunglasses").waitToAppear()
+        // DM-10: the collapsed state survives leaving the list and coming back.
+        let reopened = alex.goBack().open(card: "Alex")
+        reopened.groupCount("Vacation").waitForLabel("(3)")
+        XCTAssertFalse(reopened.itemRow("Sunglasses").exists)
+
+        reopened.groupHeader("Vacation").tap()
+        reopened.itemRow("Sunglasses").waitToAppear()
     }
 
     /// Rename lives in the group's ⋯ menu, as an alert with a text field (owner decision).
@@ -59,6 +64,20 @@ final class ListDetailUITests: XCTestCase {
 
         alex.groupHeader("Vacation").waitToDisappear()
         alex.total.waitForLabel("$225.00")
+    }
+
+    /// LD-05: an empty group is deleted at once, without the "Delete group and N items?" question.
+    @MainActor
+    func testDeleteEmptyGroupAtOnce() {
+        let app = Launch.app()
+        let alex = HomeScreen(app: app).waitUntilShown().open(card: "Alex")
+        alex.addGroup(named: "Gifts")
+
+        alex.groupMenuAction("Gifts", "delete")
+
+        alex.groupHeader("Gifts").waitToDisappear()
+        XCTAssertFalse(app.buttons["groupDelete.confirmButton"].exists, "no confirmation for an empty group")
+        alex.total.waitForLabel("$340.00")
     }
 
     // MARK: - Rows
@@ -103,6 +122,19 @@ final class ListDetailUITests: XCTestCase {
         let frame = alex.checkbox("Sunglasses").waitToAppear().frame
         XCTAssertGreaterThanOrEqual(frame.width, 44)
         XCTAssertGreaterThanOrEqual(frame.height, 44)
+    }
+
+    /// BUG-29 / LD-07a / WCAG 1.4.11: the ring of a not-bought checkbox needs ≥ 3:1 contrast with
+    /// the row background. It is drawn in the list color at reduced opacity (`.secondary` inside a
+    /// tinted Button is hierarchical, not gray): about 2.1:1 for Eva (magenta) in light and dark mode.
+    @MainActor
+    func testUncheckedCheckboxRingHasEnoughContrast() {
+        let eva = HomeScreen(app: Launch.app()).waitUntilShown().open(row: "Eva")
+        let checkbox = eva.checkbox("Sneakers").waitToBeHittable()
+        let contrast = ScreenshotContrast.strongest(in: checkbox.screenshot().image)
+        XCTExpectFailure("BUG-29: the unchecked ring uses the list tint at ~2.1:1 instead of gray ≥ 3:1") {
+            XCTAssertGreaterThanOrEqual(contrast, 3, "ring contrast \(contrast)")
+        }
     }
 
     /// LD-08: no price shows "—", not $0.00.
@@ -156,6 +188,38 @@ final class ListDetailUITests: XCTestCase {
         XCTAssertFalse(party.summary.exists)
     }
 
+    /// LD-10: the summary bar floats over the list, so the list must be able to scroll its
+    /// last rows ("＋ New Item" of the last group, "＋ Add Group") above it, also while the
+    /// "Undo" toast makes the bottom inset taller (small screens: iPhone 17e / SE).
+    @MainActor
+    func testBottomRowsScrollAboveSummaryBarAndToast() {
+        let app = Launch.app()
+        let eva = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
+        // A list longer than the screen.
+        eva.startInline(in: "Clothes")
+        app.typeText((1...8).map { "Extra \($0)\n" }.joined())
+        eva.inlineDone()
+
+        let lastNewItem = eva.addItemButton("Clothes")
+        eva.reveal(eva.addGroupRow, maxSwipes: 8)
+        XCTAssertTrue(eva.addGroupRow.isHittable)
+        XCTAssertLessThanOrEqual(eva.addGroupRow.frame.maxY, eva.summary.frame.minY,
+                                 "Add Group scrolls fully above the summary bar")
+        XCTAssertLessThanOrEqual(lastNewItem.frame.maxY, eva.summary.frame.minY)
+
+        // With the toast on screen, the last rows still scroll above it.
+        eva.swipeToDelete("Extra 8")
+        eva.undoToast.waitToAppear()
+        let list = app.collectionViews.firstMatch
+        list.swipeUp(velocity: .fast)
+        let toastTop = eva.undoToast.frame.minY
+        XCTAssertLessThan(toastTop, eva.summary.frame.minY, "the toast sits above the summary bar")
+        XCTAssertLessThanOrEqual(eva.addGroupRow.frame.maxY, toastTop,
+                                 "Add Group is not hidden behind the toast")
+        eva.addGroupRow.tap()
+        app.alerts.firstMatch.waitToAppear()
+    }
+
     // MARK: - Groups (step 3b)
 
     /// LD-01: ⋯ → Add Group asks for the name; the new group goes last.
@@ -186,6 +250,10 @@ final class ListDetailUITests: XCTestCase {
         list.waitToDisappear()
 
         XCTAssertLessThan(alex.groupHeader("Birthday").frame.minY, alex.groupHeader("Vacation").frame.minY)
+        // Leave and come back: the order was saved (DM-07).
+        let reopened = alex.goBack().open(card: "Alex")
+        XCTAssertLessThan(reopened.groupHeader("Birthday").waitToAppear().frame.minY,
+                          reopened.groupHeader("Vacation").waitToAppear().frame.minY)
     }
 
     /// Owner decision: items of a group can be dragged into another order ("Reorder Items" mode).
@@ -236,6 +304,12 @@ final class ListDetailUITests: XCTestCase {
         alex.itemRow("Swimsuit").waitToAppear()
         alex.total.waitForLabel("$340.00")
         alex.undoToast.waitToDisappear()
+        // The same item in the same place: price, group total, between its neighbours.
+        alex.itemTotal("Swimsuit").waitForLabel("$55.00")
+        alex.groupTotal("Vacation").waitForLabel("$145.00")
+        let swimsuit = alex.itemRow("Swimsuit").frame.minY
+        XCTAssertLessThan(alex.itemRow("Sunglasses").frame.minY, swimsuit)
+        XCTAssertLessThan(swimsuit, alex.itemRow("Flip-flops").frame.minY)
     }
 
     /// LD-09: the toast goes away by itself after a few seconds.

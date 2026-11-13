@@ -115,7 +115,9 @@ struct ListDetailScreen {
     func addGroup(named name: String) -> ListDetailScreen {
         menuAction("addGroup")
         typeGroupName(name)
-        groupHeader(name).waitToAppear()
+        // The new group goes last and the list doesn't scroll to it: on small phones
+        // (iPhone 17e / SE) its header is below the fold, not even in the lazy list yet.
+        groupHeader(name).scrollIntoViewLazily(within: app.collectionViews.firstMatch)
         return self
     }
 

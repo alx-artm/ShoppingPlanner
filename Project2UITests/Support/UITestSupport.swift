@@ -6,6 +6,7 @@
 //  Rule: never sleep. Every step waits for the element it needs.
 //
 
+import UIKit
 import XCTest
 
 enum Launch {
@@ -182,5 +183,43 @@ extension XCUIElement {
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: self)
         XCTAssertEqual(XCTWaiter().wait(for: [expectation], timeout: timeout), .completed,
                        "\(self) selected != \(selected)", file: file, line: line)
+    }
+}
+
+/// Contrast of the drawn content of a screenshot against its background (WCAG 2 formula).
+/// The background is the top-left pixel; the result is the strongest contrast of any pixel
+/// with it, so anti-aliased edges don't lower it. Used where colors matter (BUG-29).
+enum ScreenshotContrast {
+    static func strongest(in image: UIImage) -> Double {
+        guard let cgImage = image.cgImage else { return 0 }
+        let width = cgImage.width, height = cgImage.height
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        let drawn = pixels.withUnsafeMutableBytes { buffer -> Bool in
+            guard let context = CGContext(data: buffer.baseAddress, width: width, height: height,
+                                          bitsPerComponent: 8, bytesPerRow: width * 4,
+                                          space: CGColorSpaceCreateDeviceRGB(),
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
+                return false
+            }
+            context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
+        }
+        guard drawn, !pixels.isEmpty else { return 0 }
+        func luminance(_ offset: Int) -> Double {
+            func channel(_ value: UInt8) -> Double {
+                let c = Double(value) / 255
+                return c <= 0.03928 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4)
+            }
+            return 0.2126 * channel(pixels[offset]) + 0.7152 * channel(pixels[offset + 1])
+                + 0.0722 * channel(pixels[offset + 2])
+        }
+        let background = luminance(0)
+        var best = 1.0
+        for offset in stride(from: 0, to: pixels.count, by: 4) {
+            let l = luminance(offset)
+            let ratio = (max(l, background) + 0.05) / (min(l, background) + 0.05)
+            best = max(best, ratio)
+        }
+        return best
     }
 }
