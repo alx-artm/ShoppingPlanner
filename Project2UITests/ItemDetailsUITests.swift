@@ -45,19 +45,23 @@ final class ItemDetailsUITests: XCTestCase {
         eva.itemTotal("Scooter").waitForLabel("$25.00")
     }
 
-    /// BUG-30 / ID-03a: in en_US the "$" prefix belongs next to the amount. The price field fills
-    /// the row and right-aligns its text, so "$" sits by the label "Price per unit" and the
-    /// digits at the far right ("Price per unit $ ……… 60.00"). The symbol is hidden from
-    /// VoiceOver, so the test measures the field: it must hug its text, not span the row.
+    /// BUG-30 / ID-03a: in en_US the "$" prefix belongs next to the amount. The price field used to
+    /// fill the row and right-align its text, so "$" sat by the label "Price per unit" and the
+    /// digits at the far right ("Price per unit $ ……… 60.00"). The field's own frame can't show it:
+    /// `LabeledContent` merges the label into the field's accessibility element, so that frame
+    /// starts at the label in any layout. The test measures from the symbol to the field's right
+    /// edge (where right-aligned digits end): only the digits may lie in between.
     @MainActor
     func testPricePrefixStaysNextToTheAmount() {
         let eva = HomeScreen(app: Launch.app()).waitUntilShown().open(row: "Eva")
         let editor = eva.openItem("Scooter")
         let field = editor.priceField.waitToAppear().frame
+        let symbol = editor.app.descendants(matching: .any)["itemEdit.priceField.symbol"].firstMatch
+            .waitToAppear().frame
         let row = editor.form.frame
-        XCTExpectFailure("BUG-30: the price field spans the row, the $ prefix is far from the digits") {
-            XCTAssertLessThan(field.width, row.width / 3, "price field \(field.width) of \(row.width) pt")
-        }
+        XCTAssertGreaterThan(symbol.minX, row.midX, "the symbol is on the right, by the digits")
+        XCTAssertLessThan(field.maxX - symbol.minX, row.width / 3,
+                          "symbol at \(symbol.minX), digits end at \(field.maxX) of \(row.width) pt")
         editor.cancel()
     }
 

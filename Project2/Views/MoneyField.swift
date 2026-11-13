@@ -41,12 +41,19 @@ struct MoneyField<Field: Hashable>: View {
 
     var body: some View {
         let affix = CurrencyAffix(currencyCode: currencyCode, locale: locale)
+        // Right-aligned (item details): the field hugs its text and is pushed right together
+        // with the symbol, so "$" stays next to the digits, not by the label (BUG-30, ID-03a).
+        let hugsText = alignment == .trailing
         HStack(spacing: 4) {
+            if hugsText { Spacer(minLength: 0) }
             if affix.position == .prefix { symbol(affix) }
             TextField(title, text: $text)
                 .keyboardType(affix.fractionDigits == 0 ? .numberPad : .decimalPad)
                 .multilineTextAlignment(alignment)
                 .monospacedDigit()
+                .fixedSize(horizontal: hugsText, vertical: false)
+                // An empty field still has a comfortable tap target.
+                .frame(minWidth: hugsText ? 44 : nil, alignment: .trailing)
                 .focused(focus, equals: field)
                 .accessibilityIdentifier(identifier)
             if affix.position == .suffix { symbol(affix) }
@@ -77,6 +84,7 @@ struct MoneyField<Field: Hashable>: View {
         Text(verbatim: affix.symbol)
             .foregroundStyle(.secondary)
             .accessibilityHidden(true)
+            .accessibilityIdentifier("\(identifier).symbol")
     }
 }
 
