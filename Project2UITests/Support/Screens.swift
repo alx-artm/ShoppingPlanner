@@ -165,11 +165,17 @@ struct ListDetailScreen {
 struct ItemEditScreen {
     let app: XCUIApplication
 
+    var form: XCUIElement { app.collectionViews["itemEdit.form"] }
     var nameField: XCUIElement { app.textFields["itemEdit.nameField"] }
     var priceField: XCUIElement { app.textFields["itemEdit.priceField"] }
+    var quantityField: XCUIElement { app.textFields["itemEdit.quantityField"] }
+    var urlField: XCUIElement { app.textFields["itemEdit.urlField"] }
+    var notesField: XCUIElement { app.textFields["itemEdit.notesField"] }
     var total: XCUIElement { app.staticTexts["itemEdit.total"] }
     var quantityIncrement: XCUIElement { app.buttons["itemEdit.quantityStepper-Increment"] }
+    var groupPicker: XCUIElement { app.buttons["itemEdit.groupPicker"] }
     var doneButton: XCUIElement { app.buttons["itemEdit.doneButton"] }
+    var cancelButton: XCUIElement { app.buttons["itemEdit.cancelButton"] }
     var deleteButton: XCUIElement { app.buttons["itemEdit.deleteButton"] }
 
     @discardableResult
@@ -178,9 +184,39 @@ struct ItemEditScreen {
         return self
     }
 
+    /// Replaces the text of a field (select all is not reliable, so delete key by key).
+    /// The tap goes to the field's right end, so the cursor lands after the text
+    /// in both leading- and trailing-aligned fields.
+    func replaceText(of field: XCUIElement, with text: String) {
+        field.waitToBeHittable()
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap()
+        let current = field.value as? String ?? ""
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count + 2) + text)
+    }
+
+    /// "Delete Item" → confirm. The sheet closes, then the item is deleted (ID-11).
     func delete() {
-        deleteButton.waitAndTap()
+        deleteButton.scrollIntoViewLazily(within: form).tap()
+        app.buttons["itemEdit.deleteAlert.confirmButton"].firstMatch.waitAndTap()
         nameField.waitToDisappear()
+    }
+
+    /// ✓ → the sheet closes.
+    func done() {
+        doneButton.waitAndTap()
+        nameField.waitToDisappear()
+    }
+
+    /// ✕ → the sheet closes without saving.
+    func cancel() {
+        cancelButton.waitAndTap()
+        nameField.waitToDisappear()
+    }
+
+    /// Group picker → choose `group`.
+    func moveToGroup(_ group: String) {
+        groupPicker.scrollIntoViewLazily(within: form).tap()
+        app.buttons[group].firstMatch.waitAndTap()
     }
 }
 

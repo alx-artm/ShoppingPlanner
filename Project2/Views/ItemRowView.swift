@@ -138,7 +138,7 @@ struct ItemRowView: View {
         }
        
         .sheet(isPresented: $showDetails) {
-            ItemView(item: item)
+            ItemView(mode: .edit(item))
         }
     }
 }

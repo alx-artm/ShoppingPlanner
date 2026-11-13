@@ -156,6 +156,16 @@ extension XCUIElement {
                        "label is '\(label)', expected it to contain '\(fragment)'", file: file, line: line)
     }
 
+    /// Waits until the element is (not) enabled, e.g. ✓ after a change.
+    @MainActor
+    func waitForEnabled(_ enabled: Bool, timeout: TimeInterval = uiTimeout,
+                        file: StaticString = #filePath, line: UInt = #line) {
+        let predicate = NSPredicate(format: "enabled == %@", NSNumber(value: enabled))
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: self)
+        XCTAssertEqual(XCTWaiter().wait(for: [expectation], timeout: timeout), .completed,
+                       "\(self) enabled != \(enabled)", file: file, line: line)
+    }
+
     /// Waits until the element is (not) selected, e.g. a checkbox.
     @MainActor
     func waitForSelected(_ selected: Bool, timeout: TimeInterval = uiTimeout,

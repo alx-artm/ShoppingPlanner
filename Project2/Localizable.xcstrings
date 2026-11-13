@@ -441,8 +441,16 @@
     "Delete group? \nAll items in this group will disappear forever." : {
 
     },
-    "Delete item" : {
-
+    "Delete Item" : {
+      "comment" : "Item details: the destructive button and its confirmation.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалить товар"
+          }
+        }
+      }
     },
     "Delete list" : {
 
@@ -637,6 +645,28 @@
         }
       }
     },
+    "Group" : {
+      "comment" : "Item details: the group the item belongs to.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Группа"
+          }
+        }
+      }
+    },
+    "https://…" : {
+      "comment" : "Item details: placeholder of the link field.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://…"
+          }
+        }
+      }
+    },
     "iCloud Sync" : {
       "localizations" : {
         "ru" : {
@@ -653,6 +683,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Иконка"
+          }
+        }
+      }
+    },
+    "Item" : {
+      "comment" : "Item details: navigation title of an existing item.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Товар"
+          }
+        }
+      }
+    },
+    "Item name" : {
+      "comment" : "Item details: placeholder of the name field.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Название товара"
           }
         }
       }
@@ -688,7 +740,15 @@
       }
     },
     "Link" : {
-
+      "comment" : "Item details: section title / VoiceOver label of the link field.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ссылка"
+          }
+        }
+      }
     },
     "List Info" : {
       "localizations" : {
@@ -770,8 +830,30 @@
         }
       }
     },
+    "Name" : {
+      "comment" : "Item details: section title of the name field.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Название"
+          }
+        }
+      }
+    },
     "New group" : {
 
+    },
+    "New Item" : {
+      "comment" : "Item details: navigation title of a new item.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Новый товар"
+          }
+        }
+      }
     },
     "New List" : {
       "localizations" : {
@@ -807,6 +889,17 @@
         }
       }
     },
+    "No price" : {
+      "comment" : "VoiceOver: the total of an item without a price (shown as \"—\").",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Без цены"
+          }
+        }
+      }
+    },
     "No prices yet" : {
       "localizations" : {
         "ru" : {
@@ -828,7 +921,15 @@
       }
     },
     "Note" : {
-
+      "comment" : "Item details: section title and placeholder of the note field.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Заметка"
+          }
+        }
+      }
     },
     "Note: %@" : {
 
@@ -839,6 +940,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Выкл."
+          }
+        }
+      }
+    },
+    "Open" : {
+      "comment" : "Item details: opens the item link in the browser.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Открыть"
           }
         }
       }
@@ -955,7 +1067,26 @@
       }
     },
     "Price" : {
-
+      "comment" : "Price field: placeholder and VoiceOver label.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Цена"
+          }
+        }
+      }
+    },
+    "Price per unit" : {
+      "comment" : "Item details: label of the price field.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Цена за штуку"
+          }
+        }
+      }
     },
     "Purple" : {
       "localizations" : {
@@ -968,7 +1099,15 @@
       }
     },
     "Quantity" : {
-
+      "comment" : "Item details: label of the quantity field and stepper.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Количество"
+          }
+        }
+      }
     },
     "Red" : {
       "localizations" : {
@@ -976,6 +1115,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Красный"
+          }
+        }
+      }
+    },
+    "Remove" : {
+      "comment" : "Item details: removes the link from the item.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Убрать"
           }
         }
       }
@@ -1205,9 +1355,6 @@
     "Title" : {
 
     },
-    "Title & Price" : {
-
-    },
     "To buy" : {
       "localizations" : {
         "ru" : {
@@ -1238,8 +1385,16 @@
         }
       }
     },
-    "Total:" : {
-
+    "Total" : {
+      "comment" : "Item details: price × quantity.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Итого"
+          }
+        }
+      }
     },
     "Trip" : {
       "localizations" : {

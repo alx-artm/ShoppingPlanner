@@ -50,6 +50,7 @@ protocol PlannerStoring: AnyObject {
     @discardableResult
     func addItem(name: String, to group: GroupModel, quantity: Int, price: Decimal?,
                  urlString: String, notes: String) -> ItemModel?
+    func updateItem(_ item: ItemModel, with draft: ItemDraft)
     func renameItem(_ item: ItemModel, to name: String)
     func setQuantity(_ quantity: Int, for item: ItemModel)
     @discardableResult func setPrice(_ price: Decimal?, for item: ItemModel) -> Bool
@@ -363,6 +364,34 @@ final class PlannerStore: PlannerStoring {
         item.group = group
         save()
         return item
+    }
+
+    /// Applies the item details' ✓ in one save (ID-01). A blank name keeps the old one,
+    /// a negative price keeps the old price, the quantity is clamped (DM-12...DM-14).
+    /// A different `draft.groupID` of the same list moves the item to the end of that group (ID-08).
+    func updateItem(_ item: ItemModel, with draft: ItemDraft) {
+        if let name = Self.normalizedName(draft.name) {
+            item.name = name
+        }
+        if let price = Self.validPrice(draft.price) {
+            item.price = price
+        }
+        item.quantity = Self.clampedQuantity(draft.quantity)
+        item.urlString = draft.urlString.trimmingCharacters(in: .whitespacesAndNewlines)
+        item.notes = draft.notes
+        if let groupID = draft.groupID, groupID != item.group?.uuid,
+           let target = item.parentList?.groups?.first(where: { $0.uuid == groupID }) {
+            item.sortIndex = PlannerOrdering.indexAfter((target.items ?? []).map(\.sortIndex))
+            item.group = target
+        }
+        save()
+    }
+
+    /// Adds a new item from the details sheet's draft to `group`. `nil` for a blank name.
+    @discardableResult
+    func addItem(from draft: ItemDraft, to group: GroupModel) -> ItemModel? {
+        addItem(name: draft.name, to: group, quantity: draft.quantity, price: draft.price,
+                urlString: draft.urlString, notes: draft.notes)
     }
 
     func renameItem(_ item: ItemModel, to name: String) {

@@ -147,10 +147,7 @@ struct ListViewInside: View {
         .navigationBarTitleDisplayMode(.inline)
 
         .sheet(item: $newItemRequest) { request in
-            NavigationStack {
-                ItemView(item: request.draft, addingTo: request.group)
-            }
-            .interactiveDismissDisabled()
+            ItemView(mode: .create(request.group))
         }
 
         .sheet(item: $draftGroup) { group in
@@ -177,11 +174,10 @@ struct ListViewInside: View {
     }
 }
 
-/// A request to add an item to `group`; `draft` is not inserted until the user taps Done.
+/// A request to add an item to `group`; nothing is inserted until the user taps Done.
 private struct NewItemRequest: Identifiable {
     let id = UUID()
     let group: GroupModel
-    let draft = ItemModel()
 }
 
 #Preview {
