@@ -59,8 +59,7 @@ final class PlannerUITests: XCTestCase {
         let party = home.open(row: "Party")
 
         party.addGroup(named: "Food")
-        // Whole-number price: typing "12.5" into the decimal pad is flaky (see BUG-26,
-        // fixed with the new price input in M4). Decimal math is unit-tested.
+        // Decimal prices: testDecimalPriceKeepsTheSeparator (BUG-26).
         party.addItem(named: "Cake", price: "12", quantity: 2, to: "Food")
 
         party.itemTotal("Cake").waitForLabel("$24.00")
@@ -69,6 +68,23 @@ final class PlannerUITests: XCTestCase {
         XCTAssertEqual(app.buttons["item.quantityButton.Cake"].label, "2")
 
         party.goBack().row("Party").waitForLabel(containing: "24")
+    }
+
+    /// BUG-26: a decimal price keeps its separator, typed with "." or "," in en_US and ru_RU.
+    @MainActor
+    func testDecimalPriceKeepsTheSeparator() {
+        for (language, region, price) in [("en", "en_US", "12.5"), ("en", "en_US", "12,5"),
+                                          ("ru", "ru_RU", "12,5"), ("ru", "ru_RU", "12.5")] {
+            let app = Launch.app(language: language, region: region)
+            let eva = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
+
+            eva.addItem(named: "Cake", price: price, quantity: 2, to: "Toys")
+
+            // 12.5 × 2, formatted like the app does for this region ("$25.00", "25,00 $").
+            let expected = Decimal(25).formatted(.currency(code: "USD").locale(Locale(identifier: region)))
+            eva.itemTotal("Cake").waitForLabel(expected)
+            app.terminate()
+        }
     }
 
     /// DM-12: a new item needs a name, Done stays disabled for a blank one.

@@ -14,13 +14,17 @@ enum Launch {
     static let emptyStore = "-UITestsEmptyStore"
 
     /// Fixed language and region, so number formatting ("1,234.5") is the same on every machine.
-    static let locale = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+    static func locale(language: String = "en", region: String = "en_US") -> [String] {
+        ["-AppleLanguages", "(\(language))", "-AppleLocale", region]
+    }
 
-    /// In-memory store with `SeedData` (or empty with `emptyStore: true`).
+    /// In-memory store with `SeedData` (or empty with `emptyStore: true`), in English / en_US
+    /// unless another language and region are given.
     @MainActor
-    static func app(emptyStore: Bool = false) -> XCUIApplication {
+    static func app(emptyStore: Bool = false, language: String = "en", region: String = "en_US") -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = [uiTests] + (emptyStore ? [Launch.emptyStore] : []) + locale
+        app.launchArguments = [uiTests] + (emptyStore ? [Launch.emptyStore] : [])
+            + locale(language: language, region: region)
         app.launch()
         return app
     }

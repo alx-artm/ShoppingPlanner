@@ -24,7 +24,9 @@ struct ItemView: View {
 
     /// Set when the user tapped Delete; the item is deleted after the sheet is gone (DM-18).
     @State private var isPendingDeletion = false
-    @FocusState private var isFocused: Bool
+    @FocusState private var focus: Field?
+
+    private enum Field: Hashable { case name, price }
 
     init(item: ItemModel, addingTo group: GroupModel? = nil) {
         self.item = item
@@ -38,23 +40,22 @@ struct ItemView: View {
                 Section("Title & Price") {
 
                     TextField("Title", text: $item.name)
-                        .focused($isFocused)
+                        .focused($focus, equals: .name)
                         .onAppear {
                             if isNew {
-                                isFocused = true
+                                focus = .name
                             }
                         }
                         .accessibilityIdentifier("itemEdit.nameField")
 
                     HStack{
-                        // An empty field stays "no price" instead of becoming 0 (BUG-07);
-                        // a negative value is rejected by the store (DM-14).
-                        TextField("Price", value: Binding(
+                        // Keeps the typed text, so "12.5" can't become 125 (BUG-26). An empty field
+                        // is "no price", not 0 (BUG-07); a negative value is rejected (DM-14).
+                        MoneyField("Price", value: Binding(
                             get: { item.price },
                             set: { store.setPrice($0, for: item) }
-                        ), format: .number)
-                            .keyboardType(.decimalPad)
-                            .accessibilityIdentifier("itemEdit.priceField")
+                        ), currencyCode: currencyCode, focus: $focus, field: .price,
+                           identifier: "itemEdit.priceField")
 
                         Text("Total:")
                             .bold()
