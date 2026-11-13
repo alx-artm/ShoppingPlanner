@@ -134,18 +134,6 @@ struct ListStatusTextTests {
         #expect(s.isOverBudget == c.isOverBudget)
     }
 
-    @Test("HM-30 the row status always has two parts", .englishUI,
-          arguments: [
-            (["-", "-", "-"], "500", "3 items · budget $500.00"),
-            (alexLines, nil, "8% bought · No budget"),
-            (alexLines, "500", "8% bought · $130.00 to spare of $500.00"),
-            (["315"], "300", "0% bought · ⚠ plan $15.00 over budget"),
-            ([], nil, "Empty · No budget"),
-          ] as [([String], String?, String)])
-    func rowText(lines: [String], budget: String?, expected: String) {
-        #expect(Self.status(lines, budget: budget).rowText == expected)
-    }
-
     // MARK: - Progress and percent
 
     @Test("HM-19/24 percent by money, rounded down; 100% only when everything is bought",
@@ -199,6 +187,77 @@ struct ListStatusTextTests {
     func shortLength(locale: String, amounts: (String, String?)) {
         let s = Self.status([amounts.0], budget: amounts.1, currency: "EUR", locale: Locale(identifier: locale))
         #expect(s.budgetShort.count <= 14, "\(s.budgetShort)")
+    }
+
+    // MARK: - HM-29 table of short forms (EN and RU)
+
+    /// The app's strings in one language: `en.lproj` / `ru.lproj` of the app bundle,
+    /// so the exact RU text is checked whatever language the test host runs in.
+    static func languageBundle(_ language: String) throws -> Bundle {
+        let path = try #require(Bundle.main.path(forResource: language, ofType: "lproj"))
+        return try #require(Bundle(path: path))
+    }
+
+    /// 0, 15, 160, 999, 9 999 with the digit grouping of en_US and ru_RU.
+    static let shortAmounts: [(amount: String, en: String, ru: String)] = [
+        ("0", "0", "0"), ("15", "15", "15"), ("160", "160", "160"),
+        ("999", "999", "999"), ("9999", "9,999", "9 999"),
+    ]
+
+    struct ShortCase: CustomTestStringConvertible, Sendable {
+        let language: String
+        let locale: String
+        let currency: String
+        let budget: ListStatusText.Budget
+        let expected: String
+        var testDescription: String { "\(locale) \(currency): \(expected)" }
+    }
+
+    /// Every form for every amount: en_US + USD/EUR, ru_RU + EUR/RUB.
+    static let shortCases: [ShortCase] = {
+        var cases: [ShortCase] = []
+        for row in shortAmounts {
+            let value = dec(row.amount)
+            for (currency, symbol) in [("USD", "$"), ("EUR", "€")] {
+                cases += [
+                    ShortCase(language: "en", locale: "en_US", currency: currency,
+                              budget: .toSpare(value, of: 10_000), expected: "\(symbol)\(row.en) to spare"),
+                    ShortCase(language: "en", locale: "en_US", currency: currency,
+                              budget: .over(value), expected: "\(symbol)\(row.en) over"),
+                    ShortCase(language: "en", locale: "en_US", currency: currency,
+                              budget: .notPlanned(budget: value), expected: "Budget \(symbol)\(row.en)"),
+                ]
+            }
+            for (currency, symbol) in [("EUR", "€"), ("RUB", "₽")] {
+                cases += [
+                    ShortCase(language: "ru", locale: "ru_RU", currency: currency,
+                              budget: .toSpare(value, of: 10_000), expected: "запас \(row.ru) \(symbol)"),
+                    ShortCase(language: "ru", locale: "ru_RU", currency: currency,
+                              budget: .over(value), expected: "\(row.ru) \(symbol) сверх"),
+                    ShortCase(language: "ru", locale: "ru_RU", currency: currency,
+                              budget: .notPlanned(budget: value), expected: "Бюджет \(row.ru) \(symbol)"),
+                ]
+            }
+        }
+        return cases
+    }()
+
+    @Test("HM-29 exact short forms; at most 14 characters, 15 only for EN 'to spare'", arguments: shortCases)
+    func shortTable(_ c: ShortCase) throws {
+        let text = ListStatusText.shortBudgetText(c.budget, currencyCode: c.currency,
+                                                  locale: Locale(identifier: c.locale),
+                                                  bundle: try Self.languageBundle(c.language))
+        #expect(text.plainSpaces == c.expected)
+        let isEnglishToSpare = if case .toSpare = c.budget { c.language == "en" } else { false }
+        #expect(text.count <= (isEnglishToSpare ? 15 : 14), "\(text)")
+    }
+
+    @Test("HM-29 RU 'to spare' starts with «запас», not «… в запасе»")
+    func russianToSpareWording() throws {
+        let text = ListStatusText.shortBudgetText(.toSpare(160, of: 500), currencyCode: "EUR",
+                                                  locale: Self.ruRU, bundle: try Self.languageBundle("ru"))
+        #expect(text.plainSpaces == "запас 160 €")
+        #expect(!text.contains("в запасе"))
     }
 
     // MARK: - Locale

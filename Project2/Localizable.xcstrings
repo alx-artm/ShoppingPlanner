@@ -41,7 +41,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ в запасе"
+            "value" : "запас %@"
           }
         }
       }
