@@ -45,7 +45,9 @@ struct ItemRowView: View {
         } label: {
             Image(systemName: item.isComplete ? "checkmark.circle.fill" : "circle")
                 .font(.title2)
-                .foregroundStyle(item.isComplete ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
+                // Gray ring, not `.secondary`: inside a tinted Button that is a faded tint
+                // (~2.1:1 against the background); the ring needs ≥ 3:1 (BUG-29, LD-07a).
+                .foregroundStyle(item.isComplete ? AnyShapeStyle(.tint) : AnyShapeStyle(Color(.secondaryLabel)))
                 .frame(width: checkboxSize, height: checkboxSize)
                 .contentShape(.rect)
         }

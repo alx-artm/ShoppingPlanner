@@ -125,16 +125,14 @@ final class ListDetailUITests: XCTestCase {
     }
 
     /// BUG-29 / LD-07a / WCAG 1.4.11: the ring of a not-bought checkbox needs ≥ 3:1 contrast with
-    /// the row background. It is drawn in the list color at reduced opacity (`.secondary` inside a
-    /// tinted Button is hierarchical, not gray): about 2.1:1 for Eva (magenta) in light and dark mode.
+    /// the row background. It was drawn in the list color at reduced opacity (`.secondary` inside a
+    /// tinted Button is hierarchical, not gray): about 2.1:1 for Eva (magenta); now gray.
     @MainActor
     func testUncheckedCheckboxRingHasEnoughContrast() {
         let eva = HomeScreen(app: Launch.app()).waitUntilShown().open(row: "Eva")
         let checkbox = eva.checkbox("Sneakers").waitToBeHittable()
         let contrast = ScreenshotContrast.strongest(in: checkbox.screenshot().image)
-        XCTExpectFailure("BUG-29: the unchecked ring uses the list tint at ~2.1:1 instead of gray ≥ 3:1") {
-            XCTAssertGreaterThanOrEqual(contrast, 3, "ring contrast \(contrast)")
-        }
+        XCTAssertGreaterThanOrEqual(contrast, 3, "ring contrast \(contrast)")
     }
 
     /// LD-08: no price shows "—", not $0.00.
