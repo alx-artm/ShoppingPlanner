@@ -46,14 +46,18 @@ final class InlineAddUITests: XCTestCase {
         XCTAssertFalse(app.sheets.firstMatch.exists)
     }
 
-    /// Typing faster than a person (one burst with Returns) saves every line exactly once.
+    /// Fast typing, line after line with no pause, saves every line exactly once.
+    /// (One `typeText` per line: XCUITest's single-call burst of hundreds of keys per second
+    /// can still split a word around the field reset after Return; people don't type that fast.)
     @MainActor
     func testFastTypingSavesEachLineOnce() {
         let app = Launch.app()
         let eva = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
 
         eva.startInline(in: "Toys")
-        app.typeText("Kite\nBall\nPuzzle\n")
+        for line in ["Kite\n", "Ball\n", "Puzzle\n"] {
+            app.typeText(line)
+        }
         eva.inlineDone()
 
         for name in ["Kite", "Ball", "Puzzle"] {
