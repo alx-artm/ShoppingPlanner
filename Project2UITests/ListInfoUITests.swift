@@ -108,8 +108,9 @@ final class ListInfoUITests: XCTestCase {
         for group in ["Tickets", "Accommodation", "Gear", "Food"] {
             trip.groupHeader(group).waitToAppear()
         }
-        // Nothing planned yet: the summary bar is hidden, group totals show $0.00.
-        trip.groupTotal("Tickets").waitForLabel("$0.00")
+        // Nothing planned yet: the summary bar is hidden, group totals show "—" (LD-04).
+        trip.groupTotal("Tickets").waitForLabel("—")
+        XCTAssertFalse(trip.summary.exists)
     }
 
     /// HM-14 + LI-12: the empty state offers "Start from Template" and "New List".

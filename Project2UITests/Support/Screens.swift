@@ -80,10 +80,22 @@ struct ListDetailScreen {
     /// renders the back button in a side rail outside the navigation bar.
     var backButton: XCUIElement { app.buttons["BackButton"].firstMatch }
 
-    func groupHeader(_ group: String) -> XCUIElement { app.buttons["group.editButton.\(group)"] }
+    /// Tapping the header collapses / expands the group (LD-02).
+    func groupHeader(_ group: String) -> XCUIElement { app.buttons["group.header.\(group)"] }
+    func groupMenu(_ group: String) -> XCUIElement { app.buttons["group.menu.\(group)"] }
+    /// "(3)" next to a collapsed group's name (LD-04).
+    func groupCount(_ group: String) -> XCUIElement { app.staticTexts["group.count.\(group)"] }
     func groupTotal(_ group: String) -> XCUIElement { app.staticTexts["group.total.\(group)"] }
     func addItemButton(_ group: String) -> XCUIElement { app.buttons["group.addItemButton.\(group)"] }
-    func itemRow(_ item: String) -> XCUIElement { app.otherElements["item.row.\(item)"] }
+    /// The row without its checkbox: a button that opens item details.
+    func itemRow(_ item: String) -> XCUIElement { app.buttons["item.row.\(item)"] }
+    /// "2 × $55.00 · note" under the name.
+    func itemDetail(_ item: String) -> XCUIElement { app.staticTexts["item.detail.\(item)"] }
+    var summary: XCUIElement { app.descendants(matching: .any)["listDetail.summary"].firstMatch }
+    var planned: XCUIElement { app.staticTexts["listDetail.planned"] }
+    var progress: XCUIElement { app.staticTexts["listDetail.progress"] }
+    var unpriced: XCUIElement { app.staticTexts["listDetail.unpriced"] }
+    var budget: XCUIElement { app.staticTexts["listDetail.budget"] }
     func checkbox(_ item: String) -> XCUIElement { app.buttons["item.checkbox.\(item)"] }
     func itemTotal(_ item: String) -> XCUIElement { app.staticTexts["item.total.\(item)"] }
 
@@ -122,15 +134,56 @@ struct ListDetailScreen {
         return self
     }
 
-    /// Tap the item name → item details sheet.
+    /// Tap the row → item details sheet (LD-06).
     func openItem(_ name: String) -> ItemEditScreen {
-        itemRow(name).waitToAppear().staticTexts[name].tap()
+        reveal(itemRow(name)).tap()
         return ItemEditScreen(app: app).waitUntilShown()
     }
 
-    func openGroup(_ name: String) -> GroupEditScreen {
-        groupHeader(name).waitAndTap()
-        return GroupEditScreen(app: app).waitUntilShown()
+    /// Scrolls until `element` is on screen and not under the summary bar, which floats
+    /// over the bottom of the list (rows under it exist and look hittable to XCTest).
+    @discardableResult
+    func reveal(_ element: XCUIElement, maxSwipes: Int = 5) -> XCUIElement {
+        element.waitToAppear()
+        let list = app.collectionViews.firstMatch
+        for _ in 0..<maxSwipes {
+            let limit = summary.exists ? summary.frame.minY : app.frame.maxY
+            if element.isHittable && element.frame.maxY <= limit { break }
+            list.swipeUp(velocity: .slow)
+        }
+        return element
+    }
+
+    /// Group ⋯ → `action` ("rename", "addItem", "delete").
+    func groupMenuAction(_ group: String, _ action: String) {
+        groupMenu(group).waitAndTap()
+        app.buttons["group.menu.\(action)"].waitAndTap()
+    }
+
+    /// Group ⋯ → Delete Group → confirm (a group with items asks first, LD-05).
+    func deleteGroup(_ name: String, confirm: Bool = true) {
+        groupMenuAction(name, "delete")
+        if confirm {
+            app.buttons["groupDelete.confirmButton"].firstMatch.waitAndTap()
+        }
+        groupHeader(name).waitToDisappear()
+    }
+
+    /// Group ⋯ → Rename → alert with the name field → Save.
+    func renameGroup(_ name: String, to newName: String) {
+        groupMenuAction(name, "rename")
+        typeGroupName(newName, replacing: name)
+        groupHeader(newName).waitToAppear()
+    }
+
+    /// The New Group / Rename alert: type the name and confirm. Alerts don't expose
+    /// the identifiers of their fields, so the field and buttons are found in the alert.
+    func typeGroupName(_ newName: String, replacing old: String = "") {
+        let alert = app.alerts.firstMatch.waitToAppear()
+        let field = alert.textFields.firstMatch.waitToAppear()
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count + 2) + newName)
+        alert.buttons.element(boundBy: 1).waitAndTap() // Cancel, then Save / Add
+        alert.waitToDisappear()
     }
 
     func toggleShowCompleted() {
@@ -140,7 +193,7 @@ struct ListDetailScreen {
 
     /// Swipe left on a row and tap the system "Delete" action.
     func swipeToDelete(_ item: String) {
-        itemRow(item).scrollIntoView(within: app.collectionViews.firstMatch)
+        reveal(itemRow(item))
             .perform("Swipe left", until: app.buttons["Delete"].firstMatch) {
             $0.swipeLeft()
         }.waitAndTap()

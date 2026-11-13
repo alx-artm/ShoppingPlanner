@@ -80,9 +80,6 @@
         }
       }
     },
-    "%lld" : {
-
-    },
     "%lld items" : {
       "localizations" : {
         "en" : {
@@ -135,6 +132,59 @@
         }
       }
     },
+    "+%lld without price" : {
+      "comment" : "List summary bar: number of items that have no price yet.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "+%lld without price"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "+%lld without price"
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "+%lld без цены"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "+%lld без цены"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "+%lld без цены"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "+%lld без цены"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "A template fills in the name, icon and empty groups. You can change all of it." : {
       "localizations" : {
         "ru" : {
@@ -168,8 +218,16 @@
     "Add group" : {
 
     },
-    "Add new item..." : {
-
+    "Add Item" : {
+      "comment" : "Group menu / empty list: adds an item.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Добавить товар"
+          }
+        }
+      }
     },
     "All bought" : {
       "comment" : "Home status: every item of the list is checked off.",
@@ -258,6 +316,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Книги"
+          }
+        }
+      }
+    },
+    "Bought" : {
+      "comment" : "VoiceOver value of an item checkbox.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Куплено"
           }
         }
       }
@@ -351,6 +420,17 @@
         }
       }
     },
+    "Collapsed" : {
+      "comment" : "VoiceOver value of a group header.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Свёрнута"
+          }
+        }
+      }
+    },
     "Colleagues" : {
       "localizations" : {
         "ru" : {
@@ -436,7 +516,68 @@
       }
     },
     "Delete Group" : {
-
+      "comment" : "Group menu: deletes the group and its items.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалить группу"
+          }
+        }
+      }
+    },
+    "Delete group and %lld items?" : {
+      "comment" : "Confirmation before deleting a group that has items.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete group and %lld item?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete group and %lld items?"
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Удалить группу и %lld товар?"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Удалить группу и %lld товара?"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Удалить группу и %lld товаров?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Удалить группу и %lld товара?"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Delete group? \nAll items in this group will disappear forever." : {
 
@@ -541,6 +682,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Введите один эмодзи."
+          }
+        }
+      }
+    },
+    "Expanded" : {
+      "comment" : "VoiceOver value of a group header.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Развёрнута"
           }
         }
       }
@@ -652,6 +804,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Группа"
+          }
+        }
+      }
+    },
+    "Group Actions" : {
+      "comment" : "VoiceOver label of the group ⋯ menu.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Действия с группой"
+          }
+        }
+      }
+    },
+    "Group name" : {
+      "comment" : "Placeholder of the group name field in the New Group / Rename alert.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Название группы"
           }
         }
       }
@@ -920,6 +1094,17 @@
         }
       }
     },
+    "Not bought" : {
+      "comment" : "VoiceOver value of an item checkbox.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не куплено"
+          }
+        }
+      }
+    },
     "Note" : {
       "comment" : "Item details: section title and placeholder of the note field.",
       "localizations" : {
@@ -931,8 +1116,16 @@
         }
       }
     },
-    "Note: %@" : {
-
+    "of %@" : {
+      "comment" : "List summary bar, after the amount to buy: the planned total (\"of €909.79\").",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "из %@"
+          }
+        }
+      }
     },
     "Off" : {
       "localizations" : {
@@ -1130,12 +1323,45 @@
         }
       }
     },
+    "Rename" : {
+      "comment" : "Group menu: rename the group.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Переименовать"
+          }
+        }
+      }
+    },
+    "Rename Group" : {
+      "comment" : "Title of the rename alert.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Переименовать группу"
+          }
+        }
+      }
+    },
     "Room Renovation" : {
       "localizations" : {
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ремонт комнаты"
+          }
+        }
+      }
+    },
+    "Save" : {
+      "comment" : "Alert button: save the typed name.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сохранить"
           }
         }
       }
@@ -1371,6 +1597,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "осталось купить %@"
+          }
+        }
+      }
+    },
+    "To buy %@" : {
+      "comment" : "List summary bar while the keyboard is open (\"To buy €788.79\").",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Осталось %@"
           }
         }
       }

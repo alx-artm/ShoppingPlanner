@@ -39,10 +39,11 @@ final class PlannerUITests: XCTestCase {
         home.row("Eva").waitForLabel(containing: "180")
         home.row("Victoria").waitForLabel(containing: "315")
 
-        // Detail: list total and group totals add up (115 + 225 = 340).
+        // Detail: group headers show planned (145 + 225 = 370), the summary bar what is left (LD-04, LD-10).
         let alex = home.open(card: "Alex")
         alex.total.waitForLabel("$340.00")
-        alex.groupTotal("Vacation").waitForLabel("$115.00")
+        alex.planned.waitForLabel("of $370.00")
+        alex.groupTotal("Vacation").waitForLabel("$145.00")
         alex.groupTotal("Birthday").waitForLabel("$225.00")
         alex.itemTotal("BBQ food").waitForLabel("$110.00") // 55 × 2
         alex.checkbox("Flip-flops").waitForSelected(true)
@@ -65,7 +66,7 @@ final class PlannerUITests: XCTestCase {
         party.itemTotal("Cake").waitForLabel("$24.00")
         party.groupTotal("Food").waitForLabel("$24.00")
         party.total.waitForLabel("$24.00")
-        XCTAssertEqual(app.buttons["item.quantityButton.Cake"].label, "2")
+        party.itemDetail("Cake").waitForLabel("2 × $12.00")
 
         party.goBack().row("Party").waitForLabel(containing: "24")
     }
@@ -109,7 +110,7 @@ final class PlannerUITests: XCTestCase {
         alex.checkbox("Sunglasses").waitAndTap()
         alex.checkbox("Sunglasses").waitForSelected(true)
         alex.total.waitForLabel("$280.00")
-        alex.groupTotal("Vacation").waitForLabel("$55.00")
+        alex.groupTotal("Vacation").waitForLabel("$145.00") // planned doesn't change (LD-04)
 
         alex.checkbox("Sunglasses").tap()
         alex.checkbox("Sunglasses").waitForSelected(false)
@@ -127,7 +128,7 @@ final class PlannerUITests: XCTestCase {
 
         alex.itemRow("Swimsuit").waitToDisappear()
         alex.total.waitForLabel("$285.00")
-        alex.groupTotal("Vacation").waitForLabel("$60.00")
+        alex.groupTotal("Vacation").waitForLabel("$90.00")
         XCTAssertEqual(app.state, .runningForeground, "no crash after deleting the open item (BUG-04)")
     }
 
@@ -153,7 +154,7 @@ final class PlannerUITests: XCTestCase {
     func testDeleteGroupThenReopenList() {
         let alex = HomeScreen(app: Launch.app()).waitUntilShown().open(card: "Alex")
 
-        alex.openGroup("Vacation").delete()
+        alex.deleteGroup("Vacation")
 
         alex.groupHeader("Vacation").waitToDisappear()
         alex.itemRow("Sunglasses").waitToDisappear()
