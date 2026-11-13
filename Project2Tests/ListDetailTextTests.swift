@@ -116,44 +116,4 @@ struct ListDetailTextTests {
         #expect(bar.compact.contains(bar.toBuy))
         #expect(bar.compact.hasSuffix(percent))
     }
-
-    // MARK: - Inline entry (LD-13, LD-16, LD-17)
-
-    @Test("Return arrives as a newline: finished lines are items, the rest stays as typed",
-          arguments: [
-            ("Sofa", [], "Sofa", false),
-            ("Sofa\n", ["Sofa"], "", true),
-            ("  Sofa 450 x2  \n", ["Sofa 450 x2"], "", true),
-            ("Sofa\nLa", ["Sofa"], "La", true),
-            ("a\n\n b \nc", ["a", "b"], "c", true),
-            ("   \n", [], "", true),
-            ("  Lamp ", [], "  Lamp ", false),
-          ] as [(String, [String], String, Bool)])
-    func inlineEntry(text: String, lines: [String], rest: String, hasReturn: Bool) {
-        let entry = InlineEntry(text)
-        #expect(entry.finishedLines == lines)
-        #expect(entry.rest == rest)
-        #expect(entry.hasReturn == hasReturn)
-    }
-
-    @Test("A late echo of already saved lines is skipped, so nothing is saved twice")
-    func inlineEntryEcho() {
-        let first = InlineEntry("Ball\n")
-        #expect(first.finishedLines == ["Ball"])
-        #expect(first.consumed == "Ball\n")
-
-        // The text view reports its old text plus the next key before the reset arrives.
-        let echo = InlineEntry("Ball\nP", saved: first.consumed)
-        #expect(echo.skippedSaved)
-        #expect(echo.finishedLines.isEmpty)
-        #expect(echo.rest == "P")
-
-        let echoWithReturn = InlineEntry("Ball\nPuzzle\n", saved: first.consumed)
-        #expect(echoWithReturn.finishedLines == ["Puzzle"])
-        #expect(echoWithReturn.consumed == "Puzzle\n")
-
-        // The field caught up: "Ball" typed again on purpose is a new item.
-        #expect(InlineEntry("Ball\n", saved: "").finishedLines == ["Ball"])
-        #expect(!InlineEntry("P", saved: first.consumed).skippedSaved)
-    }
 }

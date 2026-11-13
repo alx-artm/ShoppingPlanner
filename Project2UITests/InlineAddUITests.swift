@@ -27,43 +27,82 @@ final class InlineAddUITests: XCTestCase {
 
         let field = party.startInline(in: "Food")
         let names = (1...10).map { "Item \($0)" }
-        for name in names {
+        for (index, name) in names.enumerated() {
             // `app.typeText` types into whatever has the focus, like a user does; typing into the
             // element would tap it first and hide a lost focus.
             app.typeText(name + "\n")
-            party.itemRow(name).waitToAppear()
+            let row = party.itemRow(name).waitToAppear()
             XCTAssertTrue(field.waitForKeyboardFocus(timeout: 2), "focus kept after \(name)")
             XCTAssertEqual(field.value as? String ?? "", field.placeholderValue ?? "", "an empty new line")
+            // In the order typed (checked pairwise: early rows scroll out of the lazy list).
+            if index > 0 {
+                let previous = party.itemRow(names[index - 1])
+                if previous.exists {
+                    XCTAssertLessThan(previous.frame.minY, row.frame.minY, "\(name) is below the previous item")
+                }
+            }
         }
         party.inlineDone()
-
-        var lastTop: CGFloat = -1
-        for name in names {
-            let row = party.itemRow(name).waitToAppear()
-            XCTAssertGreaterThan(row.frame.minY, lastTop, "\(name) is below the previous item")
-            lastTop = row.frame.minY
-        }
         XCTAssertFalse(app.sheets.firstMatch.exists)
     }
 
-    /// Fast typing, line after line with no pause, saves every line exactly once.
-    /// (One `typeText` per line: XCUITest's single-call burst of hundreds of keys per second
-    /// can still split a word around the field reset after Return; people don't type that fast.)
+    /// Typing faster than a person (one burst of keys with Returns) saves every line exactly
+    /// once and unbroken: the field empties itself inside the Return key press.
     @MainActor
     func testFastTypingSavesEachLineOnce() {
         let app = Launch.app()
         let eva = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
 
         eva.startInline(in: "Toys")
-        for line in ["Kite\n", "Ball\n", "Puzzle\n"] {
-            app.typeText(line)
-        }
+        app.typeText("Kite\nBall\nPuzzle\n")
         eva.inlineDone()
 
         for name in ["Kite", "Ball", "Puzzle"] {
             eva.itemRow(name).waitToAppear()
             XCTAssertEqual(app.buttons.matching(identifier: "item.row.\(name)").count, 1, name)
         }
+    }
+
+    /// Typed character by character at a normal pace, right after the field gets the focus
+    /// and right after each Return: every name is saved exactly as typed.
+    @MainActor
+    func testCharacterByCharacterNamesAreExact() {
+        let app = Launch.app()
+        let eva = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
+        let names = ["Puzzle", "Kite", "Ball"]
+
+        eva.startInline(in: "Toys")
+        for name in names {
+            for character in name { app.typeText(String(character)) }
+            app.typeText("\n")
+        }
+        eva.inlineDone()
+
+        for name in names {
+            eva.itemRow(name).waitToAppear()
+        }
+        XCTAssertFalse(app.buttons["item.row.uzzleP"].exists)
+    }
+
+    /// The next letters arrive in the same burst as Return (fast typist, hardware keyboard).
+    /// The screen rewrites the field after Return; the caret must stay at the end, so the
+    /// text left in the field is exactly the last word typed, never "uzzleP" (5 rounds).
+    @MainActor
+    func testLetterRightAfterReturnKeepsCaretAtEnd() {
+        let app = Launch.app()
+        let eva = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
+
+        let field = eva.startInline(in: "Toys")
+        for round in 1...5 {
+            app.typeText((round == 1 ? "" : "\n") + "Kite\nBall\nPuzzle")
+            XCTAssertEqual(field.value as? String, "Puzzle", "round \(round)")
+        }
+        app.typeText("\n")
+        eva.inlineDone()
+
+        // 3 seed toys + 15 new ones, none split in two (rows of a long list aren't all on screen).
+        eva.groupHeader("Toys").tap()
+        eva.groupCount("Toys").waitForLabel("(18)")
     }
 
     /// LD-12 / LD-16 / LD-17: trimmed on commit, typed text kept as a name, no parsing.

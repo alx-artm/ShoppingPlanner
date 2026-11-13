@@ -34,8 +34,11 @@ struct ListViewInside: View {
     @State private var inline: InlineAdd?
     @State private var inlineDraft = ItemDraft()
     @FocusState private var inlineFocus: InlineField?
-    /// Lines of the name field already saved by the last Return (see `InlineEntry`).
-    @State private var inlineSavedText = ""
+    /// The inline name field has the keyboard (a UIKit field, outside `inlineFocus`).
+    @State private var isEditingInlineName = false
+
+    /// Any inline field has the keyboard.
+    private var isTypingInline: Bool { isEditingInlineName || inlineFocus != nil }
 
     /// "Reorder Items": the list shows drag handles for the not-bought items.
     @State private var editMode: EditMode = .inactive
@@ -84,7 +87,7 @@ struct ListViewInside: View {
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
                 // Always visible, never scrolls away (LD-10); one line while typing (owner decision).
-                ListSummaryBar(list: list, isCompact: inlineFocus != nil)
+                ListSummaryBar(list: list, isCompact: isTypingInline)
             }
             .animation(reduceMotion ? nil : .snappy, value: deletedItem)
         }
@@ -108,13 +111,13 @@ struct ListViewInside: View {
                 if inline != nil { accessoryBar }
             }
         }
-        .onChange(of: inlineFocus) { _, focus in
-            guard focus == nil, inline != nil else { return }
-            // Focus can pass through nil between two fields or on Return; only a focus
-            // that stays away means the user left the row (tap elsewhere, back).
+        .onChange(of: isTypingInline) { _, isTyping in
+            guard !isTyping, inline != nil else { return }
+            // Focus passes through "none" between two fields; only a focus that stays
+            // away means the user left the row (tap elsewhere, back).
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(300))
-                if inlineFocus == nil, inline != nil { finishInline() }
+                if !isTypingInline, inline != nil { finishInline() }
             }
         }
         .navigationTitle(list.name)
@@ -216,21 +219,12 @@ struct ListViewInside: View {
             }
 
             if inline?.groupID == group.uuid {
-                InlineItemRow(draft: $inlineDraft, extras: inline?.extras ?? InlineExtras(),
-                              currencyCode: list.currencyCode, focus: $inlineFocus)
+                InlineItemRow(draft: $inlineDraft, isEditingName: $isEditingInlineName,
+                              extras: inline?.extras ?? InlineExtras(),
+                              currencyCode: list.currencyCode, focus: $inlineFocus,
+                              onReturn: submitInline,
+                              accessory: nameFieldAccessoryBar)
                     .id(InlineAdd.rowID)
-                    .onChange(of: inlineDraft.name) { _, name in
-                        // Return (or a pasted list of lines): every finished line is an item.
-                        let entry = InlineEntry(name, saved: inlineSavedText)
-                        guard entry.hasReturn else {
-                            inlineSavedText = ""
-                            // A late echo of saved text: keep only what is new.
-                            if entry.skippedSaved { inlineDraft.name = entry.rest }
-                            return
-                        }
-                        inlineSavedText = entry.consumed
-                        submitInline(names: entry.finishedLines, rest: entry.rest)
-                    }
             } else {
                 Button {
                     startInline(in: group)
@@ -333,15 +327,25 @@ struct ListViewInside: View {
             .accessibilityIdentifier("inline.accessory.done")
     }
 
+    /// The same bar for the name field, which is a UIKit field: SwiftUI's keyboard toolbar
+    /// doesn't reach it, so it is hosted as the field's input accessory view.
+    private var nameFieldAccessoryBar: some View {
+        HStack(spacing: 12) { accessoryBar }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.glass)
+            .controlSize(.large)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 6)
+            .tint(.primary)
+    }
+
     /// "＋ New Item" → a text field with the keyboard. Another open draft is saved first.
     private func startInline(in group: GroupModel, createdGroup: Bool = false) {
         if inline != nil { commitInline() }
         uiState.setExpanded(true, for: group.uuid)
         inlineDraft = ItemDraft(groupID: group.uuid)
-        inlineSavedText = ""
         inline = InlineAdd(groupID: group.uuid, createdGroup: createdGroup)
-        // After the row is on screen: focusing a field that doesn't exist yet is ignored.
-        Task { @MainActor in inlineFocus = .name }
+        isEditingInlineName = true
     }
 
     /// Saves a draft with a name (LD-12); returns the new item.
@@ -356,29 +360,20 @@ struct ListViewInside: View {
     }
 
     /// Return: save and start the next empty line in the same group, keeping the keyboard (LD-13).
-    /// The first line gets the price / quantity / link of the draft; more pasted lines are plain
-    /// items. Return on an empty line closes inline add.
-    private func submitInline(names: [String], rest: String) {
+    /// The name field has already emptied itself. Return on an empty line closes inline add.
+    private func submitInline(_ line: String) {
         guard let groupID = inline?.groupID else { return }
-        guard !names.isEmpty else {
-            inlineDraft.name = rest
+        var draft = inlineDraft
+        draft.name = line
+        guard draft.hasValidName else {
             finishInline()
             return
         }
-        // The field's text is written once, at the end: every write moves its cursor.
-        var draft = inlineDraft
-        for (index, name) in names.enumerated() {
-            if index > 0 { draft = ItemDraft(groupID: groupID) }
-            draft.name = name
-            commitInline(draft)
-        }
-        var next = ItemDraft(groupID: groupID)
-        next.name = rest
-        inlineDraft = next
+        commitInline(draft)
+        inlineDraft = ItemDraft(groupID: groupID)
         inline?.extras = InlineExtras()
         inline?.createdGroup = false
         inline?.submitCount += 1
-        inlineFocus = .name
     }
 
     /// Done / focus left: save a non-empty draft, drop an empty one, close.
@@ -387,6 +382,7 @@ struct ListViewInside: View {
         let saved = commitInline()
         inline = nil
         inlineFocus = nil
+        isEditingInlineName = false
         // LD-05a: the "Items" group made for the first item goes away if nothing was added.
         if saved == nil, current.createdGroup,
            let group = list.groups?.first(where: { $0.uuid == current.groupID }),
@@ -400,6 +396,7 @@ struct ListViewInside: View {
         let item = commitInline()
         inline = nil
         inlineFocus = nil
+        isEditingInlineName = false
         if let item { sheet = .editItem(item, focusFirstEmpty: true) }
     }
 

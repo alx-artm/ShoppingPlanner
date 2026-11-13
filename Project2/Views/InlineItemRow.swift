@@ -9,15 +9,15 @@
 //  and no parsing ("Sofa 450 x2" is a name, LD-17).
 //
 //  The draft and the focus belong to the list screen, which commits them
-//  through `PlannerStore` (Return = a newline in the name, see `InlineEntry`);
-//  this view only lays the fields out.
+//  through `PlannerStore`; this view only lays the fields out.
 //
 
 import SwiftUI
 
-/// Which inline field has the keyboard.
+/// Which SwiftUI inline field has the keyboard (the name field is tracked separately,
+/// it is a UIKit field).
 enum InlineField: Hashable {
-    case name, price, link
+    case price, link
 }
 
 /// The extra fields shown in the inline row, opened from the accessory bar.
@@ -27,11 +27,17 @@ struct InlineExtras: Equatable {
     var showsLink = false
 }
 
-struct InlineItemRow: View {
+struct InlineItemRow<Accessory: View>: View {
     @Binding var draft: ItemDraft
+    /// The name field has the keyboard (it is a UIKit field, see `InlineNameField`).
+    @Binding var isEditingName: Bool
     let extras: InlineExtras
     let currencyCode: String
     let focus: FocusState<InlineField?>.Binding
+    /// Return in the name field, with the line typed.
+    let onReturn: (String) -> Void
+    /// The keyboard accessory bar of the name field.
+    let accessory: Accessory
 
     @Environment(\.locale) private var locale
     @ScaledMetric(relativeTo: .title2) private var checkboxSize: CGFloat = 44
@@ -44,14 +50,9 @@ struct InlineItemRow: View {
                     .foregroundStyle(.quaternary)
                     .frame(width: checkboxSize, height: checkboxSize)
                     .accessibilityHidden(true)
-                // Multi-line on purpose: Return types a newline (handled by the list screen as
-                // "save and next") instead of ending editing, so the keyboard never drops
-                // between items (LD-13). A single-line field resigns on Return, and focusing
-                // it again loses the race with that.
-                TextField("Item name", text: $draft.name, axis: .vertical)
-                    .focused(focus, equals: .name)
-                    .submitLabel(.next)
-                    .accessibilityIdentifier("inline.nameField")
+                InlineNameField(text: $draft.name, isEditing: $isEditingName, onReturn: onReturn,
+                                accessory: accessory)
+                    .frame(minHeight: 44)
             }
 
             Group {
