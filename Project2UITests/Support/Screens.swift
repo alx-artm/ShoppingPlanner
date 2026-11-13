@@ -143,22 +143,39 @@ struct ListDetailScreen {
         }.waitAndTap()
     }
 
-    /// "＋ New Item" in `group` → name, price, quantity → Done.
+    /// "＋ New Item" in `group` → inline: name, [Price], [Qty] → Done (spec 04 Inline add).
     @discardableResult
     func addItem(named name: String, price: String? = nil, quantity: Int = 1,
                  to group: String) -> ListDetailScreen {
-        reveal(addItemButton(group)).tap()
-        let editor = ItemEditScreen(app: app).waitUntilShown()
-        editor.nameField.tap()
-        editor.nameField.typeText(name)
+        let field = startInline(in: group)
+        field.typeText(name)
         if let price {
-            editor.priceField.tap()
-            editor.priceField.typeText(price)
+            app.buttons["inline.accessory.price"].waitAndTap()
+            app.textFields["inline.priceField"].waitToAppear().typeText(price)
         }
-        for _ in 1..<max(quantity, 1) { editor.quantityIncrement.tap() }
-        editor.doneButton.waitAndTap()
+        if quantity > 1 {
+            app.buttons["inline.accessory.quantity"].waitAndTap()
+            let increment = app.buttons["inline.quantityStepper-Increment"].waitToAppear()
+            for _ in 1..<quantity { increment.tap() }
+        }
+        inlineDone()
         itemRow(name).waitToAppear()
         return self
+    }
+
+    /// "＋ New Item" in `group` → the inline name field, focused.
+    @discardableResult
+    func startInline(in group: String) -> XCUIElement {
+        reveal(addItemButton(group)).tap()
+        let field = app.textFields["inline.nameField"].waitToAppear()
+        XCTAssertTrue(field.waitForKeyboardFocus(), "the inline field has the keyboard")
+        return field
+    }
+
+    /// Done on the keyboard's accessory bar: saves a non-empty draft and closes inline add.
+    func inlineDone() {
+        app.buttons["inline.accessory.done"].waitAndTap()
+        app.textFields["inline.nameField"].waitToDisappear()
     }
 
     /// Tap the row → item details sheet (LD-06).

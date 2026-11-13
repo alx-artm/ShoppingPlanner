@@ -3,9 +3,15 @@
 //  Project2
 //
 //  The list screen (spec 04, UX_REVIEW §5): groups as collapsible sections,
-//  item rows with swipes and a context menu, "＋ Add Group" at the end, and
-//  the summary bar pinned above the bottom edge. Everything that changes data
-//  goes through `PlannerStore`.
+//  item rows with swipes and a context menu, inline adding of items with a
+//  keyboard accessory bar, "＋ Add Group" at the end, and the summary bar
+//  pinned above the bottom edge. Everything that changes data goes through
+//  `PlannerStore`.
+//
+//  Inline add (LD-12...LD-17): "＋ New Item" becomes a text field. Return
+//  saves the item and keeps the keyboard for the next one; Done, ⓘ or leaving
+//  the field saves a non-empty draft and drops an empty one. The draft lives
+//  here, so nothing is inserted before a commit.
 //
 
 import SwiftUI
@@ -24,6 +30,11 @@ struct ListViewInside: View {
     @State private var nameAlert: GroupNameAlert?
     @State private var groupName = ""
     @State private var groupToDelete: GroupModel?
+    /// The group being added to inline, `nil` when inline add is closed.
+    @State private var inline: InlineAdd?
+    @State private var inlineDraft = ItemDraft()
+    @FocusState private var inlineFocus: InlineField?
+
     /// "Reorder Items": the list shows drag handles for the not-bought items.
     @State private var editMode: EditMode = .inactive
     private var isReorderingItems: Bool { editMode.isEditing }
@@ -38,6 +49,7 @@ struct ListViewInside: View {
     var body: some View {
         let groups = list.sortedGroups
 
+        ScrollViewReader { proxy in
         List {
             ForEach(groups) { group in
                 section(for: group)
@@ -53,6 +65,13 @@ struct ListViewInside: View {
         }
         .listStyle(.plain)
         .environment(\.editMode, $editMode)
+        .onChange(of: inline) { old, new in
+            // The new empty line after Return, and fields opened from the accessory bar,
+            // stay above the keyboard and the summary bar.
+            guard let new, old?.groupID == new.groupID else { return }
+            withAnimation { proxy.scrollTo(InlineAdd.rowID, anchor: .bottom) }
+        }
+        }
         .overlay {
             if groups.isEmpty { emptyState }
         }
@@ -62,8 +81,8 @@ struct ListViewInside: View {
                     UndoToast(deleted: deletedItem) { undoDelete(deletedItem) }
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
-                // Always visible, never scrolls away (LD-10).
-                ListSummaryBar(list: list)
+                // Always visible, never scrolls away (LD-10); one line while typing (owner decision).
+                ListSummaryBar(list: list, isCompact: inlineFocus != nil)
             }
             .animation(reduceMotion ? nil : .snappy, value: deletedItem)
         }
@@ -83,14 +102,26 @@ struct ListViewInside: View {
             } else {
                 ToolbarItem(placement: .topBarTrailing) { listMenu }
             }
+            ToolbarItemGroup(placement: .keyboard) {
+                if inline != nil { accessoryBar }
+            }
+        }
+        .onChange(of: inlineFocus) { _, focus in
+            guard focus == nil, inline != nil else { return }
+            // Focus can pass through nil between two fields or on Return; only a focus
+            // that stays away means the user left the row (tap elsewhere, back).
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(300))
+                if inlineFocus == nil, inline != nil { finishInline() }
+            }
         }
         .navigationTitle(list.name)
         .navigationBarTitleDisplayMode(.inline)
 
         .sheet(item: $sheet) { sheet in
             switch sheet {
-            case .newItem(let group): ItemView(mode: .create(group))
-            case .editItem(let item): ItemView(mode: .edit(item))
+            case .editItem(let item, let focusFirstEmpty):
+                ItemView(item: item, focusFirstEmpty: focusFirstEmpty)
             case .listInfo: ListInfoView(mode: .edit(list))
             case .reorderGroups: ReorderGroupsView(list: list)
             }
@@ -182,28 +213,37 @@ struct ListViewInside: View {
                 }
             }
 
-            Button {
-                sheet = .newItem(group)
-            } label: {
-                Label("New Item", systemImage: "plus")
-                    .foregroundStyle(.tint)
+            if inline?.groupID == group.uuid {
+                InlineItemRow(draft: $inlineDraft, extras: inline?.extras ?? InlineExtras(),
+                              currencyCode: list.currencyCode, focus: $inlineFocus)
+                    .id(InlineAdd.rowID)
+                    .onChange(of: inlineDraft.name) { _, name in
+                        // Return (or a pasted list of lines): every finished line is an item.
+                        let entry = InlineEntry(name)
+                        guard entry.hasReturn else { return }
+                        submitInline(names: entry.finishedLines, rest: entry.rest)
+                    }
+            } else {
+                Button {
+                    startInline(in: group)
+                } label: {
+                    Label("New Item", systemImage: "plus")
+                        .foregroundStyle(.tint)
+                }
+                .accessibilityIdentifier("group.addItemButton.\(group.name)")
             }
-            .accessibilityIdentifier("group.addItemButton.\(group.name)")
         } header: {
             GroupHeaderView(
                 group: group,
                 onRename: { startRename(group) },
-                onAddItem: {
-                    uiState.setExpanded(true, for: group.uuid)
-                    sheet = .newItem(group)
-                },
+                onAddItem: { startInline(in: group) },
                 onDelete: { requestDelete(group) }
             )
         }
     }
 
     private func row(_ item: ItemModel) -> some View {
-        ItemRowView(item: item) { sheet = .editItem(item) }
+        ItemRowView(item: item) { sheet = .editItem(item, focusFirstEmpty: false) }
             // LD-09: Done / Undo on the leading edge, Delete (with an undo toast) on the trailing one.
             .swipeActions(edge: .leading) {
                 Button {
@@ -229,7 +269,7 @@ struct ListViewInside: View {
 
     @ViewBuilder
     private func itemMenu(_ item: ItemModel) -> some View {
-        Button("Edit", systemImage: "pencil") { sheet = .editItem(item) }
+        Button("Edit", systemImage: "pencil") { sheet = .editItem(item, focusFirstEmpty: false) }
             .accessibilityIdentifier("item.menu.edit")
         Button("Duplicate", systemImage: "plus.square.on.square") {
             animated { store.duplicateItem(item) }
@@ -256,6 +296,102 @@ struct ListViewInside: View {
         Divider()
         Button("Delete", systemImage: "trash", role: .destructive) { delete(item) }
             .accessibilityIdentifier("item.menu.delete")
+    }
+
+    // MARK: - Inline add
+
+    /// Above the keyboard: [Price] [Qty] [Link] … [ⓘ] [Done] (spec 04 Inline add, LD-15).
+    @ViewBuilder
+    private var accessoryBar: some View {
+        Button("Price", systemImage: "tag") {
+            inline?.extras.showsPrice = true
+            inlineFocus = .price
+        }
+        .accessibilityIdentifier("inline.accessory.price")
+        Button("Quantity", systemImage: "number") {
+            inline?.extras.showsQuantity.toggle()
+        }
+        .accessibilityIdentifier("inline.accessory.quantity")
+        Button("Link", systemImage: "link") {
+            inline?.extras.showsLink = true
+            inlineFocus = .link
+        }
+        .accessibilityIdentifier("inline.accessory.link")
+        Spacer()
+        Button("Details", systemImage: "info.circle") { openInlineDetails() }
+            .disabled(!inlineDraft.hasValidName)
+            .accessibilityIdentifier("inline.accessory.details")
+        Button("Done", systemImage: "checkmark") { finishInline() }
+            .accessibilityIdentifier("inline.accessory.done")
+    }
+
+    /// "＋ New Item" → a text field with the keyboard. Another open draft is saved first.
+    private func startInline(in group: GroupModel, createdGroup: Bool = false) {
+        if inline != nil { commitInline() }
+        uiState.setExpanded(true, for: group.uuid)
+        inlineDraft = ItemDraft(groupID: group.uuid)
+        inline = InlineAdd(groupID: group.uuid, createdGroup: createdGroup)
+        // After the row is on screen: focusing a field that doesn't exist yet is ignored.
+        Task { @MainActor in inlineFocus = .name }
+    }
+
+    /// Saves a draft with a name (LD-12); returns the new item.
+    @discardableResult
+    private func commitInline(_ draft: ItemDraft? = nil) -> ItemModel? {
+        let draft = draft ?? inlineDraft
+        guard let inline, draft.hasValidName,
+              let group = list.groups?.first(where: { $0.uuid == inline.groupID }) else { return nil }
+        var item: ItemModel?
+        animated { item = store.addItem(from: draft, to: group) }
+        return item
+    }
+
+    /// Return: save and start the next empty line in the same group, keeping the keyboard (LD-13).
+    /// The first line gets the price / quantity / link of the draft; more pasted lines are plain
+    /// items. Return on an empty line closes inline add.
+    private func submitInline(names: [String], rest: String) {
+        guard let groupID = inline?.groupID else { return }
+        guard !names.isEmpty else {
+            inlineDraft.name = rest
+            finishInline()
+            return
+        }
+        // The field's text is written once, at the end: every write moves its cursor.
+        var draft = inlineDraft
+        for (index, name) in names.enumerated() {
+            if index > 0 { draft = ItemDraft(groupID: groupID) }
+            draft.name = name
+            commitInline(draft)
+        }
+        var next = ItemDraft(groupID: groupID)
+        next.name = rest
+        inlineDraft = next
+        inline?.extras = InlineExtras()
+        inline?.createdGroup = false
+        inline?.submitCount += 1
+        inlineFocus = .name
+    }
+
+    /// Done / focus left: save a non-empty draft, drop an empty one, close.
+    private func finishInline() {
+        guard let current = inline else { return }
+        let saved = commitInline()
+        inline = nil
+        inlineFocus = nil
+        // LD-05a: the "Items" group made for the first item goes away if nothing was added.
+        if saved == nil, current.createdGroup,
+           let group = list.groups?.first(where: { $0.uuid == current.groupID }),
+           (group.items ?? []).isEmpty {
+            store.deleteGroup(group)
+        }
+    }
+
+    /// ⓘ: save, then open item details on the first empty field (spec 05 ID-09).
+    private func openInlineDetails() {
+        let item = commitInline()
+        inline = nil
+        inlineFocus = nil
+        if let item { sheet = .editItem(item, focusFirstEmpty: true) }
     }
 
     // MARK: - Toolbar menu
@@ -360,10 +496,11 @@ struct ListViewInside: View {
         deletedItem = nil
     }
 
-    /// LD-05a: without groups the first item goes into a new group "Items".
+    /// LD-05a: without groups the first item goes into a new group "Items" (removed again
+    /// if the user adds nothing).
     private func addFirstItem() {
         let group = store.createGroup(name: String(localized: "Items", comment: "Name of the group created for the first item of a list without groups."), in: list)
-        sheet = .newItem(group)
+        startInline(in: group, createdGroup: true)
     }
 
     /// LD-01: a new group goes last; its name is typed right away.
@@ -398,19 +535,29 @@ struct ListViewInside: View {
 
 /// The sheets of the list screen; one `sheet(item:)`.
 private enum ListSheet: Identifiable {
-    case newItem(GroupModel)
-    case editItem(ItemModel)
+    case editItem(ItemModel, focusFirstEmpty: Bool)
     case listInfo
     case reorderGroups
 
     var id: String {
         switch self {
-        case .newItem(let group): "newItem-\(group.uuid)"
-        case .editItem(let item): "editItem-\(item.uuid)"
+        case .editItem(let item, _): "editItem-\(item.uuid)"
         case .listInfo: "listInfo"
         case .reorderGroups: "reorderGroups"
         }
     }
+}
+
+/// Inline add in one group (spec 04 Inline add).
+private struct InlineAdd: Equatable {
+    static let rowID = "inlineItemRow"
+
+    var groupID: UUID
+    var extras = InlineExtras()
+    /// The group was made for this first item (LD-05a).
+    var createdGroup = false
+    /// Counts Returns, to scroll the new empty line into view.
+    var submitCount = 0
 }
 
 /// New Group or Rename: the same alert with a text field.

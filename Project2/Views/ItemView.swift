@@ -5,22 +5,18 @@
 //  Item details (spec 05, UX_REVIEW §6): name, price per unit, quantity,
 //  total, link, note, group, delete. The sheet edits an `ItemDraft`, so ✕
 //  discards everything and ✓ saves everything in one go (ID-01).
+//  New items are added inline on the list screen (spec 04), not here.
 //
 
 import SwiftUI
 
 struct ItemView: View {
-    enum Mode {
-        case create(GroupModel)
-        case edit(ItemModel)
-    }
-
     /// Fields that can take the keyboard focus.
     enum Field: Hashable {
         case name, price, quantity, link, note
     }
 
-    let mode: Mode
+    let item: ItemModel
 
     @Environment(PlannerStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -39,19 +35,14 @@ struct ItemView: View {
 
     /// - Parameter focusFirstEmpty: opened from inline add (ⓘ): focus the first empty
     ///   field of Price, Link, Note (ID-09).
-    init(mode: Mode, focusFirstEmpty: Bool = false) {
-        self.mode = mode
-        let draft = switch mode {
-        case .create(let group): ItemDraft(groupID: group.uuid)
-        case .edit(let item): ItemDraft(item: item)
-        }
+    init(item: ItemModel, focusFirstEmpty: Bool = false) {
+        self.item = item
+        let draft = ItemDraft(item: item)
         initialDraft = draft
         _draft = State(initialValue: draft)
         _quantityText = State(initialValue: "\(draft.quantity)")
 
-        if case .create = mode {
-            initialFocus = .name
-        } else if focusFirstEmpty {
+        if focusFirstEmpty {
             initialFocus = if draft.price == nil { .price }
                 else if draft.urlString.isEmpty { .link }
                 else if draft.notes.isEmpty { .note }
@@ -61,15 +52,8 @@ struct ItemView: View {
         }
     }
 
-    private var isNew: Bool {
-        if case .create = mode { true } else { false }
-    }
-
     private var list: ListModel? {
-        switch mode {
-        case .create(let group): group.list
-        case .edit(let item): item.parentList
-        }
+        item.parentList
     }
 
     private var currencyCode: String {
@@ -130,18 +114,16 @@ struct ItemView: View {
                     }
                 }
 
-                if !isNew {
-                    Section {
-                        Button("Delete Item", role: .destructive) {
-                            showsDeleteConfirmation = true
-                        }
-                        .frame(maxWidth: .infinity)
-                        .accessibilityIdentifier("itemEdit.deleteButton")
+                Section {
+                    Button("Delete Item", role: .destructive) {
+                        showsDeleteConfirmation = true
                     }
+                    .frame(maxWidth: .infinity)
+                    .accessibilityIdentifier("itemEdit.deleteButton")
                 }
             }
             .accessibilityIdentifier("itemEdit.form")
-            .navigationTitle(isNew ? Text("New Item") : Text("Item"))
+            .navigationTitle(Text("Item"))
             .navigationBarTitleDisplayMode(.inline)
             .scrollDismissesKeyboard(.interactively)
             .toolbar {
@@ -188,7 +170,7 @@ struct ItemView: View {
             if old == .quantity { quantityText = "\(draft.quantity)" }
         }
         .onDisappear {
-            if isPendingDeletion, case .edit(let item) = mode {
+            if isPendingDeletion {
                 isPendingDeletion = false
                 store.deleteItem(item)
             }
@@ -272,22 +254,11 @@ struct ItemView: View {
     // MARK: - Commit
 
     private func commit() {
-        switch mode {
-        case .create(let group):
-            let target = list?.groups?.first { $0.uuid == draft.groupID } ?? group
-            store.addItem(from: draft, to: target)
-        case .edit(let item):
-            store.updateItem(item, with: draft)
-        }
+        store.updateItem(item, with: draft)
     }
 }
 
-#Preview("Edit") {
-    ItemView(mode: .edit(SampleData.shared.evaList.sortedGroups[0].sortedItems[0]))
-        .sampleDataEnvironment()
-}
-
-#Preview("New") {
-    ItemView(mode: .create(SampleData.shared.evaList.sortedGroups[0]))
+#Preview {
+    ItemView(item: SampleData.shared.evaList.sortedGroups[0].sortedItems[0])
         .sampleDataEnvironment()
 }

@@ -53,6 +53,7 @@
 		5FB5C0DE2EF500010000000A /* ListSummaryBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB5C0DE2EF5000100000009 /* ListSummaryBar.swift */; };
 		5FB5C0DE2EF500010000000C /* ReorderGroupsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB5C0DE2EF500010000000B /* ReorderGroupsView.swift */; };
 		5FB5C0DE2EF500010000000E /* UndoToast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB5C0DE2EF500010000000D /* UndoToast.swift */; };
+		5FB5C0DE2EF5000100000010 /* InlineItemRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB5C0DE2EF500010000000F /* InlineItemRow.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -122,6 +123,7 @@
 		5FB5C0DE2EF5000100000009 /* ListSummaryBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListSummaryBar.swift; sourceTree = "<group>"; };
 		5FB5C0DE2EF500010000000B /* ReorderGroupsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReorderGroupsView.swift; sourceTree = "<group>"; };
 		5FB5C0DE2EF500010000000D /* UndoToast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoToast.swift; sourceTree = "<group>"; };
+		5FB5C0DE2EF500010000000F /* InlineItemRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineItemRow.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -242,6 +244,7 @@
 				5FB5C0DE2EF5000100000009 /* ListSummaryBar.swift */,
 				5FB5C0DE2EF500010000000B /* ReorderGroupsView.swift */,
 				5FB5C0DE2EF500010000000D /* UndoToast.swift */,
+				5FB5C0DE2EF500010000000F /* InlineItemRow.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -448,6 +451,7 @@
 				5FB5C0DE2EF500010000000A /* ListSummaryBar.swift in Sources */,
 				5FB5C0DE2EF500010000000C /* ReorderGroupsView.swift in Sources */,
 				5FB5C0DE2EF500010000000E /* UndoToast.swift in Sources */,
+				5FB5C0DE2EF5000100000010 /* InlineItemRow.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

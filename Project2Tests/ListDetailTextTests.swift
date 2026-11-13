@@ -116,4 +116,23 @@ struct ListDetailTextTests {
         #expect(bar.compact.contains(bar.toBuy))
         #expect(bar.compact.hasSuffix(percent))
     }
+
+    // MARK: - Inline entry (LD-13, LD-16, LD-17)
+
+    @Test("Return arrives as a newline: finished lines are items, the rest stays as typed",
+          arguments: [
+            ("Sofa", [], "Sofa", false),
+            ("Sofa\n", ["Sofa"], "", true),
+            ("  Sofa 450 x2  \n", ["Sofa 450 x2"], "", true),
+            ("Sofa\nLa", ["Sofa"], "La", true),
+            ("a\n\n b \nc", ["a", "b"], "c", true),
+            ("   \n", [], "", true),
+            ("  Lamp ", [], "  Lamp ", false),
+          ] as [(String, [String], String, Bool)])
+    func inlineEntry(text: String, lines: [String], rest: String, hasReturn: Bool) {
+        let entry = InlineEntry(text)
+        #expect(entry.finishedLines == lines)
+        #expect(entry.rest == rest)
+        #expect(entry.hasReturn == hasReturn)
+    }
 }

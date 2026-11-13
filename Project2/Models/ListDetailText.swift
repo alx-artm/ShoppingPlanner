@@ -90,3 +90,23 @@ enum GroupHeaderText {
             : "—"
     }
 }
+
+/// The text of the inline name field (spec 04 Inline add). The field is multi-line, so
+/// Return arrives as a newline: every line before the last newline is a finished item,
+/// the text after it is the next draft. Names are trimmed only here, at commit (LD-16),
+/// and never parsed ("Sofa 450 x2" is a name, LD-17).
+struct InlineEntry: Equatable, Sendable {
+    /// Names to save, trimmed, blank lines dropped.
+    let finishedLines: [String]
+    /// What stays in the field, untouched.
+    let rest: String
+    /// The text had at least one Return.
+    let hasReturn: Bool
+
+    init(_ text: String) {
+        let lines = text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline).map(String.init)
+        hasReturn = lines.count > 1
+        rest = hasReturn ? (lines.last ?? "") : text
+        finishedLines = lines.dropLast().compactMap(PlannerStore.normalizedName)
+    }
+}

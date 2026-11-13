@@ -88,16 +88,18 @@ final class PlannerUITests: XCTestCase {
         }
     }
 
-    /// DM-12: a new item needs a name, Done stays disabled for a blank one.
+    /// DM-12: a new item needs a name: Return on a blank inline line saves nothing.
     @MainActor
     func testNewItemWithoutNameCannotBeSaved() {
         let app = Launch.app()
         let list = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
+        let before = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'item.row.'")).count
 
-        list.addItemButton("Toys").waitAndTap()
-        let editor = ItemEditScreen(app: app).waitUntilShown()
-        editor.nameField.typeText("   ")
-        XCTAssertFalse(editor.doneButton.isEnabled)
+        list.startInline(in: "Toys")
+        app.typeText("   \n")
+
+        list.addItemButton("Toys").waitToAppear() // a blank Return closes inline add
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'item.row.'")).count, before)
     }
 
     // MARK: - Complete (DM-16, DM-23)

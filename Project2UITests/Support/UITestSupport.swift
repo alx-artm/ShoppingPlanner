@@ -156,6 +156,14 @@ extension XCUIElement {
                        "label is '\(label)', expected it to contain '\(fragment)'", file: file, line: line)
     }
 
+    /// Waits until the element has the keyboard focus; `false` after the timeout.
+    @MainActor
+    func waitForKeyboardFocus(timeout: TimeInterval = uiTimeout) -> Bool {
+        let predicate = NSPredicate(format: "hasKeyboardFocus == true")
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: self)
+        return XCTWaiter().wait(for: [expectation], timeout: timeout) == .completed
+    }
+
     /// Waits until the element is (not) enabled, e.g. ✓ after a change.
     @MainActor
     func waitForEnabled(_ enabled: Bool, timeout: TimeInterval = uiTimeout,
