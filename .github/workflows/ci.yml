@@ -10,12 +10,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # One job definition, run twice in parallel by the matrix: "Unit Tests" and
-  # "UI Tests". Each instance gets its own runner and simulator, so the fast unit
-  # tests report in a few minutes while the slow UI tests are still running, and
-  # a failure in one doesn't hide the result of the other (fail-fast: false).
-  # The matrix keeps the shared steps (Xcode, simulator, build) in one place;
-  # only the test target and the artifact name differ.
+  # One job definition, run three times in parallel by the matrix: "Unit Tests"
+  # and the UI tests split into two shards. Each instance gets its own runner and
+  # simulator, so the fast unit tests report in a few minutes while the slow UI
+  # tests are still running, and a failure in one doesn't hide the result of the
+  # others (fail-fast: false). The matrix keeps the shared steps (Xcode,
+  # simulator, build) in one place; only the tests to run and the artifact differ.
+  #
+  # Why two UI shards: the UI tests alone take ~32 min on a fast local Mac and
+  # a hosted runner is slower, so one UI job would hit timeout-minutes. The
+  # shards are split by test class and balanced by measured time (~16 min each
+  # locally). A new UI test class must be added to one of the two lists below,
+  # otherwise it doesn't run in CI.
   test:
     name: ${{ matrix.name }}
     runs-on: macos-26
@@ -25,11 +31,21 @@ jobs:
       matrix:
         include:
           - name: Unit Tests
-            target: Project2Tests
+            only-testing: -only-testing:Project2Tests
             artifact: UnitTestResults
-          - name: UI Tests
-            target: Project2UITests
-            artifact: UITestResults
+          - name: UI Tests (1/2)
+            only-testing: >-
+              -only-testing:Project2UITests/ListDetailUITests
+              -only-testing:Project2UITests/HomeUITests
+              -only-testing:Project2UITests/SettingsUITests
+            artifact: UITestResults-1
+          - name: UI Tests (2/2)
+            only-testing: >-
+              -only-testing:Project2UITests/PlannerUITests
+              -only-testing:Project2UITests/InlineAddUITests
+              -only-testing:Project2UITests/ItemDetailsUITests
+              -only-testing:Project2UITests/ListInfoUITests
+            artifact: UITestResults-2
     steps:
       - uses: actions/checkout@v7
 
@@ -68,7 +84,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             | xcbeautify --renderer github-actions
 
-      - name: Test (${{ matrix.target }})
+      - name: Test (${{ matrix.name }})
         run: |
           set -o pipefail
           xcodebuild test-without-building \
@@ -76,7 +92,7 @@ jobs:
             -scheme Project2 \
             -destination "id=${{ steps.sim.outputs.udid }}" \
             -derivedDataPath DerivedData \
-            -only-testing:${{ matrix.target }} \
+            ${{ matrix.only-testing }} \
             -resultBundlePath TestResults.xcresult \
             -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 180 \

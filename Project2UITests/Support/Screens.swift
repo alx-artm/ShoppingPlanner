@@ -73,84 +73,186 @@ struct HomeScreen {
 struct ListDetailScreen {
     let app: XCUIApplication
 
-    var addGroupButton: XCUIElement { app.buttons["listDetail.addGroupButton"] }
     var menuButton: XCUIElement { app.buttons["listDetail.menuButton"] }
+    /// "＋ Add Group" at the end of the list.
+    var addGroupRow: XCUIElement { app.buttons["listDetail.addGroupRow"] }
+    var emptyState: XCUIElement { app.descendants(matching: .any)["listDetail.emptyState"].firstMatch }
+    var undoToast: XCUIElement { app.descendants(matching: .any)["undoToast"].firstMatch }
+    var undoButton: XCUIElement { app.buttons["undoToast.undoButton"] }
+    func boughtRow(_ group: String) -> XCUIElement { app.buttons["group.boughtRow.\(group)"] }
     var total: XCUIElement { app.staticTexts["listDetail.total"] }
     /// Not scoped to `navigationBars`: on some devices (iPhone Duo) the system
     /// renders the back button in a side rail outside the navigation bar.
     var backButton: XCUIElement { app.buttons["BackButton"].firstMatch }
 
-    func groupHeader(_ group: String) -> XCUIElement { app.buttons["group.editButton.\(group)"] }
+    /// Tapping the header collapses / expands the group (LD-02).
+    func groupHeader(_ group: String) -> XCUIElement { app.buttons["group.header.\(group)"] }
+    func groupMenu(_ group: String) -> XCUIElement { app.buttons["group.menu.\(group)"] }
+    /// "(3)" next to a collapsed group's name (LD-04).
+    func groupCount(_ group: String) -> XCUIElement { app.staticTexts["group.count.\(group)"] }
     func groupTotal(_ group: String) -> XCUIElement { app.staticTexts["group.total.\(group)"] }
     func addItemButton(_ group: String) -> XCUIElement { app.buttons["group.addItemButton.\(group)"] }
-    func itemRow(_ item: String) -> XCUIElement { app.otherElements["item.row.\(item)"] }
+    /// The row without its checkbox: a button that opens item details.
+    func itemRow(_ item: String) -> XCUIElement { app.buttons["item.row.\(item)"] }
+    /// "2 × $55.00 · note" under the name.
+    func itemDetail(_ item: String) -> XCUIElement { app.staticTexts["item.detail.\(item)"] }
+    var summary: XCUIElement { app.descendants(matching: .any)["listDetail.summary"].firstMatch }
+    var planned: XCUIElement { app.staticTexts["listDetail.planned"] }
+    var progress: XCUIElement { app.staticTexts["listDetail.progress"] }
+    var unpriced: XCUIElement { app.staticTexts["listDetail.unpriced"] }
+    var budget: XCUIElement { app.staticTexts["listDetail.budget"] }
     func checkbox(_ item: String) -> XCUIElement { app.buttons["item.checkbox.\(item)"] }
     func itemTotal(_ item: String) -> XCUIElement { app.staticTexts["item.total.\(item)"] }
 
     @discardableResult
     func waitUntilShown(file: StaticString = #filePath, line: UInt = #line) -> ListDetailScreen {
-        addGroupButton.waitToAppear(file: file, line: line)
+        menuButton.waitToAppear(file: file, line: line)
         return self
     }
 
+    /// ⋯ → Add Group → alert: type the name → Add. The group goes last (LD-01).
     @discardableResult
     func addGroup(named name: String) -> ListDetailScreen {
-        addGroupButton.waitAndTap()
-        let nameField = app.textFields["groupEdit.nameField"].waitToAppear()
-        nameField.tap()
-        nameField.typeText(name)
-        app.buttons["groupEdit.doneButton"].waitAndTap()
-        groupHeader(name).waitToAppear()
+        menuAction("addGroup")
+        typeGroupName(name)
+        // The list scrolls to the new group by itself, also on small phones.
+        groupHeader(name).waitToBeHittable()
         return self
     }
 
-    /// "Add new item..." in `group` → name, price, quantity → Done.
+    /// Toolbar ⋯ → `action` (edit, addGroup, toggleCompleted, toggleExpanded, reorderGroups,
+    /// share, duplicate, delete).
+    func menuAction(_ action: String) {
+        menuButton.waitAndTap()
+        app.buttons["listDetail.menu.\(action)"].waitAndTap()
+    }
+
+    /// Long press a row → `action` of its context menu (edit, duplicate, openLink, delete).
+    func contextMenu(_ item: String, _ action: String) {
+        reveal(itemRow(item)).perform("Long press", until: app.buttons["item.menu.\(action)"]) {
+            $0.press(forDuration: 1.2)
+        }.waitAndTap()
+    }
+
+    /// Swipe right on a row → Bought / Not Bought (LD-09).
+    func swipeToToggle(_ item: String) {
+        let button = app.buttons["item.swipe.toggle"]
+        reveal(itemRow(item)).perform("Swipe right", until: button) {
+            let start = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5))
+            let end = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.5))
+            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
+        }.waitAndTap()
+    }
+
+    /// "＋ New Item" in `group` → inline: name, [Price], [Qty] → Done (spec 04 Inline add).
     @discardableResult
     func addItem(named name: String, price: String? = nil, quantity: Int = 1,
                  to group: String) -> ListDetailScreen {
-        addItemButton(group).waitAndTap()
-        let editor = ItemEditScreen(app: app).waitUntilShown()
-        editor.nameField.tap()
-        editor.nameField.typeText(name)
+        let field = startInline(in: group)
+        field.typeText(name)
         if let price {
-            editor.priceField.tap()
-            editor.priceField.typeText(price)
+            app.buttons["inline.accessory.price"].waitAndTap()
+            app.textFields["inline.priceField"].waitToAppear().typeText(price)
         }
-        for _ in 1..<max(quantity, 1) { editor.quantityIncrement.tap() }
-        editor.doneButton.waitAndTap()
+        if quantity > 1 {
+            app.buttons["inline.accessory.quantity"].waitAndTap()
+            let increment = app.buttons["inline.quantityStepper-Increment"].waitToAppear()
+            for _ in 1..<quantity { increment.tap() }
+        }
+        inlineDone()
         itemRow(name).waitToAppear()
         return self
     }
 
-    /// Tap the item name → item details sheet.
+    /// "＋ New Item" in `group` → the inline name field, focused.
+    @discardableResult
+    func startInline(in group: String) -> XCUIElement {
+        reveal(addItemButton(group)).tap()
+        let field = app.textFields["inline.nameField"].waitToAppear()
+        XCTAssertTrue(field.waitForKeyboardFocus(), "the inline field has the keyboard")
+        return field
+    }
+
+    /// Done on the keyboard's accessory bar: saves a non-empty draft and closes inline add.
+    func inlineDone() {
+        app.buttons["inline.accessory.done"].waitAndTap()
+        app.textFields["inline.nameField"].waitToDisappear()
+    }
+
+    /// Tap the row → item details sheet (LD-06).
     func openItem(_ name: String) -> ItemEditScreen {
-        itemRow(name).waitToAppear().staticTexts[name].tap()
+        reveal(itemRow(name)).tap()
         return ItemEditScreen(app: app).waitUntilShown()
     }
 
-    func openGroup(_ name: String) -> GroupEditScreen {
-        groupHeader(name).waitAndTap()
-        return GroupEditScreen(app: app).waitUntilShown()
+    /// Scrolls until `element` is on screen and not under the summary bar, which floats
+    /// over the bottom of the list (rows under it exist and look hittable to XCTest).
+    @discardableResult
+    func reveal(_ element: XCUIElement, maxSwipes: Int = 5) -> XCUIElement {
+        element.waitToAppear()
+        let list = app.collectionViews.firstMatch
+        for _ in 0..<maxSwipes {
+            let limit = summary.exists ? summary.frame.minY : app.frame.maxY
+            if element.isHittable && element.frame.maxY <= limit { break }
+            list.swipeUp(velocity: .slow)
+        }
+        return element
+    }
+
+    /// Group ⋯ → `action` ("rename", "addItem", "delete").
+    func groupMenuAction(_ group: String, _ action: String) {
+        groupMenu(group).waitAndTap()
+        app.buttons["group.menu.\(action)"].waitAndTap()
+    }
+
+    /// Group ⋯ → Delete Group → confirm (a group with items asks first, LD-05).
+    func deleteGroup(_ name: String, confirm: Bool = true) {
+        groupMenuAction(name, "delete")
+        if confirm {
+            app.buttons["groupDelete.confirmButton"].firstMatch.waitAndTap()
+        }
+        groupHeader(name).waitToDisappear()
+    }
+
+    /// Group ⋯ → Rename → alert with the name field → Save.
+    func renameGroup(_ name: String, to newName: String) {
+        groupMenuAction(name, "rename")
+        typeGroupName(newName, replacing: name)
+        groupHeader(newName).waitToAppear()
+    }
+
+    /// The New Group / Rename alert: type the name and confirm. Alerts don't expose
+    /// the identifiers of their fields, so the field and buttons are found in the alert.
+    func typeGroupName(_ newName: String, replacing old: String = "") {
+        let alert = app.alerts.firstMatch.waitToAppear()
+        let field = alert.textFields.firstMatch.waitToAppear()
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count + 2) + newName)
+        alert.buttons.element(boundBy: 1).waitAndTap() // Cancel, then Save / Add
+        alert.waitToDisappear()
     }
 
     func toggleShowCompleted() {
-        menuButton.waitAndTap()
-        app.buttons["listDetail.menu.toggleCompleted"].waitAndTap()
+        menuAction("toggleCompleted")
     }
 
-    /// Swipe left on a row and tap the system "Delete" action.
+    /// Swipe left on a row and tap "Delete". A full swipe deletes at once, which also counts.
     func swipeToDelete(_ item: String) {
-        itemRow(item).scrollIntoView(within: app.collectionViews.firstMatch)
-            .perform("Swipe left", until: app.buttons["Delete"].firstMatch) {
-            $0.swipeLeft()
-        }.waitAndTap()
+        let row = itemRow(item)
+        let deleteButton = app.buttons["item.swipe.delete"]
+        let result = app.descendants(matching: .any).matching(NSPredicate(
+            format: "identifier IN %@", ["item.swipe.delete", "undoToast"])).firstMatch
+        reveal(row).perform("Swipe left", until: result) {
+            let start = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5))
+            let end = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.5))
+            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
+        }
+        if deleteButton.exists { deleteButton.tap() }
     }
 
     /// Menu → "Delete list" → confirm. The screen pops back to Home.
     @discardableResult
     func deleteList() -> HomeScreen {
-        menuButton.waitAndTap()
-        app.buttons["listDetail.menu.delete"].waitAndTap()
+        menuAction("delete")
         app.buttons["listDetail.deleteAlert.confirmButton"].firstMatch.waitAndTap()
         return HomeScreen(app: app).waitUntilShown()
     }
@@ -165,11 +267,17 @@ struct ListDetailScreen {
 struct ItemEditScreen {
     let app: XCUIApplication
 
+    var form: XCUIElement { app.collectionViews["itemEdit.form"] }
     var nameField: XCUIElement { app.textFields["itemEdit.nameField"] }
     var priceField: XCUIElement { app.textFields["itemEdit.priceField"] }
+    var quantityField: XCUIElement { app.textFields["itemEdit.quantityField"] }
+    var urlField: XCUIElement { app.textFields["itemEdit.urlField"] }
+    var notesField: XCUIElement { app.textFields["itemEdit.notesField"] }
     var total: XCUIElement { app.staticTexts["itemEdit.total"] }
     var quantityIncrement: XCUIElement { app.buttons["itemEdit.quantityStepper-Increment"] }
+    var groupPicker: XCUIElement { app.buttons["itemEdit.groupPicker"] }
     var doneButton: XCUIElement { app.buttons["itemEdit.doneButton"] }
+    var cancelButton: XCUIElement { app.buttons["itemEdit.cancelButton"] }
     var deleteButton: XCUIElement { app.buttons["itemEdit.deleteButton"] }
 
     @discardableResult
@@ -178,30 +286,39 @@ struct ItemEditScreen {
         return self
     }
 
-    func delete() {
-        deleteButton.waitAndTap()
-        nameField.waitToDisappear()
-    }
-}
-
-@MainActor
-struct GroupEditScreen {
-    let app: XCUIApplication
-
-    var nameField: XCUIElement { app.textFields["groupEdit.nameField"] }
-    var deleteButton: XCUIElement { app.buttons["groupEdit.deleteButton"] }
-
-    @discardableResult
-    func waitUntilShown(file: StaticString = #filePath, line: UInt = #line) -> GroupEditScreen {
-        nameField.waitToAppear(file: file, line: line)
-        return self
+    /// Replaces the text of a field (select all is not reliable, so delete key by key).
+    /// The tap goes to the field's right end, so the cursor lands after the text
+    /// in both leading- and trailing-aligned fields.
+    func replaceText(of field: XCUIElement, with text: String) {
+        field.waitToBeHittable()
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap()
+        let current = field.value as? String ?? ""
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count + 2) + text)
     }
 
-    /// "Delete Group" → confirm in the alert.
+    /// "Delete Item" → confirm. The sheet closes, then the item is deleted (ID-11).
     func delete() {
-        deleteButton.waitAndTap()
-        app.buttons["groupEdit.deleteAlert.confirmButton"].firstMatch.waitAndTap()
+        deleteButton.scrollIntoViewLazily(within: form).tap()
+        app.buttons["itemEdit.deleteAlert.confirmButton"].firstMatch.waitAndTap()
         nameField.waitToDisappear()
+    }
+
+    /// ✓ → the sheet closes.
+    func done() {
+        doneButton.waitAndTap()
+        nameField.waitToDisappear()
+    }
+
+    /// ✕ → the sheet closes without saving.
+    func cancel() {
+        cancelButton.waitAndTap()
+        nameField.waitToDisappear()
+    }
+
+    /// Group picker → choose `group`.
+    func moveToGroup(_ group: String) {
+        groupPicker.scrollIntoViewLazily(within: form).tap()
+        app.buttons[group].firstMatch.waitAndTap()
     }
 }
 

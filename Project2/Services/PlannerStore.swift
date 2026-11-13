@@ -50,13 +50,16 @@ protocol PlannerStoring: AnyObject {
     @discardableResult
     func addItem(name: String, to group: GroupModel, quantity: Int, price: Decimal?,
                  urlString: String, notes: String) -> ItemModel?
+    func updateItem(_ item: ItemModel, with draft: ItemDraft)
     func renameItem(_ item: ItemModel, to name: String)
     func setQuantity(_ quantity: Int, for item: ItemModel)
     @discardableResult func setPrice(_ price: Decimal?, for item: ItemModel) -> Bool
     func toggleComplete(_ item: ItemModel)
     func moveItem(_ item: ItemModel, to group: GroupModel)
     func moveItems(in group: GroupModel, fromOffsets source: IndexSet, toOffset destination: Int)
+    @discardableResult func duplicateItem(_ item: ItemModel) -> ItemModel?
     func deleteItem(_ item: ItemModel)
+    @discardableResult func restoreItem(_ snapshot: ItemSnapshot, in list: ListModel) -> ItemModel?
 }
 
 @MainActor
@@ -365,6 +368,34 @@ final class PlannerStore: PlannerStoring {
         return item
     }
 
+    /// Applies the item details' ✓ in one save (ID-01). A blank name keeps the old one,
+    /// a negative price keeps the old price, the quantity is clamped (DM-12...DM-14).
+    /// A different `draft.groupID` of the same list moves the item to the end of that group (ID-08).
+    func updateItem(_ item: ItemModel, with draft: ItemDraft) {
+        if let name = Self.normalizedName(draft.name) {
+            item.name = name
+        }
+        if let price = Self.validPrice(draft.price) {
+            item.price = price
+        }
+        item.quantity = Self.clampedQuantity(draft.quantity)
+        item.urlString = draft.urlString.trimmingCharacters(in: .whitespacesAndNewlines)
+        item.notes = draft.notes
+        if let groupID = draft.groupID, groupID != item.group?.uuid,
+           let target = item.parentList?.groups?.first(where: { $0.uuid == groupID }) {
+            item.sortIndex = PlannerOrdering.indexAfter((target.items ?? []).map(\.sortIndex))
+            item.group = target
+        }
+        save()
+    }
+
+    /// Adds a new item from the details sheet's draft to `group`. `nil` for a blank name.
+    @discardableResult
+    func addItem(from draft: ItemDraft, to group: GroupModel) -> ItemModel? {
+        addItem(name: draft.name, to: group, quantity: draft.quantity, price: draft.price,
+                urlString: draft.urlString, notes: draft.notes)
+    }
+
     func renameItem(_ item: ItemModel, to name: String) {
         item.name = Self.normalizedName(name) ?? String(localized: "Untitled item")
         save()
@@ -408,9 +439,40 @@ final class PlannerStore: PlannerStoring {
         applyMove(group.incompleteItems, fromOffsets: source, toOffset: destination)
     }
 
+    /// A copy right after the original, not completed (LD-09 context menu).
+    @discardableResult
+    func duplicateItem(_ item: ItemModel) -> ItemModel? {
+        guard let group = item.group else { return nil }
+        var snapshot = ItemSnapshot(item)
+        snapshot.uuid = UUID()
+        snapshot.isComplete = false
+        snapshot.completedAt = nil
+        snapshot.createdAt = now()
+        let following = group.incompleteItems.map(\.sortIndex).filter { $0 > item.sortIndex }.min()
+        snapshot.sortIndex = PlannerOrdering.indexBetween(item.sortIndex, following)
+            ?? PlannerOrdering.indexAfter((group.items ?? []).map(\.sortIndex))
+        let copy = snapshot.makeItem()
+        context.insert(copy)
+        copy.group = group
+        save()
+        return copy
+    }
+
     func deleteItem(_ item: ItemModel) {
         context.delete(item)
         save()
+    }
+
+    /// Undo of a deletion (LD-09 toast): puts the item back where it was, with all its values.
+    /// `nil` when its group is gone in the meantime.
+    @discardableResult
+    func restoreItem(_ snapshot: ItemSnapshot, in list: ListModel) -> ItemModel? {
+        guard let group = list.groups?.first(where: { $0.uuid == snapshot.groupID }) else { return nil }
+        let item = snapshot.makeItem()
+        context.insert(item)
+        item.group = group
+        save()
+        return item
     }
 
     // MARK: - Helpers
