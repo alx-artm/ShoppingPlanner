@@ -14,6 +14,7 @@
 //  here, so nothing is inserted before a commit.
 //
 
+import SwiftData
 import SwiftUI
 
 struct ListViewInside: View {
@@ -39,6 +40,9 @@ struct ListViewInside: View {
 
     /// Any inline field has the keyboard.
     private var isTypingInline: Bool { isEditingInlineName || inlineFocus != nil }
+
+    /// A group just added with "Add Group", to scroll to once its section is in the list.
+    @State private var addedGroupID: PersistentIdentifier?
 
     /// "Reorder Items": the list shows drag handles for the not-bought items.
     @State private var editMode: EditMode = .inactive
@@ -75,6 +79,23 @@ struct ListViewInside: View {
             // stay above the keyboard and the summary bar.
             guard let new, old?.groupID == new.groupID else { return }
             withAnimation { proxy.scrollTo(InlineAdd.rowID, anchor: .bottom) }
+        }
+        .onChange(of: addedGroupID) { _, id in
+            // A new group goes last; show its header (owner decision 2026-11-13). The same
+            // ScrollViewReader + scrollTo as the owner's Quick List, which wrapped the call in
+            // DispatchQueue.main.async: scrolling in the same update that adds the row does
+            // nothing, the List doesn't have it yet. Here the target is state, so this runs in
+            // the update after the insert; one `Task.yield()` lets the List take the new
+            // section first. ScrollPosition / .scrollPosition(id:) is the iOS 17+ API for
+            // ScrollView + LazyVStack; with List and sections, scrollTo is the reliable one.
+            guard let id else { return }
+            Task { @MainActor in
+                await Task.yield()
+                withAnimation(reduceMotion ? nil : .default) {
+                    proxy.scrollTo(id, anchor: .top)
+                }
+                addedGroupID = nil
+            }
         }
         }
         .overlay {
@@ -523,7 +544,9 @@ struct ListViewInside: View {
     private func commitGroupName(_ alert: GroupNameAlert) {
         switch alert {
         case .new:
-            animated { _ = store.createGroup(name: groupName, in: list) }
+            var group: GroupModel?
+            animated { group = store.createGroup(name: groupName, in: list) }
+            addedGroupID = group?.persistentModelID
         case .rename(let group):
             store.renameGroup(group, to: groupName)
         }

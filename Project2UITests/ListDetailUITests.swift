@@ -230,6 +230,27 @@ final class ListDetailUITests: XCTestCase {
         XCTAssertGreaterThan(alex.groupHeader("Gifts").frame.minY, alex.groupHeader("Birthday").frame.minY)
     }
 
+    /// Owner decision 2026-11-13: in a list longer than the screen, a new group (added last)
+    /// is scrolled into view, so its header can be used without scrolling by hand.
+    @MainActor
+    func testNewGroupIsScrolledIntoView() {
+        let app = Launch.app()
+        let alex = HomeScreen(app: app).waitUntilShown().open(card: "Alex")
+        // Make the list longer than any iPhone screen.
+        alex.startInline(in: "Vacation")
+        app.typeText((1...8).map { "Extra \($0)\n" }.joined())
+        alex.inlineDone()
+        app.collectionViews.firstMatch.swipeDown(velocity: .fast) // back to the top
+        XCTAssertFalse(alex.addGroupRow.exists && alex.addGroupRow.isHittable, "the end of the list is off screen")
+
+        alex.menuAction("addGroup")
+        alex.typeGroupName("Gifts")
+
+        alex.groupHeader("Gifts").waitToBeHittable()
+        let summaryTop = alex.summary.exists ? alex.summary.frame.minY : app.frame.maxY
+        XCTAssertLessThanOrEqual(alex.groupHeader("Gifts").frame.maxY, summaryTop, "not under the summary bar")
+    }
+
     /// LD-03: Reorder Groups sheet with drag handles; the order is saved.
     @MainActor
     func testReorderGroups() {
