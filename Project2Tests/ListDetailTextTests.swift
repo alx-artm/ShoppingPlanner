@@ -116,4 +116,22 @@ struct ListDetailTextTests {
         #expect(bar.compact.contains(bar.toBuy))
         #expect(bar.compact.hasSuffix(percent))
     }
+
+    // MARK: - Bought row style (LD-07a, LD-07b)
+
+    @Test("LD-07b not bought: nothing struck, not dimmed")
+    func rowStyleNotBought() {
+        let style = ItemRowStyle(isComplete: false)
+        #expect(!style.nameStrikethrough)
+        #expect(!style.amountStrikethrough)
+        #expect(!style.isDimmed)
+    }
+
+    @Test("LD-07b bought: the name is struck, the amounts are not, the row is dimmed")
+    func rowStyleBought() {
+        let style = ItemRowStyle(isComplete: true)
+        #expect(style.nameStrikethrough)
+        #expect(!style.amountStrikethrough)
+        #expect(style.isDimmed)
+    }
 }

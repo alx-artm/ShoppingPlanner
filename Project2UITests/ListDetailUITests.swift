@@ -75,6 +75,27 @@ final class ListDetailUITests: XCTestCase {
         alex.openItem("Swimsuit").cancel()
     }
 
+    /// LD-07c / LD-07e: checking an item keeps its amounts as they were and says "Bought"
+    /// on the checkbox and on the row; unchecking says "Not bought" again.
+    @MainActor
+    func testBoughtRowKeepsAmountsAndSaysBought() {
+        let eva = HomeScreen(app: Launch.app()).waitUntilShown().open(row: "Eva")
+        eva.itemTotal("T-Shirt").waitForLabel("$40.00")
+        eva.itemDetail("T-Shirt").waitForLabel("2 × $20.00")
+        XCTAssertEqual(eva.itemRow("T-Shirt").value as? String ?? "", "")
+
+        eva.reveal(eva.checkbox("T-Shirt")).tap()
+        eva.checkbox("T-Shirt").waitForSelected(true)
+        XCTAssertEqual(eva.checkbox("T-Shirt").value as? String, "Bought")
+        XCTAssertEqual(eva.itemRow("T-Shirt").value as? String, "Bought")
+        eva.itemTotal("T-Shirt").waitForLabel("$40.00")
+        eva.itemDetail("T-Shirt").waitForLabel("2 × $20.00")
+
+        eva.checkbox("T-Shirt").tap()
+        eva.checkbox("T-Shirt").waitForSelected(false)
+        XCTAssertEqual(eva.checkbox("T-Shirt").value as? String, "Not bought")
+    }
+
     /// LD-06 / BUG-20: the checkbox is at least 44 × 44 pt.
     @MainActor
     func testCheckboxHitArea() {

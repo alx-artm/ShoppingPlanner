@@ -28,6 +28,9 @@ struct ItemRowView: View {
                     .contentShape(.rect)
             }
             .buttonStyle(.plain)
+            // LD-07e: "Bought" is read on the row too, not only on the checkbox; the strike
+            // isn't read by VoiceOver. Nothing extra for a row still to buy.
+            .accessibilityValue(item.isComplete ? Text("Bought") : Text(verbatim: ""))
             .accessibilityIdentifier("item.row.\(item.name)")
         }
     }
@@ -59,14 +62,16 @@ struct ItemRowView: View {
     }
 
     private var content: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        let style = ItemRowStyle(isComplete: item.isComplete)
+        return VStack(alignment: .leading, spacing: 2) {
             HStack(alignment: .firstTextBaseline) {
                 Text(item.name)
-                    .strikethrough(item.isComplete)
+                    .strikethrough(style.nameStrikethrough)
                     .lineLimit(3)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text(verbatim: ItemRowText.total(item.lineTotal, currencyCode: item.listCurrencyCode, locale: locale))
                     .monospacedDigit()
+                    .strikethrough(style.amountStrikethrough)
                     // The name wraps instead of the amount being cut ("$3…").
                     .fixedSize()
                     .accessibilityLabel(item.lineTotal == nil ? Text("No price") : Text(verbatim: ItemRowText.total(
@@ -75,7 +80,7 @@ struct ItemRowView: View {
             }
             secondLine
         }
-        .foregroundStyle(item.isComplete ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
+        .foregroundStyle(style.isDimmed ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
         .padding(.vertical, 4)
     }
 

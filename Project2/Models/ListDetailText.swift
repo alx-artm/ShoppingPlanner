@@ -40,6 +40,23 @@ enum ItemRowText {
     }
 }
 
+/// How a row looks when its item is bought (spec 04 LD-07a, owner decision 2026-11-13,
+/// option C): the name is struck through, the whole row is secondary, the amounts are not
+/// struck, so they stay easy to read and compare. The checkbox shape (filled / empty) tells
+/// bought rows apart without color (LD-07d).
+struct ItemRowStyle: Equatable, Sendable {
+    let nameStrikethrough: Bool
+    let amountStrikethrough: Bool
+    /// The whole row in the secondary color.
+    let isDimmed: Bool
+
+    init(isComplete: Bool) {
+        nameStrikethrough = isComplete
+        amountStrikethrough = false
+        isDimmed = isComplete
+    }
+}
+
 /// The summary bar at the bottom of the list (LD-10, LD-11, LD-11a) and its
 /// one-line form while the keyboard is open (owner decision 2026-11-13).
 struct ListSummaryText: Equatable, Sendable {
