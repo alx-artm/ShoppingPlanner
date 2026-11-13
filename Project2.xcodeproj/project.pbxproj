@@ -24,7 +24,6 @@
 		5FB3C0DE2ED5000100000002 /* IconCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000001 /* IconCatalog.swift */; };
 		5FB3C0DE2ED5000100000004 /* ListTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000003 /* ListTemplate.swift */; };
 		5FB3C0DE2ED5000100000006 /* ListDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000005 /* ListDraft.swift */; };
-		5FB4C0DE2EE5000100000002 /* DecimalInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB4C0DE2EE5000100000001 /* DecimalInput.swift */; };
 		5FB3C0DE2ED5000100000008 /* HomeSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000007 /* HomeSections.swift */; };
 		5FB3C0DE2ED500010000000A /* ListStatusText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000009 /* ListStatusText.swift */; };
 		5FB3C0DE2ED500010000000C /* ListShareText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED500010000000B /* ListShareText.swift */; };
@@ -33,6 +32,7 @@
 		5FB3C0DE2ED5000100000012 /* ListTileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000011 /* ListTileView.swift */; };
 		5FB3C0DE2ED5000100000014 /* ListInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000013 /* ListInfoView.swift */; };
 		5FB3C0DE2ED5000100000016 /* TemplatePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000015 /* TemplatePickerView.swift */; };
+		5FB4C0DE2EE5000100000002 /* DecimalInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB4C0DE2EE5000100000001 /* DecimalInput.swift */; };
 		5FCB6D2E2DF976930099AB52 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5FCB6D272DF976930099AB52 /* Assets.xcassets */; };
 		5FCB6D2F2DF976930099AB52 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D282DF976930099AB52 /* ContentView.swift */; };
 		5FCB6D322DF976930099AB52 /* ListViewInside.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D232DF976930099AB52 /* ListViewInside.swift */; };
@@ -87,7 +87,6 @@
 		5FB3C0DE2ED5000100000001 /* IconCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconCatalog.swift; sourceTree = "<group>"; };
 		5FB3C0DE2ED5000100000003 /* ListTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListTemplate.swift; sourceTree = "<group>"; };
 		5FB3C0DE2ED5000100000005 /* ListDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListDraft.swift; sourceTree = "<group>"; };
-		5FB4C0DE2EE5000100000001 /* DecimalInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecimalInput.swift; sourceTree = "<group>"; };
 		5FB3C0DE2ED5000100000007 /* HomeSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSections.swift; sourceTree = "<group>"; };
 		5FB3C0DE2ED5000100000009 /* ListStatusText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListStatusText.swift; sourceTree = "<group>"; };
 		5FB3C0DE2ED500010000000B /* ListShareText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListShareText.swift; sourceTree = "<group>"; };
@@ -96,6 +95,7 @@
 		5FB3C0DE2ED5000100000011 /* ListTileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListTileView.swift; sourceTree = "<group>"; };
 		5FB3C0DE2ED5000100000013 /* ListInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListInfoView.swift; sourceTree = "<group>"; };
 		5FB3C0DE2ED5000100000015 /* TemplatePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplatePickerView.swift; sourceTree = "<group>"; };
+		5FB4C0DE2EE5000100000001 /* DecimalInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecimalInput.swift; sourceTree = "<group>"; };
 		5FCB6D162DF976930099AB52 /* GroupModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupModel.swift; sourceTree = "<group>"; };
 		5FCB6D172DF976930099AB52 /* ItemModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemModel.swift; sourceTree = "<group>"; };
 		5FCB6D182DF976930099AB52 /* ListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListModel.swift; sourceTree = "<group>"; };
@@ -318,7 +318,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1630;
-				LastUpgradeCheck = 2600;
+				LastUpgradeCheck = 2720;
 				TargetAttributes = {
 					5F259C042DCCA51B000C6B7C = {
 						CreatedOnToolsVersion = 16.3;
@@ -462,6 +462,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -527,6 +528,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
