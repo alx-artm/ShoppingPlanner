@@ -73,8 +73,13 @@ struct HomeScreen {
 struct ListDetailScreen {
     let app: XCUIApplication
 
-    var addGroupButton: XCUIElement { app.buttons["listDetail.addGroupButton"] }
     var menuButton: XCUIElement { app.buttons["listDetail.menuButton"] }
+    /// "＋ Add Group" at the end of the list.
+    var addGroupRow: XCUIElement { app.buttons["listDetail.addGroupRow"] }
+    var emptyState: XCUIElement { app.descendants(matching: .any)["listDetail.emptyState"].firstMatch }
+    var undoToast: XCUIElement { app.descendants(matching: .any)["undoToast"].firstMatch }
+    var undoButton: XCUIElement { app.buttons["undoToast.undoButton"] }
+    func boughtRow(_ group: String) -> XCUIElement { app.buttons["group.boughtRow.\(group)"] }
     var total: XCUIElement { app.staticTexts["listDetail.total"] }
     /// Not scoped to `navigationBars`: on some devices (iPhone Duo) the system
     /// renders the back button in a side rail outside the navigation bar.
@@ -101,26 +106,48 @@ struct ListDetailScreen {
 
     @discardableResult
     func waitUntilShown(file: StaticString = #filePath, line: UInt = #line) -> ListDetailScreen {
-        addGroupButton.waitToAppear(file: file, line: line)
+        menuButton.waitToAppear(file: file, line: line)
         return self
     }
 
+    /// ⋯ → Add Group → alert: type the name → Add. The group goes last (LD-01).
     @discardableResult
     func addGroup(named name: String) -> ListDetailScreen {
-        addGroupButton.waitAndTap()
-        let nameField = app.textFields["groupEdit.nameField"].waitToAppear()
-        nameField.tap()
-        nameField.typeText(name)
-        app.buttons["groupEdit.doneButton"].waitAndTap()
+        menuAction("addGroup")
+        typeGroupName(name)
         groupHeader(name).waitToAppear()
         return self
     }
 
-    /// "Add new item..." in `group` → name, price, quantity → Done.
+    /// Toolbar ⋯ → `action` (edit, addGroup, toggleCompleted, toggleExpanded, reorderGroups,
+    /// share, duplicate, delete).
+    func menuAction(_ action: String) {
+        menuButton.waitAndTap()
+        app.buttons["listDetail.menu.\(action)"].waitAndTap()
+    }
+
+    /// Long press a row → `action` of its context menu (edit, duplicate, openLink, delete).
+    func contextMenu(_ item: String, _ action: String) {
+        reveal(itemRow(item)).perform("Long press", until: app.buttons["item.menu.\(action)"]) {
+            $0.press(forDuration: 1.2)
+        }.waitAndTap()
+    }
+
+    /// Swipe right on a row → Bought / Not Bought (LD-09).
+    func swipeToToggle(_ item: String) {
+        let button = app.buttons["item.swipe.toggle"]
+        reveal(itemRow(item)).perform("Swipe right", until: button) {
+            let start = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5))
+            let end = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.5))
+            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
+        }.waitAndTap()
+    }
+
+    /// "＋ New Item" in `group` → name, price, quantity → Done.
     @discardableResult
     func addItem(named name: String, price: String? = nil, quantity: Int = 1,
                  to group: String) -> ListDetailScreen {
-        addItemButton(group).waitAndTap()
+        reveal(addItemButton(group)).tap()
         let editor = ItemEditScreen(app: app).waitUntilShown()
         editor.nameField.tap()
         editor.nameField.typeText(name)
@@ -187,23 +214,27 @@ struct ListDetailScreen {
     }
 
     func toggleShowCompleted() {
-        menuButton.waitAndTap()
-        app.buttons["listDetail.menu.toggleCompleted"].waitAndTap()
+        menuAction("toggleCompleted")
     }
 
-    /// Swipe left on a row and tap the system "Delete" action.
+    /// Swipe left on a row and tap "Delete". A full swipe deletes at once, which also counts.
     func swipeToDelete(_ item: String) {
-        reveal(itemRow(item))
-            .perform("Swipe left", until: app.buttons["Delete"].firstMatch) {
-            $0.swipeLeft()
-        }.waitAndTap()
+        let row = itemRow(item)
+        let deleteButton = app.buttons["item.swipe.delete"]
+        let result = app.descendants(matching: .any).matching(NSPredicate(
+            format: "identifier IN %@", ["item.swipe.delete", "undoToast"])).firstMatch
+        reveal(row).perform("Swipe left", until: result) {
+            let start = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5))
+            let end = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.5))
+            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
+        }
+        if deleteButton.exists { deleteButton.tap() }
     }
 
     /// Menu → "Delete list" → confirm. The screen pops back to Home.
     @discardableResult
     func deleteList() -> HomeScreen {
-        menuButton.waitAndTap()
-        app.buttons["listDetail.menu.delete"].waitAndTap()
+        menuAction("delete")
         app.buttons["listDetail.deleteAlert.confirmButton"].firstMatch.waitAndTap()
         return HomeScreen(app: app).waitUntilShown()
     }
@@ -270,27 +301,6 @@ struct ItemEditScreen {
     func moveToGroup(_ group: String) {
         groupPicker.scrollIntoViewLazily(within: form).tap()
         app.buttons[group].firstMatch.waitAndTap()
-    }
-}
-
-@MainActor
-struct GroupEditScreen {
-    let app: XCUIApplication
-
-    var nameField: XCUIElement { app.textFields["groupEdit.nameField"] }
-    var deleteButton: XCUIElement { app.buttons["groupEdit.deleteButton"] }
-
-    @discardableResult
-    func waitUntilShown(file: StaticString = #filePath, line: UInt = #line) -> GroupEditScreen {
-        nameField.waitToAppear(file: file, line: line)
-        return self
-    }
-
-    /// "Delete Group" → confirm in the alert.
-    func delete() {
-        deleteButton.waitAndTap()
-        app.buttons["groupEdit.deleteAlert.confirmButton"].firstMatch.waitAndTap()
-        nameField.waitToDisappear()
     }
 }
 

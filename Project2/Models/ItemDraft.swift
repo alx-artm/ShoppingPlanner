@@ -105,3 +105,61 @@ enum ItemLink {
         return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
     }
 }
+
+/// Every stored value of an item, as a value: taken before a swipe-delete so
+/// "Undo" can put the same item back (LD-09), and the base of a duplicate.
+struct ItemSnapshot: Equatable, Sendable {
+    var uuid: UUID
+    var name: String
+    var quantity: Int
+    var price: Decimal?
+    var actualPrice: Decimal?
+    var currencyCode: String?
+    var exchangeRate: Decimal?
+    var urlString: String
+    var linkTitle: String?
+    var linkHost: String?
+    var linkImageData: Data?
+    var linkFetchedAt: Date?
+    var notes: String
+    var isComplete: Bool
+    var completedAt: Date?
+    var sortIndex: Double
+    var createdAt: Date
+    var groupID: UUID?
+
+    init(_ item: ItemModel) {
+        uuid = item.uuid
+        name = item.name
+        quantity = item.quantity
+        price = item.price
+        actualPrice = item.actualPrice
+        currencyCode = item.currencyCode
+        exchangeRate = item.exchangeRate
+        urlString = item.urlString
+        linkTitle = item.linkTitle
+        linkHost = item.linkHost
+        linkImageData = item.linkImageData
+        linkFetchedAt = item.linkFetchedAt
+        notes = item.notes
+        isComplete = item.isComplete
+        completedAt = item.completedAt
+        sortIndex = item.sortIndex
+        createdAt = item.createdAt
+        groupID = item.group?.uuid
+    }
+
+    /// A new, not yet inserted model with these values.
+    func makeItem() -> ItemModel {
+        let item = ItemModel(uuid: uuid, name: name, quantity: quantity, price: price,
+                             currencyCode: currencyCode, exchangeRate: exchangeRate, urlString: urlString,
+                             notes: notes, isComplete: isComplete, completedAt: completedAt,
+                             sortIndex: sortIndex, createdAt: createdAt)
+        item.actualPrice = actualPrice
+        item.linkTitle = linkTitle
+        item.linkHost = linkHost
+        item.linkImageData = linkImageData
+        item.linkFetchedAt = linkFetchedAt
+        return item
+    }
+}

@@ -40,7 +40,6 @@
 		5FCB6D342DF976930099AB52 /* ListRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D222DF976930099AB52 /* ListRowView.swift */; };
 		5FCB6D352DF976930099AB52 /* GroupModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D162DF976930099AB52 /* GroupModel.swift */; };
 		5FCB6D362DF976930099AB52 /* ItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D202DF976930099AB52 /* ItemView.swift */; };
-		5FCB6D372DF976930099AB52 /* GroupEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D1C2DF976930099AB52 /* GroupEditView.swift */; };
 		5FCB6D382DF976930099AB52 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D1A2DF976930099AB52 /* SampleData.swift */; };
 		5FCB6D3A2DF976930099AB52 /* ItemRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D1F2DF976930099AB52 /* ItemRowView.swift */; };
 		5FCB6D3B2DF976930099AB52 /* ItemModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D172DF976930099AB52 /* ItemModel.swift */; };
@@ -52,6 +51,8 @@
 		5FB5C0DE2EF5000100000006 /* ItemDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB5C0DE2EF5000100000005 /* ItemDraft.swift */; };
 		5FB5C0DE2EF5000100000008 /* ListDetailText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB5C0DE2EF5000100000007 /* ListDetailText.swift */; };
 		5FB5C0DE2EF500010000000A /* ListSummaryBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB5C0DE2EF5000100000009 /* ListSummaryBar.swift */; };
+		5FB5C0DE2EF500010000000C /* ReorderGroupsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB5C0DE2EF500010000000B /* ReorderGroupsView.swift */; };
+		5FB5C0DE2EF500010000000E /* UndoToast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB5C0DE2EF500010000000D /* UndoToast.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -105,7 +106,6 @@
 		5FCB6D172DF976930099AB52 /* ItemModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemModel.swift; sourceTree = "<group>"; };
 		5FCB6D182DF976930099AB52 /* ListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListModel.swift; sourceTree = "<group>"; };
 		5FCB6D1A2DF976930099AB52 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
-		5FCB6D1C2DF976930099AB52 /* GroupEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupEditView.swift; sourceTree = "<group>"; };
 		5FCB6D1D2DF976930099AB52 /* GroupHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupHeaderView.swift; sourceTree = "<group>"; };
 		5FCB6D1F2DF976930099AB52 /* ItemRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemRowView.swift; sourceTree = "<group>"; };
 		5FCB6D202DF976930099AB52 /* ItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemView.swift; sourceTree = "<group>"; };
@@ -120,6 +120,8 @@
 		5FB5C0DE2EF5000100000005 /* ItemDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemDraft.swift; sourceTree = "<group>"; };
 		5FB5C0DE2EF5000100000007 /* ListDetailText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListDetailText.swift; sourceTree = "<group>"; };
 		5FB5C0DE2EF5000100000009 /* ListSummaryBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListSummaryBar.swift; sourceTree = "<group>"; };
+		5FB5C0DE2EF500010000000B /* ReorderGroupsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReorderGroupsView.swift; sourceTree = "<group>"; };
+		5FB5C0DE2EF500010000000D /* UndoToast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoToast.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -223,7 +225,6 @@
 		5FCB6D262DF976930099AB52 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				5FCB6D1C2DF976930099AB52 /* GroupEditView.swift */,
 				5FCB6D1D2DF976930099AB52 /* GroupHeaderView.swift */,
 				5FCB6D1F2DF976930099AB52 /* ItemRowView.swift */,
 				5FFACC5A2E1F9628005C5F6B /* HomeView.swift */,
@@ -239,6 +240,8 @@
 				5FB3C0DE2ED5000100000015 /* TemplatePickerView.swift */,
 				5FB5C0DE2EF5000100000003 /* MoneyField.swift */,
 				5FB5C0DE2EF5000100000009 /* ListSummaryBar.swift */,
+				5FB5C0DE2EF500010000000B /* ReorderGroupsView.swift */,
+				5FB5C0DE2EF500010000000D /* UndoToast.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -409,7 +412,6 @@
 				5FCB6D342DF976930099AB52 /* ListRowView.swift in Sources */,
 				5FCB6D352DF976930099AB52 /* GroupModel.swift in Sources */,
 				5FCB6D362DF976930099AB52 /* ItemView.swift in Sources */,
-				5FCB6D372DF976930099AB52 /* GroupEditView.swift in Sources */,
 				5FCB6D382DF976930099AB52 /* SampleData.swift in Sources */,
 				5FB1C0DE2EB5000100000003 /* SchemaV1.swift in Sources */,
 				5FB1C0DE2EB5000100000005 /* BudgetCalculator.swift in Sources */,
@@ -444,6 +446,8 @@
 				5FB5C0DE2EF5000100000006 /* ItemDraft.swift in Sources */,
 				5FB5C0DE2EF5000100000008 /* ListDetailText.swift in Sources */,
 				5FB5C0DE2EF500010000000A /* ListSummaryBar.swift in Sources */,
+				5FB5C0DE2EF500010000000C /* ReorderGroupsView.swift in Sources */,
+				5FB5C0DE2EF500010000000E /* UndoToast.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
