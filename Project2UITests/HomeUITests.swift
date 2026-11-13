@@ -139,4 +139,23 @@ final class HomeUITests: XCTestCase {
         settings.close().card("Alex").waitToAppear()
         XCTAssertTrue(home.settingsButton.isHittable)
     }
+
+    /// HM-03: lists are reordered in Edit mode with drag handles (outside it, a long press is
+    /// the context menu, so rows are not draggable there).
+    @MainActor
+    func testReorderListsInEditMode() {
+        let app = Launch.app()
+        let home = HomeScreen(app: app).waitUntilShown()
+        XCTAssertLessThan(home.top(of: home.row("Eva")), home.top(of: home.row("Victoria")))
+
+        app.buttons["home.editButton"].waitAndTap()
+        let handles = home.list.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Reorder"))
+        // Pinned Alex is a row in Edit mode too: Alex, Eva, Victoria.
+        let victoriaHandle = handles.element(boundBy: 2).waitToAppear()
+        victoriaHandle.press(forDuration: 0.6, thenDragTo: handles.element(boundBy: 1),
+                             withVelocity: .slow, thenHoldForDuration: 0.3)
+        app.buttons["home.editButton"].waitAndTap()
+
+        XCTAssertLessThan(home.top(of: home.row("Victoria")), home.top(of: home.row("Eva")))
+    }
 }
