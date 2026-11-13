@@ -46,6 +46,22 @@ final class InlineAddUITests: XCTestCase {
         XCTAssertFalse(app.sheets.firstMatch.exists)
     }
 
+    /// Typing faster than a person (one burst with Returns) saves every line exactly once.
+    @MainActor
+    func testFastTypingSavesEachLineOnce() {
+        let app = Launch.app()
+        let eva = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
+
+        eva.startInline(in: "Toys")
+        app.typeText("Kite\nBall\nPuzzle\n")
+        eva.inlineDone()
+
+        for name in ["Kite", "Ball", "Puzzle"] {
+            eva.itemRow(name).waitToAppear()
+            XCTAssertEqual(app.buttons.matching(identifier: "item.row.\(name)").count, 1, name)
+        }
+    }
+
     /// LD-12 / LD-16 / LD-17: trimmed on commit, typed text kept as a name, no parsing.
     @MainActor
     func testTextIsTakenAsTyped() {

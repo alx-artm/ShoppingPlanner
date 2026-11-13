@@ -34,6 +34,8 @@ struct ListViewInside: View {
     @State private var inline: InlineAdd?
     @State private var inlineDraft = ItemDraft()
     @FocusState private var inlineFocus: InlineField?
+    /// Lines of the name field already saved by the last Return (see `InlineEntry`).
+    @State private var inlineSavedText = ""
 
     /// "Reorder Items": the list shows drag handles for the not-bought items.
     @State private var editMode: EditMode = .inactive
@@ -219,8 +221,14 @@ struct ListViewInside: View {
                     .id(InlineAdd.rowID)
                     .onChange(of: inlineDraft.name) { _, name in
                         // Return (or a pasted list of lines): every finished line is an item.
-                        let entry = InlineEntry(name)
-                        guard entry.hasReturn else { return }
+                        let entry = InlineEntry(name, saved: inlineSavedText)
+                        guard entry.hasReturn else {
+                            inlineSavedText = ""
+                            // A late echo of saved text: keep only what is new.
+                            if entry.skippedSaved { inlineDraft.name = entry.rest }
+                            return
+                        }
+                        inlineSavedText = entry.consumed
                         submitInline(names: entry.finishedLines, rest: entry.rest)
                     }
             } else {
@@ -330,6 +338,7 @@ struct ListViewInside: View {
         if inline != nil { commitInline() }
         uiState.setExpanded(true, for: group.uuid)
         inlineDraft = ItemDraft(groupID: group.uuid)
+        inlineSavedText = ""
         inline = InlineAdd(groupID: group.uuid, createdGroup: createdGroup)
         // After the row is on screen: focusing a field that doesn't exist yet is ignored.
         Task { @MainActor in inlineFocus = .name }

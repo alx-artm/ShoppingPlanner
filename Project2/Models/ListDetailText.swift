@@ -95,18 +95,30 @@ enum GroupHeaderText {
 /// Return arrives as a newline: every line before the last newline is a finished item,
 /// the text after it is the next draft. Names are trimmed only here, at commit (LD-16),
 /// and never parsed ("Sofa 450 x2" is a name, LD-17).
+///
+/// Typing fast, the text view can report its old text once more ("Ball\nP") after the
+/// screen has already saved "Ball" and cleared the field. `saved` is that already-saved
+/// part; when the text still starts with it, it is skipped, so nothing is saved twice.
 struct InlineEntry: Equatable, Sendable {
     /// Names to save, trimmed, blank lines dropped.
     let finishedLines: [String]
     /// What stays in the field, untouched.
     let rest: String
-    /// The text had at least one Return.
+    /// The text had at least one new Return.
     let hasReturn: Bool
+    /// The part of the text that this entry saves (up to the last newline), to pass as
+    /// `saved` with the next change.
+    let consumed: String
+    /// The text started with the already-saved part, which was skipped.
+    let skippedSaved: Bool
 
-    init(_ text: String) {
-        let lines = text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline).map(String.init)
+    init(_ text: String, saved: String = "") {
+        skippedSaved = !saved.isEmpty && text.hasPrefix(saved)
+        let fresh = skippedSaved ? String(text.dropFirst(saved.count)) : text
+        let lines = fresh.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline).map(String.init)
         hasReturn = lines.count > 1
-        rest = hasReturn ? (lines.last ?? "") : text
+        rest = hasReturn ? (lines.last ?? "") : fresh
         finishedLines = lines.dropLast().compactMap(PlannerStore.normalizedName)
+        consumed = hasReturn ? String(fresh.dropLast(rest.count)) : ""
     }
 }

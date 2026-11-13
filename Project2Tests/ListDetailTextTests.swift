@@ -135,4 +135,25 @@ struct ListDetailTextTests {
         #expect(entry.rest == rest)
         #expect(entry.hasReturn == hasReturn)
     }
+
+    @Test("A late echo of already saved lines is skipped, so nothing is saved twice")
+    func inlineEntryEcho() {
+        let first = InlineEntry("Ball\n")
+        #expect(first.finishedLines == ["Ball"])
+        #expect(first.consumed == "Ball\n")
+
+        // The text view reports its old text plus the next key before the reset arrives.
+        let echo = InlineEntry("Ball\nP", saved: first.consumed)
+        #expect(echo.skippedSaved)
+        #expect(echo.finishedLines.isEmpty)
+        #expect(echo.rest == "P")
+
+        let echoWithReturn = InlineEntry("Ball\nPuzzle\n", saved: first.consumed)
+        #expect(echoWithReturn.finishedLines == ["Puzzle"])
+        #expect(echoWithReturn.consumed == "Puzzle\n")
+
+        // The field caught up: "Ball" typed again on purpose is a new item.
+        #expect(InlineEntry("Ball\n", saved: "").finishedLines == ["Ball"])
+        #expect(!InlineEntry("P", saved: first.consumed).skippedSaved)
+    }
 }
