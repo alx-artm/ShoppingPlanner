@@ -149,7 +149,11 @@ final class InlineAddUITests: XCTestCase {
         eva.focusedInlineField("inline.linkField").typeText("www.kites.example.com/red")
         eva.inlineDone()
 
-        eva.app.descendants(matching: .any)["item.link.Kite"].firstMatch.waitForLabel(containing: "kites.example.com")
+        // The chip is an icon + host. iOS 26 exposes them as two elements with the same
+        // identifier (the icon's label is "Link"), iOS 27 as one: look for the host text.
+        eva.app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier == %@ AND label CONTAINS %@", "item.link.Kite", "kites.example.com"))
+            .firstMatch.waitToAppear()
         eva.reveal(eva.itemRow("Kite")).perform("Long press", until: app.buttons["item.menu.openLink"]) {
             $0.press(forDuration: 1.2)
         }
