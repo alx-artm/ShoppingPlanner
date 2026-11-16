@@ -13,8 +13,12 @@
 //  one list. So a tile is not a `Button` + `.contextMenu` but a `Menu` with a
 //  `primaryAction`: tap opens the list, long press opens the menu of that tile.
 //  A `Menu` is its own control, so the cell never takes it over. Rows (All
-//  Lists, and Pinned in Edit mode or at accessibility sizes) keep the real
+//  Lists, and Pinned in reorder mode or at accessibility sizes) keep the real
 //  `.contextMenu`, swipes and reordering: one list per cell, nothing to mix up.
+//
+//  Reordering is a mode (HM-32…HM-35): ⋯ → "Reorder Lists" shows the system
+//  handles, and Done ends it. It is not a nav-bar "Edit" button, because Home
+//  has nothing else to edit: a list's details are "List Info" (HM-36).
 //
 
 import SwiftData
@@ -69,7 +73,7 @@ struct HomeView: View {
                     ForEach(sections.others) { list in
                         row(list)
                     }
-                    // Reordering only in Edit mode: outside it, a long press is the context menu,
+                    // Reordering only in reorder mode: outside it, a long press is the context menu,
                     // and a drag lift competing with it left the menu stuck (the app never idled).
                     .onMove(perform: editMode.isEditing
                             ? { store.moveList(in: sections.others, fromOffsets: $0, toOffset: $1) } : nil)
@@ -89,8 +93,9 @@ struct HomeView: View {
         .navigationTitle("Lists")
         .searchable(text: $query, prompt: Text("Search Lists"))
         .toolbar { toolbar }
-        .onChange(of: lists.isEmpty) { _, isEmpty in
-            if isEmpty { editMode = .inactive }
+        // HM-35: a list deleted elsewhere (the detail column on iPad) can leave nothing to reorder.
+        .onChange(of: canReorder) { _, canReorder in
+            if !canReorder { editMode = .inactive }
         }
         .sheet(item: $sheet) { sheet in
             switch sheet {
@@ -132,10 +137,15 @@ struct HomeView: View {
         !query.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
+    /// Whole sections, not the search results: the search only hides rows (HM-32).
+    private var canReorder: Bool {
+        HomeSections(lists: lists).canReorder
+    }
+
     // MARK: - Pinned
 
-    /// Rows instead of tiles at accessibility text sizes (HM-02) and in Edit mode,
-    /// where rows get the system reorder handles (HM-03).
+    /// Rows instead of tiles at accessibility text sizes (HM-02) and in reorder mode,
+    /// where rows get the system reorder handles (HM-03, HM-33).
     private var showsPinnedAsRows: Bool {
         dynamicTypeSize.isAccessibilitySize || editMode.isEditing
     }
@@ -177,7 +187,7 @@ struct HomeView: View {
         .accessibilityIdentifier("home.listCard.\(list.name)")
         // HM-16: the menu actions, reachable without a long press.
         .accessibilityAction(named: Text("Unpin")) { togglePin(list) }
-        .accessibilityAction(named: Text("Edit")) { sheet = .editList(list) }
+        .accessibilityAction(named: Text("List Info")) { sheet = .editList(list) }
         .accessibilityAction(named: Text("Delete")) { listToDelete = list }
     }
 
@@ -211,7 +221,7 @@ struct HomeView: View {
             Button {
                 sheet = .editList(list)
             } label: {
-                Label("Edit", systemImage: "info.circle")
+                Label("List Info", systemImage: "info.circle")
             }
             .tint(.gray)
             .accessibilityIdentifier("home.swipe.edit")
@@ -237,7 +247,8 @@ struct HomeView: View {
         }
         .accessibilityIdentifier("home.menu.togglePin")
 
-        Button("Edit", systemImage: "info.circle") {
+        // "List Info", not "Edit": the same name as in the list's ⋯ menu (HM-36).
+        Button("List Info", systemImage: "info.circle") {
             sheet = .editList(list)
         }
         .accessibilityIdentifier("home.menu.edit")
@@ -289,29 +300,48 @@ struct HomeView: View {
             }
             .accessibilityIdentifier("home.settingsButton")
         }
-        ToolbarItem(placement: .topBarTrailing) {
-            Button(editMode.isEditing ? "Done" : "Edit") {
-                withAnimation {
-                    editMode = editMode.isEditing ? .inactive : .active
+        if editMode.isEditing {
+            // HM-33: only Done while reordering, like `listDetail.reorderDoneButton`.
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Done", systemImage: "checkmark", role: .confirm) {
+                    withAnimation { editMode = .inactive }
                 }
+                .accessibilityIdentifier("home.reorderDoneButton")
             }
-            .disabled(lists.isEmpty)
-            .accessibilityIdentifier("home.editButton")
-        }
-        ToolbarItem(placement: .topBarTrailing) {
-            // Tap: a new empty list. Long press: the choice with templates (LI-12).
-            Menu {
-                Button("New List", systemImage: "plus") { newList() }
-                    .accessibilityIdentifier("home.menu.newList")
-                Button("From Template", systemImage: "square.grid.2x2") { sheet = .templates }
-                    .accessibilityIdentifier("home.menu.fromTemplate")
-            } label: {
-                Label("New List", systemImage: "plus")
-            } primaryAction: {
-                newList()
+        } else {
+            ToolbarItem(placement: .topBarTrailing) { moreMenu }
+            ToolbarItem(placement: .topBarTrailing) {
+                // Tap: a new empty list. Long press: the choice with templates (LI-12).
+                Menu {
+                    Button("New List", systemImage: "plus") { newList() }
+                        .accessibilityIdentifier("home.menu.newList")
+                    Button("From Template", systemImage: "square.grid.2x2") { sheet = .templates }
+                        .accessibilityIdentifier("home.menu.fromTemplate")
+                } label: {
+                    Label("New List", systemImage: "plus")
+                } primaryAction: {
+                    newList()
+                }
+                .accessibilityIdentifier("home.newListButton")
             }
-            .accessibilityIdentifier("home.newListButton")
         }
+    }
+
+    /// ⋯ of Home (HM-31, HM-32). Always shown, even with no lists: "New from Template"
+    /// works then too, and "Reorder Lists" stays visible but disabled.
+    private var moreMenu: some View {
+        Menu {
+            Button("New from Template", systemImage: "square.grid.2x2") { sheet = .templates }
+                .accessibilityIdentifier("home.menu.newFromTemplate")
+            Button("Reorder Lists", systemImage: "arrow.up.arrow.down") {
+                withAnimation { editMode = .active }
+            }
+            .disabled(!canReorder)
+            .accessibilityIdentifier("home.menu.reorderLists")
+        } label: {
+            Label("More", systemImage: "ellipsis")
+        }
+        .accessibilityIdentifier("home.menuButton")
     }
 
     /// No lists at all (HM-14). Centered by `ContentUnavailableView` in an overlay (AD-07).

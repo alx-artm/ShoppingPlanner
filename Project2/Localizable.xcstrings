@@ -1168,6 +1168,17 @@
         }
       }
     },
+    "New from Template" : {
+      "comment" : "Home ⋯ menu: opens the template picker to create a list.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Из шаблона"
+          }
+        }
+      }
+    },
     "New Group" : {
       "comment" : "Title of the New Group alert.",
       "localizations" : {
@@ -1565,6 +1576,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Порядок товаров"
+          }
+        }
+      }
+    },
+    "Reorder Lists" : {
+      "comment" : "Home ⋯ menu: shows drag handles to reorder lists inside their sections.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Порядок списков"
           }
         }
       }
