@@ -418,6 +418,35 @@ extension HomeScreen {
         return ListInfoScreen(app: app).waitUntilShown()
     }
 
+    /// ⋯ in the toolbar (HM-31) and its items (HM-32, HM-38).
+    var menuButton: XCUIElement { app.buttons["home.menuButton"] }
+    var reorderListsItem: XCUIElement { app.buttons["home.menu.reorderLists"] }
+    var reorderDoneButton: XCUIElement { app.buttons["home.reorderDoneButton"] }
+
+    /// ⋯ → "New from Template" → template picker (HM-38).
+    func openTemplatesFromMoreMenu() -> TemplatePickerScreen {
+        menuButton.waitAndTap()
+        app.buttons["home.menu.newFromTemplate"].waitAndTap()
+        return TemplatePickerScreen(app: app).waitUntilShown()
+    }
+
+    /// ⋯ → "Reorder Lists": rows with drag handles and only Done in the toolbar (HM-33).
+    func startReorderingLists() {
+        menuButton.waitAndTap()
+        reorderListsItem.waitAndTap()
+        reorderDoneButton.waitToAppear()
+    }
+
+    /// ⋯ open: is "Reorder Lists" enabled? Closes the menu again (HM-32).
+    func isReorderListsEnabled() -> Bool {
+        menuButton.waitAndTap()
+        let enabled = reorderListsItem.waitToAppear().isEnabled
+        // A tap outside the menu closes it without choosing anything.
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9)).tap()
+        reorderListsItem.waitToDisappear()
+        return enabled
+    }
+
     /// Long press "+" → "From Template" → template picker (LI-12).
     func openTemplatesFromMenu() -> TemplatePickerScreen {
         newListButton.perform("Long press", until: app.buttons["home.menu.fromTemplate"]) {
@@ -444,14 +473,14 @@ extension HomeScreen {
         openContextMenu(card: name, until: app.buttons["home.menu.togglePin"]).waitAndTap()
     }
 
-    /// Long press a tile → Edit → List Info of that list (HM-09, BUG-27).
+    /// Long press a tile → "List Info" → List Info of that list (HM-09, HM-36, BUG-27).
     func editFromContextMenu(card name: String) -> ListInfoScreen {
         openContextMenu(card: name, until: app.buttons["home.menu.edit"]).waitAndTap()
         return ListInfoScreen(app: app).waitUntilShown()
     }
 
     /// Long press a tile until `item` of its context menu shows up; returns `item`.
-    private func openContextMenu(card name: String, until item: XCUIElement) -> XCUIElement {
+    func openContextMenu(card name: String, until item: XCUIElement) -> XCUIElement {
         card(name).scrollIntoView(within: list)
             .perform("Long press", until: item,
                      recover: { backFromMisfiredGesture(on: card(name)) }) {
@@ -484,7 +513,7 @@ extension HomeScreen {
         return confirm.waitToAppear()
     }
 
-    /// Swipe left on a row → gray "Edit" → List Info in edit mode (LI-11).
+    /// Swipe left on a row → gray "List Info" → List Info in edit mode (LI-11, HM-36).
     func editWithSwipe(row name: String) -> ListInfoScreen {
         // A partial drag: a full swipe would run the first trailing action (Delete).
         row(name).scrollIntoView(within: list).perform("Partial swipe left", until: app.buttons["home.swipe.edit"],
