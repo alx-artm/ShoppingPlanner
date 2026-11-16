@@ -152,7 +152,7 @@ struct ListDetailScreen {
         field.typeText(name)
         if let price {
             app.buttons["inline.accessory.price"].waitAndTap()
-            app.textFields["inline.priceField"].waitToAppear().typeText(price)
+            focusedInlineField("inline.priceField").typeText(price)
         }
         if quantity > 1 {
             app.buttons["inline.accessory.quantity"].waitAndTap()
@@ -170,6 +170,15 @@ struct ListDetailScreen {
         reveal(addItemButton(group)).tap()
         let field = app.textFields["inline.nameField"].waitToAppear()
         XCTAssertTrue(field.waitForKeyboardFocus(), "the inline field has the keyboard")
+        return field
+    }
+
+    /// An inline extra field ("inline.priceField", "inline.linkField") once it has the keyboard.
+    /// The accessory button shows the field first and moves the focus on a later update, so on
+    /// a slow machine (CI) typing right after `waitToAppear` lands before the focus does.
+    func focusedInlineField(_ identifier: String) -> XCUIElement {
+        let field = app.textFields[identifier].waitToAppear()
+        XCTAssertTrue(field.waitForKeyboardFocus(), "\(identifier) has the keyboard")
         return field
     }
 

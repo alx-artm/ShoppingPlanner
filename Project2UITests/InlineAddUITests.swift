@@ -126,7 +126,7 @@ final class InlineAddUITests: XCTestCase {
         let field = eva.startInline(in: "Toys")
         field.typeText("Kite")
         eva.app.buttons["inline.accessory.price"].waitAndTap()
-        eva.app.textFields["inline.priceField"].waitToAppear().typeText("12.5")
+        eva.focusedInlineField("inline.priceField").typeText("12.5")
         eva.app.buttons["inline.accessory.quantity"].waitAndTap()
         eva.app.buttons["inline.quantityStepper-Increment"].waitAndTap()
         eva.app.staticTexts["inline.total"].waitForLabel("= $25.00")
@@ -146,7 +146,7 @@ final class InlineAddUITests: XCTestCase {
         let field = eva.startInline(in: "Toys")
         field.typeText("Kite")
         app.buttons["inline.accessory.link"].waitAndTap()
-        app.textFields["inline.linkField"].waitToAppear().typeText("www.kites.example.com/red")
+        eva.focusedInlineField("inline.linkField").typeText("www.kites.example.com/red")
         eva.inlineDone()
 
         eva.app.descendants(matching: .any)["item.link.Kite"].firstMatch.waitForLabel(containing: "kites.example.com")
