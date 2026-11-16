@@ -62,7 +62,7 @@ struct HomeScreen {
     func deleteFromContextMenu(row name: String) {
         row(name).scrollIntoView(within: app.collectionViews.firstMatch)
             .perform("Long press", until: app.buttons["home.menu.delete"],
-                     recover: { backFromMisfiredLongPress(on: row(name)) }) {
+                     recover: { backFromMisfiredGesture(on: row(name)) }) {
             $0.press(forDuration: 1.5)
         }.waitAndTap()
         // Dialog buttons can expose their identifier twice; take the first match.
@@ -130,18 +130,23 @@ struct ListDetailScreen {
 
     /// Long press a row → `action` of its context menu (edit, duplicate, openLink, delete).
     func contextMenu(_ item: String, _ action: String) {
-        // A long press the busy app read as a tap opens the item's details: close them.
-        let details = ItemEditScreen(app: app)
         reveal(itemRow(item)).perform("Long press", until: app.buttons["item.menu.\(action)"],
-                                      recover: { if details.cancelButton.exists { details.cancel() } }) {
+                                      recover: closeMisfiredItemDetails) {
             $0.press(forDuration: 1.2)
         }.waitAndTap()
+    }
+
+    /// A gesture on a row that the busy app (slow CI runner) received as a tap opens the
+    /// item's details sheet over the list: close it so the gesture can be retried.
+    func closeMisfiredItemDetails() {
+        let details = ItemEditScreen(app: app)
+        if details.cancelButton.exists { details.cancel() }
     }
 
     /// Swipe right on a row → Bought / Not Bought (LD-09).
     func swipeToToggle(_ item: String) {
         let button = app.buttons["item.swipe.toggle"]
-        reveal(itemRow(item)).perform("Swipe right", until: button) {
+        reveal(itemRow(item)).perform("Swipe right", until: button, recover: closeMisfiredItemDetails) {
             let start = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5))
             let end = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.5))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
@@ -254,7 +259,7 @@ struct ListDetailScreen {
         let deleteButton = app.buttons["item.swipe.delete"]
         let result = app.descendants(matching: .any).matching(NSPredicate(
             format: "identifier IN %@", ["item.swipe.delete", "undoToast"])).firstMatch
-        reveal(row).perform("Swipe left", until: result) {
+        reveal(row).perform("Swipe left", until: result, recover: closeMisfiredItemDetails) {
             let start = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5))
             let end = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.5))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
@@ -427,7 +432,8 @@ extension HomeScreen {
         let pinButton = app.buttons["home.swipe.togglePin"]
         let result = app.buttons.matching(NSPredicate(
             format: "identifier IN %@", ["home.swipe.togglePin", "home.listCard.\(name)"])).firstMatch
-        row(name).scrollIntoView(within: list).perform("Swipe right", until: result) {
+        row(name).scrollIntoView(within: list).perform("Swipe right", until: result,
+                                                       recover: { backFromMisfiredGesture(on: row(name)) }) {
             $0.swipeRight()
         }
         if pinButton.exists { pinButton.tap() }
@@ -448,16 +454,16 @@ extension HomeScreen {
     private func openContextMenu(card name: String, until item: XCUIElement) -> XCUIElement {
         card(name).scrollIntoView(within: list)
             .perform("Long press", until: item,
-                     recover: { backFromMisfiredLongPress(on: card(name)) }) {
+                     recover: { backFromMisfiredGesture(on: card(name)) }) {
                 $0.press(forDuration: 1.5)
             }
     }
 
-    /// A long press that a busy app (slow CI runner) received as a tap opens the list
-    /// (a tile's Menu primary action, a row's link) and Home's tile or row is no longer
-    /// on screen. Go back so the press can be retried. On iPad the list opens beside
+    /// A long press or swipe that a busy app (slow CI runner) received as a tap opens the
+    /// list (a tile's Menu primary action, a row's link) and Home's tile or row is no longer
+    /// on screen. Go back so the gesture can be retried. On iPad the list opens beside
     /// Home and `element` stays hittable: nothing to undo.
-    func backFromMisfiredLongPress(on element: XCUIElement) {
+    func backFromMisfiredGesture(on element: XCUIElement) {
         let detail = ListDetailScreen(app: app)
         guard !element.isHittable, detail.menuButton.exists, detail.backButton.exists else { return }
         _ = detail.goBack()
@@ -470,7 +476,8 @@ extension HomeScreen {
         let deleteButton = app.buttons["home.swipe.delete"]
         let result = app.buttons.matching(NSPredicate(
             format: "identifier IN %@", ["home.swipe.delete", "home.deleteAlert.confirmButton"])).firstMatch
-        row(name).scrollIntoView(within: list).perform("Swipe left", until: result) {
+        row(name).scrollIntoView(within: list).perform("Swipe left", until: result,
+                                                       recover: { backFromMisfiredGesture(on: row(name)) }) {
             $0.swipeLeft()
         }
         if deleteButton.exists && !confirm.exists { deleteButton.tap() }
@@ -480,7 +487,8 @@ extension HomeScreen {
     /// Swipe left on a row → gray "Edit" → List Info in edit mode (LI-11).
     func editWithSwipe(row name: String) -> ListInfoScreen {
         // A partial drag: a full swipe would run the first trailing action (Delete).
-        row(name).scrollIntoView(within: list).perform("Partial swipe left", until: app.buttons["home.swipe.edit"]) {
+        row(name).scrollIntoView(within: list).perform("Partial swipe left", until: app.buttons["home.swipe.edit"],
+                                                       recover: { backFromMisfiredGesture(on: row(name)) }) {
             let start = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5))
             let end = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.5))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
