@@ -285,8 +285,13 @@ final class ListDetailUITests: XCTestCase {
         alex.menuAction("reorderItems")
         let handles = app.collectionViews.firstMatch.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Reorder"))
         let swimsuitHandle = handles.element(boundBy: 1).waitToAppear()
-        swimsuitHandle.press(forDuration: 0.6, thenDragTo: handles.element(boundBy: 0),
-                             withVelocity: .slow, thenHoldForDuration: 0.3)
+        // Drop in the upper part of the first row, not on its center: a row dropped exactly on
+        // the center of the row above sometimes stays in place (CI, iOS 26: Swimsuit didn't move).
+        let firstHandle = handles.element(boundBy: 0)
+        let start = swimsuitHandle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let target = firstHandle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .withOffset(CGVector(dx: 0, dy: -24))
+        start.press(forDuration: 0.6, thenDragTo: target, withVelocity: .slow, thenHoldForDuration: 0.5)
         app.buttons["listDetail.reorderDoneButton"].waitAndTap()
 
         XCTAssertLessThan(alex.itemRow("Swimsuit").frame.minY, alex.itemRow("Sunglasses").frame.minY)
