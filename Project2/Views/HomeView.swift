@@ -45,7 +45,8 @@ struct HomeView: View {
                         ForEach(sections.pinned) { list in
                             row(list)
                         }
-                        .onMove { store.moveList(in: sections.pinned, fromOffsets: $0, toOffset: $1) }
+                        .onMove(perform: editMode.isEditing
+                                ? { store.moveList(in: sections.pinned, fromOffsets: $0, toOffset: $1) } : nil)
                         .moveDisabled(isSearching)
                     } else {
                         pinnedGrid(sections.pinned)
@@ -68,7 +69,10 @@ struct HomeView: View {
                     ForEach(sections.others) { list in
                         row(list)
                     }
-                    .onMove { store.moveList(in: sections.others, fromOffsets: $0, toOffset: $1) }
+                    // Reordering only in Edit mode: outside it, a long press is the context menu,
+                    // and a drag lift competing with it left the menu stuck (the app never idled).
+                    .onMove(perform: editMode.isEditing
+                            ? { store.moveList(in: sections.others, fromOffsets: $0, toOffset: $1) } : nil)
                     .moveDisabled(isSearching)
                 }
             }

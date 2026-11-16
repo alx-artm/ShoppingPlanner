@@ -69,9 +69,11 @@ struct ListRowView: View {
         }
         .font(.subheadline)
         .foregroundStyle(.secondary)
-        .lineLimit(1)
-        // Narrow rows (Edit mode handles, small iPhones) shrink a little before truncating.
-        .minimumScaleFactor(0.8)
+        // Standard sizes: one line each; narrow rows (Edit mode handles, small iPhones) shrink a
+        // little first. Accessibility sizes: the lines wrap, so nothing is cut off (HM-25).
+        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+        .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.8)
+        .fixedSize(horizontal: false, vertical: dynamicTypeSize.isAccessibilitySize)
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("home.listRow.status.\(list.name)")
     }

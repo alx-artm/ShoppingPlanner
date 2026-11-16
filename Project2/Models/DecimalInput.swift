@@ -2,7 +2,7 @@
 //  DecimalInput.swift
 //  Project2
 //
-//  Parsing of amounts typed by the user (BUG-28, later BUG-26).
+//  Parsing of amounts typed by the user (BUG-28, BUG-26).
 //
 //  `Decimal.FormatStyle` parses strictly in the locale: in ru_RU "." is not a
 //  separator at all, so "250.5" silently became 250. People get "." from a
@@ -136,12 +136,7 @@ struct MoneyInputFormat: ParseableFormatStyle {
         /// The list currency's symbol in this locale ("€", "$", "US$") and its ISO code.
         /// Another currency's symbol stays in the text, so it is rejected.
         private var symbols: [String] {
-            let sample = MoneyFormat.string(0, currencyCode: currencyCode, locale: locale)
-            let symbol = String(sample.unicodeScalars.filter {
-                !$0.properties.isWhitespace && !("0"..."9").contains($0)
-                    && $0 != "," && $0 != "." && $0 != "-" && $0 != "\u{2212}"
-            }.map(Character.init))
-            return [symbol, currencyCode.uppercased()]
+            [CurrencyAffix(currencyCode: currencyCode, locale: locale).symbol, currencyCode.uppercased()]
         }
     }
 }

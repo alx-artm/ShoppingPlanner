@@ -83,6 +83,18 @@ final class HomeUITests: XCTestCase {
         info.cancel().card("Alex").waitToAppear()
     }
 
+    /// HM-30: rows have three lines (name + to buy / progress / budget) and the same height
+    /// whatever the budget state: Eva "No budget" next to Victoria "⚠ plan €15.00 over budget" (S5).
+    @MainActor
+    func testRowsHaveTheSameHeightInEveryBudgetState() {
+        let home = HomeScreen(app: Launch.app()).waitUntilShown()
+        let eva = home.row("Eva").waitToAppear()
+        let victoria = home.row("Victoria").waitToAppear()
+        XCTAssertEqual(eva.frame.height, victoria.frame.height, accuracy: 0.5)
+        XCTAssertFalse(home.app.staticTexts["home.listRow.status.Victoria"].label.contains("·"),
+                       "no '·' joining progress and budget")
+    }
+
     /// HM-28: tiles of one row have the same height, whatever their budget state
     /// (Alex: to spare, Victoria: over budget).
     @MainActor
@@ -138,5 +150,24 @@ final class HomeUITests: XCTestCase {
         settings.version.waitToAppear()
         settings.close().card("Alex").waitToAppear()
         XCTAssertTrue(home.settingsButton.isHittable)
+    }
+
+    /// HM-03: lists are reordered in Edit mode with drag handles (outside it, a long press is
+    /// the context menu, so rows are not draggable there).
+    @MainActor
+    func testReorderListsInEditMode() {
+        let app = Launch.app()
+        let home = HomeScreen(app: app).waitUntilShown()
+        XCTAssertLessThan(home.top(of: home.row("Eva")), home.top(of: home.row("Victoria")))
+
+        app.buttons["home.editButton"].waitAndTap()
+        let handles = home.list.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Reorder"))
+        // Pinned Alex is a row in Edit mode too: Alex, Eva, Victoria.
+        let victoriaHandle = handles.element(boundBy: 2).waitToAppear()
+        victoriaHandle.press(forDuration: 0.6, thenDragTo: handles.element(boundBy: 1),
+                             withVelocity: .slow, thenHoldForDuration: 0.3)
+        app.buttons["home.editButton"].waitAndTap()
+
+        XCTAssertLessThan(home.top(of: home.row("Victoria")), home.top(of: home.row("Eva")))
     }
 }

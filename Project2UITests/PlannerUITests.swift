@@ -39,10 +39,11 @@ final class PlannerUITests: XCTestCase {
         home.row("Eva").waitForLabel(containing: "180")
         home.row("Victoria").waitForLabel(containing: "315")
 
-        // Detail: list total and group totals add up (115 + 225 = 340).
+        // Detail: group headers show planned (145 + 225 = 370), the summary bar what is left (LD-04, LD-10).
         let alex = home.open(card: "Alex")
         alex.total.waitForLabel("$340.00")
-        alex.groupTotal("Vacation").waitForLabel("$115.00")
+        alex.planned.waitForLabel("of $370.00")
+        alex.groupTotal("Vacation").waitForLabel("$145.00")
         alex.groupTotal("Birthday").waitForLabel("$225.00")
         alex.itemTotal("BBQ food").waitForLabel("$110.00") // 55 × 2
         alex.checkbox("Flip-flops").waitForSelected(true)
@@ -59,28 +60,46 @@ final class PlannerUITests: XCTestCase {
         let party = home.open(row: "Party")
 
         party.addGroup(named: "Food")
-        // Whole-number price: typing "12.5" into the decimal pad is flaky (see BUG-26,
-        // fixed with the new price input in M4). Decimal math is unit-tested.
+        // Decimal prices: testDecimalPriceKeepsTheSeparator (BUG-26).
         party.addItem(named: "Cake", price: "12", quantity: 2, to: "Food")
 
         party.itemTotal("Cake").waitForLabel("$24.00")
         party.groupTotal("Food").waitForLabel("$24.00")
         party.total.waitForLabel("$24.00")
-        XCTAssertEqual(app.buttons["item.quantityButton.Cake"].label, "2")
+        party.itemDetail("Cake").waitForLabel("2 × $12.00")
 
         party.goBack().row("Party").waitForLabel(containing: "24")
     }
 
-    /// DM-12: a new item needs a name, Done stays disabled for a blank one.
+    /// BUG-26: a decimal price keeps its separator, typed with "." or "," in en_US and ru_RU.
+    @MainActor
+    func testDecimalPriceKeepsTheSeparator() {
+        for (language, region, price) in [("en", "en_US", "12.5"), ("en", "en_US", "12,5"),
+                                          ("ru", "ru_RU", "12,5"), ("ru", "ru_RU", "12.5")] {
+            let app = Launch.app(language: language, region: region)
+            let eva = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
+
+            eva.addItem(named: "Cake", price: price, quantity: 2, to: "Toys")
+
+            // 12.5 × 2, formatted like the app does for this region ("$25.00", "25,00 $").
+            let expected = Decimal(25).formatted(.currency(code: "USD").locale(Locale(identifier: region)))
+            eva.itemTotal("Cake").waitForLabel(expected)
+            app.terminate()
+        }
+    }
+
+    /// DM-12: a new item needs a name: Return on a blank inline line saves nothing.
     @MainActor
     func testNewItemWithoutNameCannotBeSaved() {
         let app = Launch.app()
         let list = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
+        let before = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'item.row.'")).count
 
-        list.addItemButton("Toys").waitAndTap()
-        let editor = ItemEditScreen(app: app).waitUntilShown()
-        editor.nameField.typeText("   ")
-        XCTAssertFalse(editor.doneButton.isEnabled)
+        list.startInline(in: "Toys")
+        app.typeText("   \n")
+
+        list.addItemButton("Toys").waitToAppear() // a blank Return closes inline add
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'item.row.'")).count, before)
     }
 
     // MARK: - Complete (DM-16, DM-23)
@@ -93,7 +112,7 @@ final class PlannerUITests: XCTestCase {
         alex.checkbox("Sunglasses").waitAndTap()
         alex.checkbox("Sunglasses").waitForSelected(true)
         alex.total.waitForLabel("$280.00")
-        alex.groupTotal("Vacation").waitForLabel("$55.00")
+        alex.groupTotal("Vacation").waitForLabel("$145.00") // planned doesn't change (LD-04)
 
         alex.checkbox("Sunglasses").tap()
         alex.checkbox("Sunglasses").waitForSelected(false)
@@ -111,7 +130,7 @@ final class PlannerUITests: XCTestCase {
 
         alex.itemRow("Swimsuit").waitToDisappear()
         alex.total.waitForLabel("$285.00")
-        alex.groupTotal("Vacation").waitForLabel("$60.00")
+        alex.groupTotal("Vacation").waitForLabel("$90.00")
         XCTAssertEqual(app.state, .runningForeground, "no crash after deleting the open item (BUG-04)")
     }
 
@@ -137,7 +156,7 @@ final class PlannerUITests: XCTestCase {
     func testDeleteGroupThenReopenList() {
         let alex = HomeScreen(app: Launch.app()).waitUntilShown().open(card: "Alex")
 
-        alex.openGroup("Vacation").delete()
+        alex.deleteGroup("Vacation")
 
         alex.groupHeader("Vacation").waitToDisappear()
         alex.itemRow("Sunglasses").waitToDisappear()

@@ -49,7 +49,8 @@ struct ListStatusText: Equatable, Sendable {
     let percentText: String?
     /// Tile: "No budget", "Budget €500", "€160 to spare", "€15 over" (no cents, HM-29; ⚠ is drawn by the view).
     let budgetShort: String
-    /// Row: "No budget", "budget €500.00", "€160.00 to spare of €500.00", "plan €15.00 over budget".
+    /// Row and list summary bar: "No budget", "budget €500.00", "€160.00 to spare of €500.00",
+    /// "plan €15.00 over budget".
     let budgetFull: String
     /// The VoiceOver form of the budget part ("… of €500.00 budget", "no budget").
     let budgetSpoken: String
@@ -78,17 +79,9 @@ struct ListStatusText: Equatable, Sendable {
         }
     }
 
-    /// Row status, always two parts (HM-30): "13% bought · €160.00 to spare of €500.00".
-    var rowText: String {
-        "\(progressText) · \(isOverBudget ? "⚠ " : "")\(budgetFull)"
-    }
-
     init(_ summary: BudgetSummary, currencyCode: String, locale: Locale = .autoupdatingCurrent) {
         func money(_ value: Decimal) -> String {
             MoneyFormat.string(value, currencyCode: currencyCode, locale: locale)
-        }
-        func whole(_ value: Decimal, _ rule: FloatingPointRoundingRule) -> String {
-            MoneyFormat.wholeString(value, currencyCode: currencyCode, locale: locale, rounding: rule)
         }
 
         // Progress.
@@ -132,21 +125,18 @@ struct ListStatusText: Equatable, Sendable {
         case .allBought: String(localized: "All bought")
         }
 
+        budgetShort = Self.shortBudgetText(budget, currencyCode: currencyCode, locale: locale)
         switch budget {
         case .none:
-            budgetShort = String(localized: "No budget")
             budgetFull = String(localized: "status.row.noBudget", defaultValue: "No budget")
             budgetSpoken = String(localized: "status.voice.noBudget", defaultValue: "no budget")
         case .notPlanned(let limit):
-            budgetShort = String(localized: "Budget \(whole(limit, .toNearestOrAwayFromZero))")
             budgetFull = String(localized: "budget \(money(limit))")
             budgetSpoken = budgetFull
         case .toSpare(let left, let limit):
-            budgetShort = String(localized: "\(whole(left, .down)) to spare")
             budgetFull = String(localized: "\(money(left)) to spare of \(money(limit))")
             budgetSpoken = String(localized: "\(money(left)) to spare of \(money(limit)) budget")
         case .over(let excess):
-            budgetShort = String(localized: "\(whole(excess, .up)) over")
             budgetFull = String(localized: "plan \(money(excess)) over budget")
             budgetSpoken = budgetFull
         }
@@ -173,6 +163,29 @@ struct ListStatusText: Equatable, Sendable {
     }
 
     // MARK: - Helpers
+
+    /// The tile form of the budget part, without cents (HM-29): "No budget", "Budget €500",
+    /// "€160 to spare" / «запас 160 €», "€15 over". "To spare" rounds down and "over" rounds up,
+    /// so the tile never promises more money than there is.
+    ///
+    /// - Parameter bundle: where the translation comes from. The app passes `.main`; tests pass
+    ///   a language bundle (`ru.lproj`) to check the exact text in another language.
+    static func shortBudgetText(_ budget: Budget, currencyCode: String, locale: Locale,
+                                bundle: Bundle = .main) -> String {
+        func whole(_ value: Decimal, _ rule: FloatingPointRoundingRule) -> String {
+            MoneyFormat.wholeString(value, currencyCode: currencyCode, locale: locale, rounding: rule)
+        }
+        return switch budget {
+        case .none:
+            String(localized: "No budget", bundle: bundle)
+        case .notPlanned(let limit):
+            String(localized: "Budget \(whole(limit, .toNearestOrAwayFromZero))", bundle: bundle)
+        case .toSpare(let left, _):
+            String(localized: "\(whole(left, .down)) to spare", bundle: bundle)
+        case .over(let excess):
+            String(localized: "\(whole(excess, .up)) over", bundle: bundle)
+        }
+    }
 
     /// At least one item has a price. Without one, Home shows "—" instead of "0" (HM-06).
     static func hasPrices(_ summary: BudgetSummary) -> Bool {
