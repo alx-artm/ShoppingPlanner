@@ -74,6 +74,24 @@ extension XCUIElement {
         return self
     }
 
+    /// Waits until this element is hittable or `other` exists, whichever comes first.
+    /// Returns `true` if `other` showed up; fails the test if neither happens in time.
+    @MainActor
+    @discardableResult
+    func waitToBeHittable(orUntil other: XCUIElement, timeout: TimeInterval = uiTimeout,
+                          file: StaticString = #filePath, line: UInt = #line) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            if other.exists { return true }
+            if exists && isHittable { return false }
+            // The wait for `other` paces the loop (no sleep) and ends early if it appears.
+        } while !other.waitForExistence(timeout: 0.5) && Date() < deadline
+        if other.exists { return true }
+        XCTFail("\(self) is not hittable (and \(other) did not appear) after \(timeout)s",
+                file: file, line: line)
+        return false
+    }
+
     /// Scrolls `container` until this element is hittable, at most `maxSwipes` times.
     ///
     /// An element can exist but sit under the floating tab bar or below the fold
@@ -112,6 +130,11 @@ extension XCUIElement {
     /// system can drop one that lands while the view is still settling. A tap is
     /// re-sent automatically by XCTest, a gesture is not, so we retry it ourselves.
     /// Each attempt waits for the element to be hittable first; no sleeps.
+    ///
+    /// A missed gesture can also do something else: when the app is too busy to see the
+    /// touch go down and up in time, a long press arrives as a tap (on a Home tile that runs
+    /// the Menu's primary action and opens the list). `recover` runs before each retry and
+    /// brings the screen back (e.g. goes back to Home) so the element can be pressed again.
     @MainActor
     @discardableResult
     func perform(_ gestureName: String,
@@ -119,12 +142,15 @@ extension XCUIElement {
                  attempts: Int = 3,
                  resultTimeout: TimeInterval = 5,
                  file: StaticString = #filePath, line: UInt = #line,
+                 recover: () -> Void = {},
                  _ gesture: (XCUIElement) -> Void) -> XCUIElement {
-        for _ in 1...max(attempts, 1) {
+        for attempt in 1...max(attempts, 1) {
             // A late result from the previous attempt counts, and pressing again
             // on top of an open menu would dismiss it.
             if result.exists { return result }
-            waitToBeHittable(file: file, line: line)
+            if attempt > 1 { recover() }
+            // A menu that opens late covers this element (not hittable): wait for either.
+            if waitToBeHittable(orUntil: result, file: file, line: line) { return result }
             gesture(self)
             if result.waitForExistence(timeout: resultTimeout) { return result }
         }

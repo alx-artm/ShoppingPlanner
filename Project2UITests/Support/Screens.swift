@@ -61,7 +61,8 @@ struct HomeScreen {
 
     func deleteFromContextMenu(row name: String) {
         row(name).scrollIntoView(within: app.collectionViews.firstMatch)
-            .perform("Long press", until: app.buttons["home.menu.delete"]) {
+            .perform("Long press", until: app.buttons["home.menu.delete"],
+                     recover: { backFromMisfiredLongPress(on: row(name)) }) {
             $0.press(forDuration: 1.5)
         }.waitAndTap()
         // Dialog buttons can expose their identifier twice; take the first match.
@@ -129,7 +130,10 @@ struct ListDetailScreen {
 
     /// Long press a row → `action` of its context menu (edit, duplicate, openLink, delete).
     func contextMenu(_ item: String, _ action: String) {
-        reveal(itemRow(item)).perform("Long press", until: app.buttons["item.menu.\(action)"]) {
+        // A long press the busy app read as a tap opens the item's details: close them.
+        let details = ItemEditScreen(app: app)
+        reveal(itemRow(item)).perform("Long press", until: app.buttons["item.menu.\(action)"],
+                                      recover: { if details.cancelButton.exists { details.cancel() } }) {
             $0.press(forDuration: 1.2)
         }.waitAndTap()
     }
@@ -443,9 +447,20 @@ extension HomeScreen {
     /// Long press a tile until `item` of its context menu shows up; returns `item`.
     private func openContextMenu(card name: String, until item: XCUIElement) -> XCUIElement {
         card(name).scrollIntoView(within: list)
-            .perform("Long press", until: item) {
+            .perform("Long press", until: item,
+                     recover: { backFromMisfiredLongPress(on: card(name)) }) {
                 $0.press(forDuration: 1.5)
             }
+    }
+
+    /// A long press that a busy app (slow CI runner) received as a tap opens the list
+    /// (a tile's Menu primary action, a row's link) and Home's tile or row is no longer
+    /// on screen. Go back so the press can be retried. On iPad the list opens beside
+    /// Home and `element` stays hittable: nothing to undo.
+    func backFromMisfiredLongPress(on element: XCUIElement) {
+        let detail = ListDetailScreen(app: app)
+        guard !element.isHittable, detail.menuButton.exists, detail.backButton.exists else { return }
+        _ = detail.goBack()
     }
 
     /// Swipe left on a row → "Delete" → confirmation dialog (HM-10).
