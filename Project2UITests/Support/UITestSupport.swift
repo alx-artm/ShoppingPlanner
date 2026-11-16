@@ -19,12 +19,22 @@ enum Launch {
         ["-AppleLanguages", "(\(language))", "-AppleLocale", region]
     }
 
+    /// Keeps the "Undo" toast for this many seconds instead of 4.
+    static let undoToastSeconds = "-UITestsUndoToastSeconds"
+
     /// In-memory store with `SeedData` (or empty with `emptyStore: true`), in English / en_US
     /// unless another language and region are given.
+    ///
+    /// `longUndoToast`: the toast stays a minute. For tests that act while it is on screen:
+    /// its 4-second timer is wall-clock time, and on a slow CI runner the steps between the
+    /// deletion and the tap can take longer. When the toast leaves, the bottom inset shrinks
+    /// and the rows move down ~50 pt, so a tap aimed a moment before lands on the row above.
     @MainActor
-    static func app(emptyStore: Bool = false, language: String = "en", region: String = "en_US") -> XCUIApplication {
+    static func app(emptyStore: Bool = false, language: String = "en", region: String = "en_US",
+                    longUndoToast: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [uiTests] + (emptyStore ? [Launch.emptyStore] : [])
+            + (longUndoToast ? [undoToastSeconds, "60"] : [])
             + locale(language: language, region: region)
         app.launch()
         return app

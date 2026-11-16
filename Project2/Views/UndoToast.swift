@@ -13,8 +13,10 @@ struct DeletedItem: Identifiable, Equatable {
     let id = UUID()
     let snapshot: ItemSnapshot
 
-    /// How long the toast stays.
-    static let duration: Duration = .seconds(4)
+    /// How long the toast stays (a UI test can make it longer, see `LaunchConfiguration`).
+    static var duration: Duration {
+        LaunchConfiguration.undoToastDurationOverride ?? .seconds(4)
+    }
 }
 
 struct UndoToast: View {

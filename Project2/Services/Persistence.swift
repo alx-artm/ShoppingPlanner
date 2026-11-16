@@ -33,6 +33,21 @@ enum LaunchConfiguration {
     static var wantsEmptyStore: Bool {
         ProcessInfo.processInfo.arguments.contains(uiTestsEmptyStoreArgument)
     }
+
+    /// Together with `-UITests`: `-UITestsUndoToastSeconds 60` keeps the "Undo" toast that long.
+    /// UI tests that act while the toast is shown would otherwise race its 4-second timer,
+    /// which a slow CI runner can lose.
+    static let uiTestsUndoToastSecondsArgument = "-UITestsUndoToastSeconds"
+
+    /// The toast duration asked for by a UI test, `nil` in a normal launch.
+    static var undoToastDurationOverride: Duration? {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard isUITesting,
+              let index = arguments.firstIndex(of: uiTestsUndoToastSecondsArgument),
+              arguments.indices.contains(index + 1),
+              let seconds = Int(arguments[index + 1]), seconds > 0 else { return nil }
+        return .seconds(seconds)
+    }
 }
 
 enum Persistence {

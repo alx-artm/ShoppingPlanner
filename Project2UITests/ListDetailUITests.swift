@@ -191,7 +191,7 @@ final class ListDetailUITests: XCTestCase {
     /// "Undo" toast makes the bottom inset taller (small screens: iPhone 17e / SE).
     @MainActor
     func testBottomRowsScrollAboveSummaryBarAndToast() {
-        let app = Launch.app()
+        let app = Launch.app(longUndoToast: true)
         let eva = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
         // A list longer than the screen.
         eva.startInline(in: "Clothes")
@@ -320,14 +320,13 @@ final class ListDetailUITests: XCTestCase {
     /// LD-09: swipe-delete without confirmation; the toast's Undo brings the item back.
     @MainActor
     func testSwipeDeleteThenUndo() {
-        let alex = HomeScreen(app: Launch.app()).waitUntilShown().open(card: "Alex")
+        let alex = HomeScreen(app: Launch.app(longUndoToast: true)).waitUntilShown().open(card: "Alex")
 
         alex.swipeToDelete("Swimsuit")
-        // The toast lives ~4 s: tap Undo first, check the totals after.
         alex.undoButton.waitAndTap()
         alex.itemRow("Swimsuit").waitToAppear()
         alex.total.waitForLabel("$340.00")
-        alex.undoToast.waitToDisappear()
+        alex.undoToast.waitToDisappear() // Undo closes the toast at once
         // The same item in the same place: price, group total, between its neighbours.
         alex.itemTotal("Swimsuit").waitForLabel("$55.00")
         alex.groupTotal("Vacation").waitForLabel("$145.00")
