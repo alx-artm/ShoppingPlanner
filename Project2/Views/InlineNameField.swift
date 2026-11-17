@@ -13,7 +13,8 @@
 //  before the next key arrives; returning `false` keeps the keyboard up.
 //
 //  The UIKit field owns its text: SwiftUI only reads it (draft name, live ⓘ
-//  state) and never writes it back, so a stale value can't overwrite typing.
+//  state) and never writes it back while the field has the keyboard, so a
+//  stale value can't overwrite typing.
 //
 //  SwiftUI's `.toolbar(placement: .keyboard)` doesn't reach a UIKit field, so
 //  the accessory bar is hosted as the field's `inputAccessoryView`.
@@ -65,7 +66,13 @@ struct InlineNameField<Accessory: View>: UIViewRepresentable {
         context.coordinator.parent = self
         // The bar's state (ⓘ enabled only with a name) follows the screen.
         context.coordinator.accessoryHost?.rootView = accessory
-        // Focus only; the text is never written from here (see the file comment).
+        // The text is written from here only to empty a field that isn't being typed in: when
+        // inline add closes (Done) and opens again in the same group, SwiftUI reuses this
+        // UITextField, which still held the previous name ("Gum" + "Mints" → "GumMints").
+        // Without the keyboard there is no typing for a late write to scramble.
+        if text.isEmpty, !field.isFirstResponder, field.text?.isEmpty == false {
+            field.text = ""
+        }
         if isEditing, !field.isFirstResponder {
             // After the field is in a window: becoming first responder before that is ignored.
             Task { @MainActor in field.becomeFirstResponder() }
