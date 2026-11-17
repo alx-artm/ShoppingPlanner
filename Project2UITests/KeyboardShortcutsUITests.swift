@@ -83,7 +83,7 @@ final class KeyboardShortcutsUITests: XCTestCase {
         let eva = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
         eva.itemRow("Scooter").waitToAppear()
 
-        press("n", [.command, .shift], in: app)
+        press("n", [.command, .shift], in: app, until: app.alerts.firstMatch)
         eva.typeGroupName("Shoes")
         eva.groupHeader("Shoes").waitToAppear()
         XCTAssertGreaterThan(eva.groupHeader("Shoes").frame.minY, eva.groupHeader("Clothes").frame.maxY)
@@ -122,12 +122,25 @@ final class KeyboardShortcutsUITests: XCTestCase {
         app.typeKey(key, modifierFlags: modifiers)
     }
 
+    /// Presses the shortcut until `result` appears. On a slow runner (CI, run 44061691931)
+    /// a hardware key can still be lost after the Shift warm-up; a lost key changes nothing,
+    /// and once `result` is up the shortcut isn't sent again, so retrying is safe.
+    @MainActor
+    private func press(_ key: String, _ modifiers: XCUIElement.KeyModifierFlags, in app: XCUIApplication,
+                       until result: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        for _ in 0..<3 {
+            press(key, modifiers, in: app)
+            if result.waitForExistence(timeout: 4) { return }
+        }
+        XCTFail("\(result) did not appear after 3 presses", file: file, line: line)
+    }
+
     /// ⌘N → the inline name field, with the keyboard focus.
     @MainActor
     private func commandN(in app: XCUIApplication,
                           file: StaticString = #filePath, line: UInt = #line) -> XCUIElement {
-        press("n", .command, in: app)
-        let field = app.textFields["inline.nameField"].waitToAppear(file: file, line: line)
+        let field = app.textFields["inline.nameField"]
+        press("n", .command, in: app, until: field, file: file, line: line)
         XCTAssertTrue(field.waitForKeyboardFocus(), "the inline field has the keyboard",
                       file: file, line: line)
         return field

@@ -175,8 +175,12 @@ final class HomeUITests: XCTestCase {
         let handles = home.list.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Reorder"))
         // Pinned Alex is a row in reorder mode too: Alex, Eva, Victoria.
         let victoriaHandle = handles.element(boundBy: 2).waitToAppear()
-        victoriaHandle.press(forDuration: 0.6, thenDragTo: handles.element(boundBy: 1),
-                             withVelocity: .slow, thenHoldForDuration: 0.3)
+        // Drop in the upper part of Eva's row, not on its center: on the center the list
+        // sometimes keeps the order (CI, run 44061691931), as in testReorderItemsInGroup.
+        let start = victoriaHandle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let target = handles.element(boundBy: 1).coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .withOffset(CGVector(dx: 0, dy: -24))
+        start.press(forDuration: 0.6, thenDragTo: target, withVelocity: .slow, thenHoldForDuration: 0.5)
         home.reorderDoneButton.waitAndTap()
 
         // HM-34: Done brings back the tiles, ⋯ and +; the new order stays.
