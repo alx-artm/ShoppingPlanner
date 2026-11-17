@@ -102,6 +102,8 @@ struct ListDetailScreen {
     var progress: XCUIElement { app.staticTexts["listDetail.progress"] }
     var unpriced: XCUIElement { app.staticTexts["listDetail.unpriced"] }
     var budget: XCUIElement { app.staticTexts["listDetail.budget"] }
+    /// The segmented purchase bar: one adjustable VoiceOver element (LD-28).
+    var purchaseBar: XCUIElement { app.descendants(matching: .any)["listDetail.purchaseBar"].firstMatch }
     func checkbox(_ item: String) -> XCUIElement { app.buttons["item.checkbox.\(item)"] }
     func itemTotal(_ item: String) -> XCUIElement { app.staticTexts["item.total.\(item)"] }
 
@@ -195,6 +197,12 @@ struct ListDetailScreen {
     func inlineDone() {
         app.buttons["inline.accessory.done"].waitAndTap()
         app.textFields["inline.nameField"].waitToDisappear()
+    }
+
+    /// Taps the purchase bar at `fraction` (0...1) of its width, in the middle of its 44 pt row.
+    func tapPurchaseBar(at fraction: CGFloat) {
+        purchaseBar.waitToBeHittable()
+            .coordinate(withNormalizedOffset: CGVector(dx: fraction, dy: 0.5)).tap()
     }
 
     /// Tap the row → item details sheet (LD-06).

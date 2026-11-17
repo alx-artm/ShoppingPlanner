@@ -21,6 +21,8 @@ enum Launch {
 
     /// Keeps the "Undo" toast for this many seconds instead of 4.
     static let undoToastSeconds = "-UITestsUndoToastSeconds"
+    /// Keeps the row highlight after a purchase bar tap for this many seconds instead of ~1.
+    static let rowHighlightSeconds = "-UITestsRowHighlightSeconds"
 
     /// In-memory store with `SeedData` (or empty with `emptyStore: true`), in English / en_US
     /// unless another language and region are given.
@@ -29,12 +31,16 @@ enum Launch {
     /// its 4-second timer is wall-clock time, and on a slow CI runner the steps between the
     /// deletion and the tap can take longer. When the toast leaves, the bottom inset shrinks
     /// and the rows move down ~50 pt, so a tap aimed a moment before lands on the row above.
+    ///
+    /// `longRowHighlight`: the row picked in the purchase bar stays highlighted a minute
+    /// instead of ~1 s, so the test checks it without racing that timer.
     @MainActor
     static func app(emptyStore: Bool = false, language: String = "en", region: String = "en_US",
-                    longUndoToast: Bool = false) -> XCUIApplication {
+                    longUndoToast: Bool = false, longRowHighlight: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [uiTests] + (emptyStore ? [Launch.emptyStore] : [])
             + (longUndoToast ? [undoToastSeconds, "60"] : [])
+            + (longRowHighlight ? [rowHighlightSeconds, "60"] : [])
             + locale(language: language, region: region)
         app.launch()
         return app
@@ -219,6 +225,28 @@ extension XCUIElement {
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: self)
         XCTAssertEqual(XCTWaiter().wait(for: [expectation], timeout: timeout), .completed,
                        "\(self) selected != \(selected)", file: file, line: line)
+    }
+}
+
+/// One pixel of a screenshot, to tell a tinted (highlighted) background from a plain one.
+enum ScreenshotPixel {
+    /// RGBA of the pixel `inset` pixels in from the top-left corner.
+    static func nearTopLeft(of image: UIImage, inset: Int = 4) -> [UInt8] {
+        guard let cgImage = image.cgImage else { return [] }
+        var pixel = [UInt8](repeating: 0, count: 4)
+        let drawn = pixel.withUnsafeMutableBytes { buffer -> Bool in
+            guard let context = CGContext(data: buffer.baseAddress, width: 1, height: 1,
+                                          bitsPerComponent: 8, bytesPerRow: 4,
+                                          space: CGColorSpaceCreateDeviceRGB(),
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
+                return false
+            }
+            // Draw the image shifted so that the wanted pixel lands on the 1×1 context.
+            context.draw(cgImage, in: CGRect(x: -inset, y: inset + 1 - cgImage.height,
+                                             width: cgImage.width, height: cgImage.height))
+            return true
+        }
+        return drawn ? pixel : []
     }
 }
 
