@@ -41,9 +41,22 @@ enum LaunchConfiguration {
 
     /// The toast duration asked for by a UI test, `nil` in a normal launch.
     static var undoToastDurationOverride: Duration? {
+        seconds(after: uiTestsUndoToastSecondsArgument)
+    }
+
+    /// Together with `-UITests`: `-UITestsRowHighlightSeconds 60` keeps the row highlight after
+    /// a purchase bar tap (LD-27) that long instead of ~1 s, so a test can check it unhurried.
+    static let uiTestsRowHighlightSecondsArgument = "-UITestsRowHighlightSeconds"
+
+    /// The highlight duration asked for by a UI test, `nil` in a normal launch.
+    static var rowHighlightDurationOverride: Duration? {
+        seconds(after: uiTestsRowHighlightSecondsArgument)
+    }
+
+    private static func seconds(after argument: String) -> Duration? {
         let arguments = ProcessInfo.processInfo.arguments
         guard isUITesting,
-              let index = arguments.firstIndex(of: uiTestsUndoToastSecondsArgument),
+              let index = arguments.firstIndex(of: argument),
               arguments.indices.contains(index + 1),
               let seconds = Int(arguments[index + 1]), seconds > 0 else { return nil }
         return .seconds(seconds)
