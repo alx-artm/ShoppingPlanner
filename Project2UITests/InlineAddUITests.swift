@@ -125,15 +125,26 @@ final class InlineAddUITests: XCTestCase {
 
         let field = eva.startInline(in: "Toys")
         field.typeText("Kite")
-        eva.app.buttons["inline.accessory.price"].waitAndTap()
-        eva.focusedInlineField("inline.priceField").typeText("12.5")
-        eva.app.buttons["inline.accessory.quantity"].waitAndTap()
+        eva.tapAccessory("price")
+        eva.app.typeNumber("12.5", into: eva.focusedInlineField("inline.priceField"))
+        eva.tapAccessory("quantity")
         eva.app.buttons["inline.quantityStepper-Increment"].waitAndTap()
         eva.app.staticTexts["inline.total"].waitForLabel("= $25.00")
         eva.inlineDone()
 
         eva.itemTotal("Kite").waitForLabel("$25.00")
         eva.itemDetail("Kite").waitForLabel("2 × $12.50")
+    }
+
+    /// LD-15: a price, then Done right away saves the item with its price. On iPad the price is
+    /// typed on a number pad popover whose first outside tap is eaten (see `typeNumber`).
+    @MainActor
+    func testPriceThenDoneSavesItem() {
+        let eva = HomeScreen(app: Launch.app()).waitUntilShown().open(row: "Eva")
+
+        eva.addItem(named: "Kite", price: "7", to: "Toys")
+
+        eva.itemTotal("Kite").waitForLabel("$7.00")
     }
 
     /// LD-15 / LP-08: [Link] opens a URL field in the row; the saved item shows the host chip
@@ -145,7 +156,7 @@ final class InlineAddUITests: XCTestCase {
 
         let field = eva.startInline(in: "Toys")
         field.typeText("Kite")
-        app.buttons["inline.accessory.link"].waitAndTap()
+        eva.tapAccessory("link")
         eva.focusedInlineField("inline.linkField").typeText("www.kites.example.com/red")
         eva.inlineDone()
 
@@ -195,7 +206,7 @@ final class InlineAddUITests: XCTestCase {
 
         let field = eva.startInline(in: "Toys")
         field.typeText("Kite")
-        eva.app.buttons["inline.accessory.details"].waitAndTap()
+        eva.tapAccessory("details")
 
         let editor = ItemEditScreen(app: eva.app).waitUntilShown()
         XCTAssertEqual(editor.nameField.value as? String, "Kite")

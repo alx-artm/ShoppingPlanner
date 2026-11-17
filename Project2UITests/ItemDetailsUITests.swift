@@ -38,7 +38,7 @@ final class ItemDetailsUITests: XCTestCase {
 
         let editor = eva.openItem("Scooter")
         editor.replaceText(of: editor.priceField, with: "12.5")
-        editor.quantityIncrement.waitAndTap()
+        editor.incrementQuantity()
         editor.total.waitForLabel(containing: "$25.00")
         editor.done()
 

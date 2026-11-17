@@ -26,6 +26,10 @@ struct HomeSections {
     /// More pinned lists than the soft limit (HM-15).
     var exceedsPinnedSoftLimit: Bool { pinned.count > Self.pinnedSoftLimit }
 
+    /// "Reorder Lists" has something to do: a list moves only inside its section,
+    /// so at least one section needs two lists (HM-32, HM-35).
+    var canReorder: Bool { pinned.count >= 2 || others.count >= 2 }
+
     /// Substring match ignoring case and diacritics ("cafe" finds "Café"). A blank query matches everything.
     static func matches(_ name: String, query: String) -> Bool {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)

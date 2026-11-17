@@ -3,7 +3,8 @@
 //  Project2UITests
 //
 //  Spec 04 list screen on the seed data: group headers (LD-02, LD-04, LD-05),
-//  item rows (LD-06, LD-08) and the summary bar (LD-10, LD-11, LD-11a).
+//  item rows (LD-06, LD-08), the summary bar (LD-10, LD-11, LD-11a) and its
+//  purchase bar (LD-21, LD-23, LD-27...LD-29).
 //  Alex (USD, budget 500): planned 370, bought 30. Eva (USD, no budget):
 //  Jacket has no price. Victoria (EUR, budget 300): planned 315.
 //
@@ -110,7 +111,8 @@ final class ListDetailUITests: XCTestCase {
         eva.itemTotal("T-Shirt").waitForLabel("$40.00")
         eva.itemDetail("T-Shirt").waitForLabel("2 × $20.00")
 
-        eva.checkbox("T-Shirt").tap()
+        // A bought item moves to the end of its group (DM-15), maybe under the summary bar.
+        eva.reveal(eva.checkbox("T-Shirt")).tap()
         eva.checkbox("T-Shirt").waitForSelected(false)
         XCTAssertEqual(eva.checkbox("T-Shirt").value as? String, "Not bought")
     }
@@ -191,7 +193,7 @@ final class ListDetailUITests: XCTestCase {
     /// "Undo" toast makes the bottom inset taller (small screens: iPhone 17e / SE).
     @MainActor
     func testBottomRowsScrollAboveSummaryBarAndToast() {
-        let app = Launch.app()
+        let app = Launch.app(longUndoToast: true)
         let eva = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
         // A list longer than the screen.
         eva.startInline(in: "Clothes")
@@ -216,6 +218,75 @@ final class ListDetailUITests: XCTestCase {
                                  "Add Group is not hidden behind the toast")
         eva.addGroupRow.tap()
         app.alerts.firstMatch.waitToAppear()
+    }
+
+    // MARK: - Purchase bar (LD-20...LD-29)
+    // Alex in bar order: Flip-flops 30 (bought) | Sunglasses 60, Swimsuit 55, Appetizers 30,
+    // BBQ food 110, Country house rental 85 — of 370, so Country house is the last 23 %.
+
+    /// LD-21 / LD-28: the bar replaces the simple progress bar, next to "8% bought"; for
+    /// VoiceOver it is one element that reads the summary.
+    @MainActor
+    func testPurchaseBarIsOneVoiceOverElement() {
+        let alex = HomeScreen(app: Launch.app()).waitUntilShown().open(card: "Alex")
+
+        let bar = alex.purchaseBar.waitToAppear()
+        alex.progress.waitForLabel("8% bought")
+        XCTAssertEqual(bar.label, "Purchase progress")
+        XCTAssertEqual(bar.value as? String, "8% bought, 1 of 6 items, $340.00 to buy")
+        XCTAssertGreaterThanOrEqual(bar.frame.height, 44, "LD-27: the tap area is the 44 pt row")
+
+        // Checking an item off updates the same element (the segment moves to the bought side).
+        alex.checkbox("Sunglasses").waitAndTap()
+        alex.progress.waitForLabel("24% bought")
+        XCTAssertEqual(bar.value as? String, "24% bought, 2 of 6 items, $280.00 to buy")
+    }
+
+    /// LD-27: a tap on a segment shows its item: the collapsed group opens, the row is
+    /// scrolled above the summary bar and highlighted. The highlight is kept long by a
+    /// launch argument, so the check doesn't race its ~1 s timer.
+    @MainActor
+    func testPurchaseBarTapShowsAndHighlightsItem() {
+        let app = Launch.app(longRowHighlight: true)
+        let alex = HomeScreen(app: app).waitUntilShown().open(card: "Alex")
+        alex.groupHeader("Birthday").waitAndTap()
+        alex.itemRow("Country house rental").waitToDisappear()
+
+        alex.tapPurchaseBar(at: 0.9)
+
+        let row = alex.itemRow("Country house rental").waitToBeHittable()
+        XCTAssertLessThanOrEqual(row.frame.maxY, alex.summary.frame.minY, "not under the summary bar")
+        let highlighted = ScreenshotPixel.nearTopLeft(of: row.screenshot().image)
+        let plain = ScreenshotPixel.nearTopLeft(of: alex.itemRow("Appetizers").waitToBeHittable().screenshot().image)
+        XCTAssertFalse(highlighted.isEmpty)
+        XCTAssertNotEqual(highlighted, plain, "the picked row has a tinted background")
+    }
+
+    /// LD-23 / LD-27: two tiny items merge into "other" at the end of the "to buy" side;
+    /// a tap on it lists them with their amounts in a popover.
+    @MainActor
+    func testPurchaseBarOtherOpensPopover() {
+        let app = Launch.app()
+        let alex = HomeScreen(app: app).waitUntilShown().open(card: "Alex")
+        alex.addItem(named: "Gum", price: "0.5", to: "Birthday")
+        alex.addItem(named: "Mints", price: "0.5", to: "Birthday")
+
+        alex.tapPurchaseBar(at: 0.998)
+
+        let gum = app.descendants(matching: .any)["purchaseBar.other.Gum"].waitToAppear()
+        XCTAssertTrue(gum.label.contains("$0.50"), gum.label)
+        app.descendants(matching: .any)["purchaseBar.other.Mints"].waitToAppear()
+        XCTAssertFalse(app.descendants(matching: .any)["purchaseBar.other.BBQ food"].exists)
+    }
+
+    /// LD-29: the outline of a "to buy" segment needs ≥ 3:1 against the summary bar. Victoria
+    /// is green, about 2.2:1 on white as the plain system color.
+    @MainActor
+    func testPurchaseBarOutlineHasEnoughContrast() {
+        let victoria = HomeScreen(app: Launch.app()).waitUntilShown().open(row: "Victoria")
+        let bar = victoria.purchaseBar.waitToBeHittable()
+        let contrast = ScreenshotContrast.strongest(in: bar.screenshot().image)
+        XCTAssertGreaterThanOrEqual(contrast, 3, "outline contrast \(contrast)")
     }
 
     // MARK: - Groups (step 3b)
@@ -320,14 +391,13 @@ final class ListDetailUITests: XCTestCase {
     /// LD-09: swipe-delete without confirmation; the toast's Undo brings the item back.
     @MainActor
     func testSwipeDeleteThenUndo() {
-        let alex = HomeScreen(app: Launch.app()).waitUntilShown().open(card: "Alex")
+        let alex = HomeScreen(app: Launch.app(longUndoToast: true)).waitUntilShown().open(card: "Alex")
 
         alex.swipeToDelete("Swimsuit")
-        // The toast lives ~4 s: tap Undo first, check the totals after.
         alex.undoButton.waitAndTap()
         alex.itemRow("Swimsuit").waitToAppear()
         alex.total.waitForLabel("$340.00")
-        alex.undoToast.waitToDisappear()
+        alex.undoToast.waitToDisappear() // Undo closes the toast at once
         // The same item in the same place: price, group total, between its neighbours.
         alex.itemTotal("Swimsuit").waitForLabel("$55.00")
         alex.groupTotal("Vacation").waitForLabel("$145.00")

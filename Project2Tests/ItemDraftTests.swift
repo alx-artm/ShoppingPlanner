@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import SwiftUI
 import Testing
 @testable import Project2
 
@@ -199,5 +200,14 @@ struct ItemDraftTests {
         #expect(item.name == "Lamp")
         #expect(item.lineTotal == 120)
         #expect(group.sortedItems.map(\.name) == ["First", "Lamp"])
+    }
+
+    // MARK: - Presentation
+
+    @Test("ID-10 the sheet is full height on regular width, half then full on iPhone")
+    func detents() {
+        #expect(ItemView.detents(for: .regular) == [.large])
+        #expect(ItemView.detents(for: .compact) == [.medium, .large])
+        #expect(ItemView.detents(for: nil) == [.medium, .large])
     }
 }

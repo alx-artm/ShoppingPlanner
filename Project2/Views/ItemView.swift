@@ -17,6 +17,12 @@ struct ItemView: View {
     }
 
     let item: ItemModel
+    /// The width class of the screen that presents the sheet. The sheet's own content is
+    /// always compact (a form sheet is narrow), so it can't tell an iPad from an iPhone.
+    let presentingSizeClass: UserInterfaceSizeClass?
+    /// Goes up by one for each ⌘⌫ (iPad): asks "Delete …?" like the Delete Item button
+    /// (AD-12, ID-11). The command reaches the presenter, not this sheet, so it is passed in.
+    let deleteRequests: Int
 
     @Environment(PlannerStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -35,8 +41,12 @@ struct ItemView: View {
 
     /// - Parameter focusFirstEmpty: opened from inline add (ⓘ): focus the first empty
     ///   field of Price, Link, Note (ID-09).
-    init(item: ItemModel, focusFirstEmpty: Bool = false) {
+    /// - Parameter presentingSizeClass: the presenter's `horizontalSizeClass` (detents, ID-10).
+    init(item: ItemModel, focusFirstEmpty: Bool = false, presentingSizeClass: UserInterfaceSizeClass? = nil,
+         deleteRequests: Int = 0) {
         self.item = item
+        self.presentingSizeClass = presentingSizeClass
+        self.deleteRequests = deleteRequests
         let draft = ItemDraft(item: item)
         initialDraft = draft
         _draft = State(initialValue: draft)
@@ -157,7 +167,7 @@ struct ItemView: View {
                 Button("Cancel", role: .cancel) {}
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents(Self.detents(for: presentingSizeClass))
         // A form sheet on iPad and the unfolded iPhone Duo, not a full-width cover (ID-10).
         .presentationSizing(.form)
         // Don't lose edits to an accidental swipe down; ✕ discards on purpose (ID-01).
@@ -165,6 +175,9 @@ struct ItemView: View {
         .task {
             // After the sheet is on screen; focusing during the presentation is ignored.
             if let initialFocus { focus = initialFocus }
+        }
+        .onChange(of: deleteRequests) {
+            showsDeleteConfirmation = true
         }
         .onChange(of: focus) { old, _ in
             if old == .quantity { quantityText = "\(draft.quantity)" }
@@ -175,6 +188,15 @@ struct ItemView: View {
                 store.deleteItem(item)
             }
         }
+    }
+
+    /// Half height then full on iPhone (spec 05 Layout). On regular width (iPad, unfolded Duo)
+    /// the form sheet is always full height: a half-height form sheet hides the Group picker
+    /// and Delete below its edge, and neither dragging the grabber nor scrolling the form
+    /// expands it. It also jumped to full height on its own when the docked keyboard came
+    /// back after the iPad number pad popover, moving the controls away mid-tap (ID-10).
+    static func detents(for sizeClass: UserInterfaceSizeClass?) -> Set<PresentationDetent> {
+        sizeClass == .regular ? [.large] : [.medium, .large]
     }
 
     // MARK: - Rows

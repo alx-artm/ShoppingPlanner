@@ -1,9 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {
-
-    },
     "%@ %@" : {
       "shouldTranslate" : false
     },
@@ -28,6 +25,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ сверх"
+          }
+        }
+      }
+    },
+    "%@ to buy" : {
+      "comment" : "Purchase bar, VoiceOver: the amount still to buy (\"$788.79 to buy\").",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "осталось купить на %@"
           }
         }
       }
@@ -101,12 +109,6 @@
         "ru" : {
           "variations" : {
             "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld куплен"
-                }
-              },
               "few" : {
                 "stringUnit" : {
                   "state" : "translated",
@@ -117,6 +119,12 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld куплено"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld куплен"
                 }
               },
               "other" : {
@@ -182,6 +190,132 @@
         }
       }
     },
+    "%lld items without price" : {
+      "comment" : "List summary bar when no item has a price: no purchase bar, only this.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld item without price"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld items without price"
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld товар без цены"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld товара без цены"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld товаров без цены"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld товара без цены"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld of %lld items" : {
+      "comment" : "Purchase bar, VoiceOver: bought items of all items (\"5 of 12 items\").",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of %#@items@"
+          },
+          "substitutions" : {
+            "items" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg item"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg items"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld из %#@items@"
+          },
+          "substitutions" : {
+            "items" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg товара"
+                    }
+                  },
+                  "few" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg товаров"
+                    }
+                  },
+                  "many" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg товаров"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg товара"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "+%lld without price" : {
       "comment" : "List summary bar: number of items that have no price yet.",
       "localizations" : {
@@ -206,12 +340,6 @@
         "ru" : {
           "variations" : {
             "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "+%lld без цены"
-                }
-              },
               "few" : {
                 "stringUnit" : {
                   "state" : "translated",
@@ -219,6 +347,12 @@
                 }
               },
               "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "+%lld без цены"
+                }
+              },
+              "one" : {
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "+%lld без цены"
@@ -638,12 +772,6 @@
         "ru" : {
           "variations" : {
             "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Удалить группу и %lld товар?"
-                }
-              },
               "few" : {
                 "stringUnit" : {
                   "state" : "translated",
@@ -654,6 +782,12 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "Удалить группу и %lld товаров?"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Удалить группу и %lld товар?"
                 }
               },
               "other" : {
@@ -1168,6 +1302,17 @@
         }
       }
     },
+    "New from Template" : {
+      "comment" : "Home ⋯ menu: opens the template picker to create a list.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Из шаблона"
+          }
+        }
+      }
+    },
     "New Group" : {
       "comment" : "Title of the New Group alert.",
       "localizations" : {
@@ -1349,6 +1494,16 @@
         }
       }
     },
+    "Other items" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Прочие товары"
+          }
+        }
+      }
+    },
     "Other…" : {
       "localizations" : {
         "ru" : {
@@ -1472,6 +1627,51 @@
         }
       }
     },
+    "Purchase progress" : {
+      "comment" : "VoiceOver label of the segmented purchase bar.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ход покупок"
+          }
+        }
+      }
+    },
+    "purchaseBar.voice.bought" : {
+      "comment" : "Purchase bar, VoiceOver: state of an item, after its name and amount.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "bought"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "куплено"
+          }
+        }
+      }
+    },
+    "purchaseBar.voice.notBought" : {
+      "comment" : "Purchase bar, VoiceOver: state of an item, after its name and amount.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "not bought"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "не куплено"
+          }
+        }
+      }
+    },
     "Purple" : {
       "localizations" : {
         "ru" : {
@@ -1569,6 +1769,17 @@
         }
       }
     },
+    "Reorder Lists" : {
+      "comment" : "Home ⋯ menu: shows drag handles to reorder lists inside their sections.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Порядок списков"
+          }
+        }
+      }
+    },
     "Room Renovation" : {
       "localizations" : {
         "ru" : {
@@ -1647,6 +1858,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Показать купленное"
+          }
+        }
+      }
+    },
+    "Show item" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показать товар"
           }
         }
       }
@@ -1904,9 +2125,7 @@
         }
       }
     },
-    "Untitled group" : {
-
-    },
+    "Untitled group" : {},
     "Untitled item" : {
       "comment" : "Default name for a new item.",
       "isCommentAutoGenerated" : true

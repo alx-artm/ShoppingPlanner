@@ -70,8 +70,11 @@ struct ListSummaryText: Equatable, Sendable {
     let progress: String
     /// 0...1, the same value as the percent (HM-19).
     let barFraction: Double
-    /// "+3 without price"; `nil` when every item has a price (LD-11).
+    /// "+3 without price"; `nil` when every item has a price (LD-11, LD-24). When no item has
+    /// a price, the only label of the bar's line: "3 items without price" (LD-25).
     let unpriced: String?
+    /// The purchase bar and "13% bought" are shown: at least one item has a price (LD-25).
+    var showsProgress: Bool { status.hasPrices }
     /// While typing: "To buy $788.79 · 13%".
     let compact: String
 
@@ -88,10 +91,15 @@ struct ListSummaryText: Equatable, Sendable {
             : nil
         progress = status.progressText
         barFraction = status.barFraction
-        unpriced = summary.unpricedCount > 0
-            ? String(localized: "+\(summary.unpricedCount) without price",
-                     comment: "List summary bar: number of items that have no price yet.")
-            : nil
+        if summary.unpricedCount == 0 {
+            unpriced = nil
+        } else if status.hasPrices {
+            unpriced = String(localized: "+\(summary.unpricedCount) without price",
+                              comment: "List summary bar: number of items that have no price yet.")
+        } else {
+            unpriced = String(localized: "\(summary.unpricedCount) items without price",
+                              comment: "List summary bar when no item has a price: no purchase bar, only this.")
+        }
         let amount = String(localized: "To buy \(status.amount)",
                             comment: "List summary bar while the keyboard is open (\"To buy €788.79\").")
         compact = status.percentText.map { "\(amount) · \($0)" } ?? amount
@@ -108,3 +116,34 @@ enum GroupHeaderText {
     }
 }
 
+
+/// VoiceOver of the purchase bar (LD-28): one adjustable element. Its value is the
+/// summary, or the item picked with swipe up / down.
+enum PurchaseBarText {
+    static var label: String {
+        String(localized: "Purchase progress", comment: "VoiceOver label of the segmented purchase bar.")
+    }
+
+    /// "13% bought, 5 of 12 items, $788.79 to buy".
+    static func summary(_ summary: BudgetSummary, currencyCode: String,
+                        locale: Locale = .autoupdatingCurrent) -> String {
+        let status = ListStatusText(summary, currencyCode: currencyCode, locale: locale)
+        let items = String(localized: "\(summary.completedCount) of \(summary.itemCount) items",
+                           comment: "Purchase bar, VoiceOver: bought items of all items (\"5 of 12 items\").")
+        let toBuy = String(localized: "\(status.amount) to buy",
+                           comment: "Purchase bar, VoiceOver: the amount still to buy (\"$788.79 to buy\").")
+        return [status.progressText, items, toBuy].joined(separator: ", ")
+    }
+
+    /// One segment: "Sofa, $450.00, bought" / "Lamp, $60.00, not bought".
+    static func item(name: String, lineTotal: Decimal, isComplete: Bool, currencyCode: String,
+                     locale: Locale = .autoupdatingCurrent) -> String {
+        let state = isComplete
+            ? String(localized: "purchaseBar.voice.bought", defaultValue: "bought",
+                     comment: "Purchase bar, VoiceOver: state of an item, after its name and amount.")
+            : String(localized: "purchaseBar.voice.notBought", defaultValue: "not bought",
+                     comment: "Purchase bar, VoiceOver: state of an item, after its name and amount.")
+        return [name, MoneyFormat.string(lineTotal, currencyCode: currencyCode, locale: locale), state]
+            .joined(separator: ", ")
+    }
+}

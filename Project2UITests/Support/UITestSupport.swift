@@ -19,12 +19,28 @@ enum Launch {
         ["-AppleLanguages", "(\(language))", "-AppleLocale", region]
     }
 
+    /// Keeps the "Undo" toast for this many seconds instead of 4.
+    static let undoToastSeconds = "-UITestsUndoToastSeconds"
+    /// Keeps the row highlight after a purchase bar tap for this many seconds instead of ~1.
+    static let rowHighlightSeconds = "-UITestsRowHighlightSeconds"
+
     /// In-memory store with `SeedData` (or empty with `emptyStore: true`), in English / en_US
     /// unless another language and region are given.
+    ///
+    /// `longUndoToast`: the toast stays a minute. For tests that act while it is on screen:
+    /// its 4-second timer is wall-clock time, and on a slow CI runner the steps between the
+    /// deletion and the tap can take longer. When the toast leaves, the bottom inset shrinks
+    /// and the rows move down ~50 pt, so a tap aimed a moment before lands on the row above.
+    ///
+    /// `longRowHighlight`: the row picked in the purchase bar stays highlighted a minute
+    /// instead of ~1 s, so the test checks it without racing that timer.
     @MainActor
-    static func app(emptyStore: Bool = false, language: String = "en", region: String = "en_US") -> XCUIApplication {
+    static func app(emptyStore: Bool = false, language: String = "en", region: String = "en_US",
+                    longUndoToast: Bool = false, longRowHighlight: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [uiTests] + (emptyStore ? [Launch.emptyStore] : [])
+            + (longUndoToast ? [undoToastSeconds, "60"] : [])
+            + (longRowHighlight ? [rowHighlightSeconds, "60"] : [])
             + locale(language: language, region: region)
         app.launch()
         return app
@@ -74,6 +90,24 @@ extension XCUIElement {
         return self
     }
 
+    /// Waits until this element is hittable or `other` exists, whichever comes first.
+    /// Returns `true` if `other` showed up; fails the test if neither happens in time.
+    @MainActor
+    @discardableResult
+    func waitToBeHittable(orUntil other: XCUIElement, timeout: TimeInterval = uiTimeout,
+                          file: StaticString = #filePath, line: UInt = #line) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            if other.exists { return true }
+            if exists && isHittable { return false }
+            // The wait for `other` paces the loop (no sleep) and ends early if it appears.
+        } while !other.waitForExistence(timeout: 0.5) && Date() < deadline
+        if other.exists { return true }
+        XCTFail("\(self) is not hittable (and \(other) did not appear) after \(timeout)s",
+                file: file, line: line)
+        return false
+    }
+
     /// Scrolls `container` until this element is hittable, at most `maxSwipes` times.
     ///
     /// An element can exist but sit under the floating tab bar or below the fold
@@ -112,6 +146,11 @@ extension XCUIElement {
     /// system can drop one that lands while the view is still settling. A tap is
     /// re-sent automatically by XCTest, a gesture is not, so we retry it ourselves.
     /// Each attempt waits for the element to be hittable first; no sleeps.
+    ///
+    /// A missed gesture can also do something else: when the app is too busy to see the
+    /// touch go down and up in time, a long press arrives as a tap (on a Home tile that runs
+    /// the Menu's primary action and opens the list). `recover` runs before each retry and
+    /// brings the screen back (e.g. goes back to Home) so the element can be pressed again.
     @MainActor
     @discardableResult
     func perform(_ gestureName: String,
@@ -119,12 +158,15 @@ extension XCUIElement {
                  attempts: Int = 3,
                  resultTimeout: TimeInterval = 5,
                  file: StaticString = #filePath, line: UInt = #line,
+                 recover: () -> Void = {},
                  _ gesture: (XCUIElement) -> Void) -> XCUIElement {
-        for _ in 1...max(attempts, 1) {
+        for attempt in 1...max(attempts, 1) {
             // A late result from the previous attempt counts, and pressing again
             // on top of an open menu would dismiss it.
             if result.exists { return result }
-            waitToBeHittable(file: file, line: line)
+            if attempt > 1 { recover() }
+            // A menu that opens late covers this element (not hittable): wait for either.
+            if waitToBeHittable(orUntil: result, file: file, line: line) { return result }
             gesture(self)
             if result.waitForExistence(timeout: resultTimeout) { return result }
         }
@@ -183,6 +225,99 @@ extension XCUIElement {
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: self)
         XCTAssertEqual(XCTWaiter().wait(for: [expectation], timeout: timeout), .completed,
                        "\(self) selected != \(selected)", file: file, line: line)
+    }
+}
+
+// MARK: - Number pad on iPad
+
+/// On iPad (iPadOS 26+) a `.decimalPad` / `.numberPad` field doesn't get the docked keyboard:
+/// its keys open in a small popover next to the field, and the system puts a full-window
+/// "dismiss popup" region behind it. The first tap outside the popover only closes it; it
+/// never reaches the button under the finger (a real user taps twice too). So after a price,
+/// quantity or budget, a tap on ✓, Cancel or an accessory button was silently lost.
+///
+/// `typeText` makes it worse: XCTest sends hardware key events, iPad switches to its
+/// hardware-keyboard mode (the popover goes, a 64 pt bar stays), and the next touch is spent
+/// switching back to the on-screen keyboard. So on iPad numbers are typed on the popover's
+/// own keys, and the popover is closed on purpose before the next tap.
+/// On iPhone the number pad is docked: both helpers fall back to plain typing / do nothing.
+extension XCUIApplication {
+    /// The number pad popover (iPad only): a popover with keyboard keys in it.
+    var numberPadPopover: XCUIElement { popovers.containing(.key, identifier: nil).firstMatch }
+
+    /// Types `text` into the focused number field: on the popover's keys on iPad, with
+    /// `typeText` elsewhere. `XCUIKeyboardKey.delete` is the popover's "Delete" key.
+    @MainActor
+    func typeNumber(_ text: String, into field: XCUIElement,
+                    file: StaticString = #filePath, line: UInt = #line) {
+        let pad = numberPadPopover
+        // The popover opens with the focus. Without it (iPhone, or a Mac keyboard connected
+        // to the simulator) there is a docked keyboard or none, and plain typing is right.
+        guard UIDevice.current.userInterfaceIdiom == .pad, pad.waitForExistence(timeout: 3) else {
+            field.typeText(text)
+            return
+        }
+        for character in text {
+            let label = String(character) == XCUIKeyboardKey.delete.rawValue ? "Delete" : String(character)
+            pad.keys[label].firstMatch.waitAndTap(file: file, line: line)
+        }
+    }
+
+    /// Closes the iPad number pad popover if it is open, so that the next tap reaches its
+    /// target. The tap goes to the focused field, the popover's anchor: the dismiss region
+    /// takes it (and if it ever didn't, a tap on the focused field changes nothing).
+    @MainActor
+    func dismissNumberPadPopover(file: StaticString = #filePath, line: UInt = #line) {
+        let pad = numberPadPopover
+        guard pad.exists else { return }
+        let focused = descendants(matching: .textField)
+            .matching(NSPredicate(format: "hasKeyboardFocus == true")).firstMatch
+        // A coordinate tap: an element tap would refuse the field as covered (not hittable).
+        let target = focused.exists ? focused : windows.firstMatch
+        target.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        pad.waitToDisappear(file: file, line: line)
+    }
+
+    /// Gets the iPad keyboard into its final place before a tap on a control *inside* a sheet
+    /// (a Stepper) while a number field has the focus. Whatever the number was typed with, the
+    /// next touch anywhere brings the docked on-screen keyboard back: after the number pad
+    /// popover closes (iPadOS 27) or after `typeText` switched to hardware-keyboard mode
+    /// (iPadOS 26, no popover). The form sheet slides up for that keyboard mid-touch, so the
+    /// touch misses its target (a user taps "+" again). Here that touch goes to the focused
+    /// field itself: the popover doesn't reopen and the text doesn't change; taps that wait
+    /// for idle afterwards hit the settled layout. No-op on iPhone (docked keyboard).
+    /// Toolbar buttons (✓, ✕) don't need this: `dismissNumberPadPopover` is enough there.
+    @MainActor
+    func settleKeyboardBeforeTapInSheet(file: StaticString = #filePath, line: UInt = #line) {
+        guard UIDevice.current.userInterfaceIdiom == .pad else { return }
+        let focused = descendants(matching: .textField)
+            .matching(NSPredicate(format: "hasKeyboardFocus == true")).firstMatch
+        guard focused.exists else { return }
+        dismissNumberPadPopover(file: file, line: line)
+        focused.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap()
+        keyboards.firstMatch.waitToAppear(file: file, line: line)
+    }
+}
+
+/// One pixel of a screenshot, to tell a tinted (highlighted) background from a plain one.
+enum ScreenshotPixel {
+    /// RGBA of the pixel `inset` pixels in from the top-left corner.
+    static func nearTopLeft(of image: UIImage, inset: Int = 4) -> [UInt8] {
+        guard let cgImage = image.cgImage else { return [] }
+        var pixel = [UInt8](repeating: 0, count: 4)
+        let drawn = pixel.withUnsafeMutableBytes { buffer -> Bool in
+            guard let context = CGContext(data: buffer.baseAddress, width: 1, height: 1,
+                                          bitsPerComponent: 8, bytesPerRow: 4,
+                                          space: CGColorSpaceCreateDeviceRGB(),
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
+                return false
+            }
+            // Draw the image shifted so that the wanted pixel lands on the 1×1 context.
+            context.draw(cgImage, in: CGRect(x: -inset, y: inset + 1 - cgImage.height,
+                                             width: cgImage.width, height: cgImage.height))
+            return true
+        }
+        return drawn ? pixel : []
     }
 }
 

@@ -61,7 +61,8 @@ struct HomeScreen {
 
     func deleteFromContextMenu(row name: String) {
         row(name).scrollIntoView(within: app.collectionViews.firstMatch)
-            .perform("Long press", until: app.buttons["home.menu.delete"]) {
+            .perform("Long press", until: app.buttons["home.menu.delete"],
+                     recover: { backFromMisfiredGesture(on: row(name)) }) {
             $0.press(forDuration: 1.5)
         }.waitAndTap()
         // Dialog buttons can expose their identifier twice; take the first match.
@@ -101,6 +102,8 @@ struct ListDetailScreen {
     var progress: XCUIElement { app.staticTexts["listDetail.progress"] }
     var unpriced: XCUIElement { app.staticTexts["listDetail.unpriced"] }
     var budget: XCUIElement { app.staticTexts["listDetail.budget"] }
+    /// The segmented purchase bar: one adjustable VoiceOver element (LD-28).
+    var purchaseBar: XCUIElement { app.descendants(matching: .any)["listDetail.purchaseBar"].firstMatch }
     func checkbox(_ item: String) -> XCUIElement { app.buttons["item.checkbox.\(item)"] }
     func itemTotal(_ item: String) -> XCUIElement { app.staticTexts["item.total.\(item)"] }
 
@@ -129,15 +132,23 @@ struct ListDetailScreen {
 
     /// Long press a row → `action` of its context menu (edit, duplicate, openLink, delete).
     func contextMenu(_ item: String, _ action: String) {
-        reveal(itemRow(item)).perform("Long press", until: app.buttons["item.menu.\(action)"]) {
+        reveal(itemRow(item)).perform("Long press", until: app.buttons["item.menu.\(action)"],
+                                      recover: closeMisfiredItemDetails) {
             $0.press(forDuration: 1.2)
         }.waitAndTap()
+    }
+
+    /// A gesture on a row that the busy app (slow CI runner) received as a tap opens the
+    /// item's details sheet over the list: close it so the gesture can be retried.
+    func closeMisfiredItemDetails() {
+        let details = ItemEditScreen(app: app)
+        if details.cancelButton.exists { details.cancel() }
     }
 
     /// Swipe right on a row → Bought / Not Bought (LD-09).
     func swipeToToggle(_ item: String) {
         let button = app.buttons["item.swipe.toggle"]
-        reveal(itemRow(item)).perform("Swipe right", until: button) {
+        reveal(itemRow(item)).perform("Swipe right", until: button, recover: closeMisfiredItemDetails) {
             let start = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5))
             let end = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.5))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
@@ -151,11 +162,11 @@ struct ListDetailScreen {
         let field = startInline(in: group)
         field.typeText(name)
         if let price {
-            app.buttons["inline.accessory.price"].waitAndTap()
-            focusedInlineField("inline.priceField").typeText(price)
+            tapAccessory("price")
+            app.typeNumber(price, into: focusedInlineField("inline.priceField"))
         }
         if quantity > 1 {
-            app.buttons["inline.accessory.quantity"].waitAndTap()
+            tapAccessory("quantity")
             let increment = app.buttons["inline.quantityStepper-Increment"].waitToAppear()
             for _ in 1..<quantity { increment.tap() }
         }
@@ -182,10 +193,23 @@ struct ListDetailScreen {
         return field
     }
 
+    /// A button of the inline accessory bar: "price", "quantity", "link", "details", "done".
+    /// On iPad the price's number pad popover is closed first, or it would eat the tap.
+    func tapAccessory(_ name: String, file: StaticString = #filePath, line: UInt = #line) {
+        app.dismissNumberPadPopover(file: file, line: line)
+        app.buttons["inline.accessory.\(name)"].waitAndTap(file: file, line: line)
+    }
+
     /// Done on the keyboard's accessory bar: saves a non-empty draft and closes inline add.
-    func inlineDone() {
-        app.buttons["inline.accessory.done"].waitAndTap()
-        app.textFields["inline.nameField"].waitToDisappear()
+    func inlineDone(file: StaticString = #filePath, line: UInt = #line) {
+        tapAccessory("done", file: file, line: line)
+        app.textFields["inline.nameField"].waitToDisappear(file: file, line: line)
+    }
+
+    /// Taps the purchase bar at `fraction` (0...1) of its width, in the middle of its 44 pt row.
+    func tapPurchaseBar(at fraction: CGFloat) {
+        purchaseBar.waitToBeHittable()
+            .coordinate(withNormalizedOffset: CGVector(dx: fraction, dy: 0.5)).tap()
     }
 
     /// Tap the row → item details sheet (LD-06).
@@ -250,7 +274,7 @@ struct ListDetailScreen {
         let deleteButton = app.buttons["item.swipe.delete"]
         let result = app.descendants(matching: .any).matching(NSPredicate(
             format: "identifier IN %@", ["item.swipe.delete", "undoToast"])).firstMatch
-        reveal(row).perform("Swipe left", until: result) {
+        reveal(row).perform("Swipe left", until: result, recover: closeMisfiredItemDetails) {
             let start = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5))
             let end = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.5))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
@@ -298,15 +322,23 @@ struct ItemEditScreen {
     /// Replaces the text of a field (select all is not reliable, so delete key by key).
     /// The tap goes to the field's right end, so the cursor lands after the text
     /// in both leading- and trailing-aligned fields.
+    /// Price and quantity are typed on the iPad number pad popover (see `typeNumber`).
     func replaceText(of field: XCUIElement, with text: String) {
+        app.dismissNumberPadPopover()
         field.waitToBeHittable()
         field.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap()
         let current = field.value as? String ?? ""
-        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count + 2) + text)
+        let keys = String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count + 2) + text
+        if ["itemEdit.priceField", "itemEdit.quantityField"].contains(field.identifier) {
+            app.typeNumber(keys, into: field)
+        } else {
+            field.typeText(keys)
+        }
     }
 
     /// "Delete Item" → confirm. The sheet closes, then the item is deleted (ID-11).
     func delete() {
+        app.dismissNumberPadPopover()
         deleteButton.scrollIntoViewLazily(within: form).tap()
         app.buttons["itemEdit.deleteAlert.confirmButton"].firstMatch.waitAndTap()
         nameField.waitToDisappear()
@@ -314,18 +346,29 @@ struct ItemEditScreen {
 
     /// ✓ → the sheet closes.
     func done() {
+        app.dismissNumberPadPopover()
         doneButton.waitAndTap()
         nameField.waitToDisappear()
     }
 
-    /// ✕ → the sheet closes without saving.
+    /// ✕ → the sheet closes without saving. From inline ⓘ the price field has the focus, so
+    /// on iPad its number pad popover is open and is closed first.
     func cancel() {
+        app.dismissNumberPadPopover()
         cancelButton.waitAndTap()
         nameField.waitToDisappear()
     }
 
+    /// Stepper "+" once. After a typed price or quantity the iPad keyboard is settled first
+    /// (see `settleKeyboardBeforeTapInSheet`).
+    func incrementQuantity(file: StaticString = #filePath, line: UInt = #line) {
+        app.settleKeyboardBeforeTapInSheet(file: file, line: line)
+        quantityIncrement.waitToBeHittable(file: file, line: line).tap()
+    }
+
     /// Group picker → choose `group`.
     func moveToGroup(_ group: String) {
+        app.dismissNumberPadPopover()
         groupPicker.scrollIntoViewLazily(within: form).tap()
         app.buttons[group].firstMatch.waitAndTap()
     }
@@ -409,6 +452,35 @@ extension HomeScreen {
         return ListInfoScreen(app: app).waitUntilShown()
     }
 
+    /// ⋯ in the toolbar (HM-31) and its items (HM-32, HM-38).
+    var menuButton: XCUIElement { app.buttons["home.menuButton"] }
+    var reorderListsItem: XCUIElement { app.buttons["home.menu.reorderLists"] }
+    var reorderDoneButton: XCUIElement { app.buttons["home.reorderDoneButton"] }
+
+    /// ⋯ → "New from Template" → template picker (HM-38).
+    func openTemplatesFromMoreMenu() -> TemplatePickerScreen {
+        menuButton.waitAndTap()
+        app.buttons["home.menu.newFromTemplate"].waitAndTap()
+        return TemplatePickerScreen(app: app).waitUntilShown()
+    }
+
+    /// ⋯ → "Reorder Lists": rows with drag handles and only Done in the toolbar (HM-33).
+    func startReorderingLists() {
+        menuButton.waitAndTap()
+        reorderListsItem.waitAndTap()
+        reorderDoneButton.waitToAppear()
+    }
+
+    /// ⋯ open: is "Reorder Lists" enabled? Closes the menu again (HM-32).
+    func isReorderListsEnabled() -> Bool {
+        menuButton.waitAndTap()
+        let enabled = reorderListsItem.waitToAppear().isEnabled
+        // A tap outside the menu closes it without choosing anything.
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9)).tap()
+        reorderListsItem.waitToDisappear()
+        return enabled
+    }
+
     /// Long press "+" → "From Template" → template picker (LI-12).
     func openTemplatesFromMenu() -> TemplatePickerScreen {
         newListButton.perform("Long press", until: app.buttons["home.menu.fromTemplate"]) {
@@ -423,7 +495,8 @@ extension HomeScreen {
         let pinButton = app.buttons["home.swipe.togglePin"]
         let result = app.buttons.matching(NSPredicate(
             format: "identifier IN %@", ["home.swipe.togglePin", "home.listCard.\(name)"])).firstMatch
-        row(name).scrollIntoView(within: list).perform("Swipe right", until: result) {
+        row(name).scrollIntoView(within: list).perform("Swipe right", until: result,
+                                                       recover: { backFromMisfiredGesture(on: row(name)) }) {
             $0.swipeRight()
         }
         if pinButton.exists { pinButton.tap() }
@@ -434,18 +507,29 @@ extension HomeScreen {
         openContextMenu(card: name, until: app.buttons["home.menu.togglePin"]).waitAndTap()
     }
 
-    /// Long press a tile → Edit → List Info of that list (HM-09, BUG-27).
+    /// Long press a tile → "List Info" → List Info of that list (HM-09, HM-36, BUG-27).
     func editFromContextMenu(card name: String) -> ListInfoScreen {
         openContextMenu(card: name, until: app.buttons["home.menu.edit"]).waitAndTap()
         return ListInfoScreen(app: app).waitUntilShown()
     }
 
     /// Long press a tile until `item` of its context menu shows up; returns `item`.
-    private func openContextMenu(card name: String, until item: XCUIElement) -> XCUIElement {
+    func openContextMenu(card name: String, until item: XCUIElement) -> XCUIElement {
         card(name).scrollIntoView(within: list)
-            .perform("Long press", until: item) {
+            .perform("Long press", until: item,
+                     recover: { backFromMisfiredGesture(on: card(name)) }) {
                 $0.press(forDuration: 1.5)
             }
+    }
+
+    /// A long press or swipe that a busy app (slow CI runner) received as a tap opens the
+    /// list (a tile's Menu primary action, a row's link) and Home's tile or row is no longer
+    /// on screen. Go back so the gesture can be retried. On iPad the list opens beside
+    /// Home and `element` stays hittable: nothing to undo.
+    func backFromMisfiredGesture(on element: XCUIElement) {
+        let detail = ListDetailScreen(app: app)
+        guard !element.isHittable, detail.menuButton.exists, detail.backButton.exists else { return }
+        _ = detail.goBack()
     }
 
     /// Swipe left on a row → "Delete" → confirmation dialog (HM-10).
@@ -455,17 +539,19 @@ extension HomeScreen {
         let deleteButton = app.buttons["home.swipe.delete"]
         let result = app.buttons.matching(NSPredicate(
             format: "identifier IN %@", ["home.swipe.delete", "home.deleteAlert.confirmButton"])).firstMatch
-        row(name).scrollIntoView(within: list).perform("Swipe left", until: result) {
+        row(name).scrollIntoView(within: list).perform("Swipe left", until: result,
+                                                       recover: { backFromMisfiredGesture(on: row(name)) }) {
             $0.swipeLeft()
         }
         if deleteButton.exists && !confirm.exists { deleteButton.tap() }
         return confirm.waitToAppear()
     }
 
-    /// Swipe left on a row → gray "Edit" → List Info in edit mode (LI-11).
+    /// Swipe left on a row → gray "List Info" → List Info in edit mode (LI-11, HM-36).
     func editWithSwipe(row name: String) -> ListInfoScreen {
         // A partial drag: a full swipe would run the first trailing action (Delete).
-        row(name).scrollIntoView(within: list).perform("Partial swipe left", until: app.buttons["home.swipe.edit"]) {
+        row(name).scrollIntoView(within: list).perform("Partial swipe left", until: app.buttons["home.swipe.edit"],
+                                                       recover: { backFromMisfiredGesture(on: row(name)) }) {
             let start = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5))
             let end = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.5))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
@@ -540,13 +626,14 @@ struct ListInfoScreen {
     @discardableResult
     func typeBudget(_ amount: String) -> ListInfoScreen {
         budgetField.scrollIntoViewLazily(within: form, maxSwipes: 8).tap()
-        budgetField.typeText(amount)
+        app.typeNumber(amount, into: budgetField)
         return self
     }
 
     /// ✓ → the sheet closes.
     @discardableResult
     func done() -> HomeScreen {
+        app.dismissNumberPadPopover()
         doneButton.waitAndTap()
         nameField.waitToDisappear()
         return HomeScreen(app: app).waitUntilShown()
@@ -555,6 +642,7 @@ struct ListInfoScreen {
     /// ✕ → the sheet closes without saving.
     @discardableResult
     func cancel() -> HomeScreen {
+        app.dismissNumberPadPopover()
         cancelButton.waitAndTap()
         nameField.waitToDisappear()
         return HomeScreen(app: app).waitUntilShown()

@@ -5,7 +5,8 @@
 //  Spec 02 / 08 end to end on the seed data (en_US): Alex is pinned (a tile),
 //  Eva and Victoria are rows in All Lists (Eva first). Pin with a swipe and
 //  unpin from the context menu (HM-08, HM-09), delete with a swipe and a
-//  confirmation (HM-10), search (HM-13), Settings behind the gear (spec 08).
+//  confirmation (HM-10), search (HM-13), Settings behind the gear (spec 08),
+//  reordering from the ⋯ menu (HM-31…HM-35) and "List Info" naming (HM-36).
 //
 
 import XCTest
@@ -70,7 +71,8 @@ final class HomeUITests: XCTestCase {
         XCTAssertFalse(home.row("Alex").exists)
     }
 
-    /// BUG-27: Edit in the second tile's context menu opens List Info of that list, not the first one.
+    /// BUG-27: List Info in the second tile's context menu opens List Info of that list, not the
+    /// first one. HM-36: the item is called "List Info", and the menu has no "Edit".
     @MainActor
     func testContextMenuEditOfSecondTileOpensThatList() {
         let app = Launch.app()
@@ -78,7 +80,11 @@ final class HomeUITests: XCTestCase {
         home.pinWithSwipe(row: "Victoria")
         home.card("Victoria").waitToAppear()
 
-        let info = home.editFromContextMenu(card: "Victoria")
+        let listInfoItem = home.openContextMenu(card: "Victoria", until: app.buttons["home.menu.edit"])
+        XCTAssertEqual(listInfoItem.label, "List Info")
+        XCTAssertFalse(app.buttons["Edit"].exists, "no \"Edit\" on Home (HM-36)")
+        listInfoItem.tap()
+        let info = ListInfoScreen(app: app).waitUntilShown()
         XCTAssertEqual(info.nameField.value as? String, "Victoria")
         info.cancel().card("Alex").waitToAppear()
     }
@@ -152,22 +158,55 @@ final class HomeUITests: XCTestCase {
         XCTAssertTrue(home.settingsButton.isHittable)
     }
 
-    /// HM-03: lists are reordered in Edit mode with drag handles (outside it, a long press is
-    /// the context menu, so rows are not draggable there).
+    /// HM-03, HM-31…HM-34: ⋯ → Reorder Lists shows drag handles and only Done in the toolbar
+    /// (outside this mode a long press is the context menu, so rows are not draggable there).
+    /// There is no "Edit" button on Home.
     @MainActor
     func testReorderListsInEditMode() {
         let app = Launch.app()
         let home = HomeScreen(app: app).waitUntilShown()
         XCTAssertLessThan(home.top(of: home.row("Eva")), home.top(of: home.row("Victoria")))
+        XCTAssertFalse(app.buttons["home.editButton"].exists, "HM-31: no Edit button")
+        XCTAssertFalse(app.navigationBars.buttons["Edit"].exists, "HM-31: no Edit button")
 
-        app.buttons["home.editButton"].waitAndTap()
+        home.startReorderingLists()
+        XCTAssertFalse(home.menuButton.exists, "HM-33: ⋯ is hidden while reordering")
+        XCTAssertFalse(home.newListButton.exists, "HM-33: + is hidden while reordering")
         let handles = home.list.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Reorder"))
-        // Pinned Alex is a row in Edit mode too: Alex, Eva, Victoria.
+        // Pinned Alex is a row in reorder mode too: Alex, Eva, Victoria.
         let victoriaHandle = handles.element(boundBy: 2).waitToAppear()
-        victoriaHandle.press(forDuration: 0.6, thenDragTo: handles.element(boundBy: 1),
-                             withVelocity: .slow, thenHoldForDuration: 0.3)
-        app.buttons["home.editButton"].waitAndTap()
+        // Drop in the upper part of Eva's row, not on its center: on the center the list
+        // sometimes keeps the order (CI, run 44061691931), as in testReorderItemsInGroup.
+        let start = victoriaHandle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let target = handles.element(boundBy: 1).coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .withOffset(CGVector(dx: 0, dy: -24))
+        start.press(forDuration: 0.6, thenDragTo: target, withVelocity: .slow, thenHoldForDuration: 0.5)
+        home.reorderDoneButton.waitAndTap()
 
+        // HM-34: Done brings back the tiles, ⋯ and +; the new order stays.
+        home.reorderDoneButton.waitToDisappear()
+        home.card("Alex").waitToAppear()
+        home.menuButton.waitToAppear()
+        home.newListButton.waitToAppear()
         XCTAssertLessThan(home.top(of: home.row("Victoria")), home.top(of: home.row("Eva")))
+    }
+
+    /// HM-32: "Reorder Lists" is shown but disabled unless one section has two lists.
+    /// 0 lists → disabled, 2 in All Lists → enabled, 1 pinned + 1 other → disabled.
+    @MainActor
+    func testReorderListsDisabledWithoutTwoListsInASection() {
+        let app = Launch.app(emptyStore: true)
+        let home = HomeScreen(app: app).waitUntilShown()
+        home.emptyState.waitToAppear()
+        XCTAssertFalse(home.isReorderListsEnabled(), "no lists")
+
+        home.createList(named: "Garden")
+        home.createList(named: "Kitchen")
+        home.row("Garden").waitToAppear()
+        XCTAssertTrue(home.isReorderListsEnabled(), "two lists in All Lists")
+
+        home.pinWithSwipe(row: "Kitchen")
+        home.card("Kitchen").waitToAppear()
+        XCTAssertFalse(home.isReorderListsEnabled(), "one list in each section")
     }
 }

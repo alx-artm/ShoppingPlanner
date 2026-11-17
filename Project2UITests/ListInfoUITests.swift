@@ -4,8 +4,9 @@
 //
 //  Spec 03 end to end: create a list in List Info (name, color, SF Symbol,
 //  budget) and find it on Home (LI-01...LI-08, HM-03); cancel creates
-//  nothing; the "Other…" emoji field; templates from the "+" menu and from
-//  the empty state (LI-12). Seed data and en_US, see PlannerUITests.
+//  nothing; the "Other…" emoji field; templates from the "+" menu, the ⋯
+//  menu (HM-38) and the empty state (LI-12). Seed data and en_US, see
+//  PlannerUITests.
 //
 
 import XCTest
@@ -113,13 +114,25 @@ final class ListInfoUITests: XCTestCase {
         XCTAssertFalse(trip.summary.exists)
     }
 
+    /// HM-38: ⋯ → New from Template → the same template picker → List Info with the template.
+    @MainActor
+    func testCreateFromTemplateInMoreMenu() {
+        let app = Launch.app()
+        var home = HomeScreen(app: app).waitUntilShown()
+
+        let info = home.openTemplatesFromMoreMenu().pick("trip")
+        XCTAssertEqual(info.nameField.value as? String, "Trip")
+        home = info.done()
+        home.row("Trip").waitToAppear()
+    }
+
     /// HM-14 + LI-12: the empty state offers "Start from Template" and "New List".
     @MainActor
     func testEmptyStateTemplateAndNewList() {
         let app = Launch.app(emptyStore: true)
         var home = HomeScreen(app: app).waitUntilShown()
         home.emptyState.waitToAppear()
-        XCTAssertFalse(app.buttons["home.editButton"].isEnabled, "nothing to edit yet")
+        XCTAssertFalse(home.isReorderListsEnabled(), "nothing to reorder yet (HM-32)")
 
         home.emptyStateTemplateButton.waitAndTap()
         home = TemplatePickerScreen(app: app).waitUntilShown().pick("roomRenovation").done()

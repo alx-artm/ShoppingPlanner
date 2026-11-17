@@ -23,9 +23,12 @@ struct ListViewInside: View {
     @Environment(AppNavigation.self) private var navigation
     @Environment(\.openURL) private var openURL
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     let list: ListModel
 
     @State private var sheet: ListSheet?
+    /// ⌘⌫ presses while item details are open (AD-12); the sheet asks before deleting.
+    @State private var itemDeleteRequests = 0
     @State private var showsDeleteListConfirmation = false
     /// The New Group / Rename alert (owner decision: an alert with a text field).
     @State private var nameAlert: GroupNameAlert?
@@ -50,6 +53,11 @@ struct ListViewInside: View {
 
     /// The last swipe-deleted item, while its "Undo" toast is on screen (LD-09).
     @State private var deletedItem: DeletedItem?
+
+    /// An item picked in the purchase bar, to scroll to once its row is in the list (LD-27).
+    @State private var itemToReveal: PersistentIdentifier?
+    /// The row highlighted for a moment after a purchase bar tap (LD-27).
+    @State private var highlight: RowHighlight?
 
     private var showsCompleted: Bool {
         uiState.showsCompleted(list.uuid)
@@ -97,6 +105,18 @@ struct ListViewInside: View {
                 addedGroupID = nil
             }
         }
+        .onChange(of: itemToReveal) { _, id in
+            // Same pattern as a new group: the row may have just appeared (expanded group,
+            // shown bought items), so scroll in a later update.
+            guard let id else { return }
+            Task { @MainActor in
+                await Task.yield()
+                withAnimation(reduceMotion ? nil : .default) {
+                    proxy.scrollTo(id, anchor: .center)
+                }
+                itemToReveal = nil
+            }
+        }
         }
         .overlay {
             if groups.isEmpty { emptyState }
@@ -108,7 +128,7 @@ struct ListViewInside: View {
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
                 // Always visible, never scrolls away (LD-10); one line while typing (owner decision).
-                ListSummaryBar(list: list, isCompact: isTypingInline)
+                ListSummaryBar(list: list, isCompact: isTypingInline, onShowItem: reveal)
             }
             .animation(reduceMotion ? nil : .snappy, value: deletedItem)
         }
@@ -116,6 +136,13 @@ struct ListViewInside: View {
             guard deletedItem != nil else { return }
             try? await Task.sleep(for: DeletedItem.duration)
             if !Task.isCancelled { deletedItem = nil }
+        }
+        .task(id: highlight) {
+            guard highlight != nil else { return }
+            try? await Task.sleep(for: RowHighlight.duration)
+            if !Task.isCancelled {
+                withAnimation(.easeOut(duration: 0.3)) { highlight = nil }
+            }
         }
         .toolbar {
             if isReorderingItems {
@@ -143,11 +170,22 @@ struct ListViewInside: View {
         }
         .navigationTitle(list.name)
         .navigationBarTitleDisplayMode(.inline)
+        // ⌘N / ⇧⌘N on iPad (AD-12); off while a sheet, an alert or Reorder Items is up.
+        .focusedSceneValue(\.listShortcutActions, acceptsShortcuts
+                           ? ListShortcutActions(newItem: newItemFromShortcut, newGroup: startNewGroup)
+                           : nil)
+        // ⌘⌫ only while item details are open. Published here, not by the sheet: a value
+        // published inside the sheet doesn't reach the scene's commands.
+        .focusedSceneValue(\.itemShortcutActions, isEditingItem
+                           ? ItemShortcutActions { itemDeleteRequests += 1 }
+                           : nil)
 
         .sheet(item: $sheet) { sheet in
             switch sheet {
             case .editItem(let item, let focusFirstEmpty):
-                ItemView(item: item, focusFirstEmpty: focusFirstEmpty)
+                ItemView(item: item, focusFirstEmpty: focusFirstEmpty,
+                         presentingSizeClass: horizontalSizeClass,
+                         deleteRequests: itemDeleteRequests)
             case .listInfo: ListInfoView(mode: .edit(list))
             case .reorderGroups: ReorderGroupsView(list: list)
             }
@@ -288,6 +326,9 @@ struct ListViewInside: View {
                 .accessibilityIdentifier("item.swipe.delete")
             }
             .contextMenu { itemMenu(item) }
+            // LD-27: picked in the purchase bar.
+            .listRowBackground(highlight?.itemID == item.persistentModelID
+                               ? list.color.color.opacity(0.2) : nil)
     }
 
     @ViewBuilder
@@ -523,11 +564,50 @@ struct ListViewInside: View {
         deletedItem = nil
     }
 
+    /// LD-27: a purchase bar segment was tapped. Its row is made visible (its group expanded,
+    /// bought items shown if they were hidden), scrolled to, and highlighted for a moment.
+    private func reveal(_ id: PersistentIdentifier) {
+        guard let item = list.allItems.first(where: { $0.persistentModelID == id }) else { return }
+        if let group = item.group, !uiState.isExpanded(group.uuid) {
+            uiState.setExpanded(true, for: group.uuid)
+        }
+        if item.isComplete, !showsCompleted {
+            uiState.setShowsCompleted(true, for: list.uuid)
+        }
+        itemToReveal = id
+        highlight = RowHighlight(itemID: id)
+    }
+
     /// LD-05a: without groups the first item goes into a new group "Items" (removed again
     /// if the user adds nothing).
     private func addFirstItem() {
         let group = store.createGroup(name: String(localized: "Items", comment: "Name of the group created for the first item of a list without groups."), in: list)
         startInline(in: group, createdGroup: true)
+    }
+
+    private var isEditingItem: Bool {
+        if case .editItem = sheet { true } else { false }
+    }
+
+    /// Nothing covers the list, so ⌘N / ⇧⌘N may act on it.
+    private var acceptsShortcuts: Bool {
+        sheet == nil && nameAlert == nil && groupToDelete == nil
+            && !showsDeleteListConfirmation && !isReorderingItems
+    }
+
+    /// ⌘N: inline add in the group an item was added to last, else the first expanded one;
+    /// without groups, the first item makes the "Items" group (LD-05a). See `NewItemTarget`.
+    private func newItemFromShortcut() {
+        let groups = list.sortedGroups
+        let candidates = groups.map {
+            NewItemTarget.Candidate($0, isExpanded: uiState.isExpanded($0.uuid))
+        }
+        if let id = NewItemTarget.groupID(in: candidates),
+           let group = groups.first(where: { $0.uuid == id }) {
+            startInline(in: group)
+        } else {
+            addFirstItem()
+        }
     }
 
     /// LD-01: a new group goes last; its name is typed right away.
@@ -587,6 +667,18 @@ private struct InlineAdd: Equatable {
     var createdGroup = false
     /// Counts Returns, to scroll the new empty line into view.
     var submitCount = 0
+}
+
+/// A row highlighted after a purchase bar tap (LD-27). A new tap, even on the same item,
+/// is a new value, so the timer starts again.
+private struct RowHighlight: Equatable {
+    let itemID: PersistentIdentifier
+    let token = UUID()
+
+    /// About a second (a UI test can make it longer, see `LaunchConfiguration`).
+    static var duration: Duration {
+        LaunchConfiguration.rowHighlightDurationOverride ?? .seconds(1)
+    }
 }
 
 /// New Group or Rename: the same alert with a text field.

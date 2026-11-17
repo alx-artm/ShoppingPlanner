@@ -5,7 +5,7 @@
 //  Spec 02: what Home shows. Pinned lists as tiles and the others as rows
 //  (HM-01), each section in sortIndex order with a new list first (HM-03,
 //  BUG-18), duplicates first (HM-11), search over both sections (HM-13),
-//  and the soft pin limit hint (HM-15).
+//  the soft pin limit hint (HM-15) and when lists can be reordered (HM-32).
 //
 
 import Foundation
@@ -115,6 +115,17 @@ struct HomeSectionsTests {
         for name in ["A", "B", "C"] { f.store.createList(name: name) } // C, B, A
         f.store.moveList(in: HomeSections(lists: try allLists()).others, fromOffsets: [0], toOffset: 3)
         #expect(HomeSections(lists: try allLists()).others.map(\.name) == ["B", "A", "C"])
+    }
+
+    // MARK: - HM-32 / HM-35
+
+    @Test("HM-32 Reorder Lists needs two lists in one section",
+          arguments: [(0, 0, false), (1, 0, false), (0, 1, false), (1, 1, false),
+                      (2, 0, true), (0, 2, true), (2, 1, true)])
+    func canReorder(pinned: Int, others: Int, expected: Bool) throws {
+        for index in 0..<pinned { f.store.createList(name: "P\(index)", isPinned: true) }
+        for index in 0..<others { f.store.createList(name: "O\(index)") }
+        #expect(HomeSections(lists: try allLists()).canReorder == expected)
     }
 
     // MARK: - HM-15
