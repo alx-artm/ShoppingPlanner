@@ -20,6 +20,9 @@ struct ItemView: View {
     /// The width class of the screen that presents the sheet. The sheet's own content is
     /// always compact (a form sheet is narrow), so it can't tell an iPad from an iPhone.
     let presentingSizeClass: UserInterfaceSizeClass?
+    /// Goes up by one for each ⌘⌫ (iPad): asks "Delete …?" like the Delete Item button
+    /// (AD-12, ID-11). The command reaches the presenter, not this sheet, so it is passed in.
+    let deleteRequests: Int
 
     @Environment(PlannerStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -39,9 +42,11 @@ struct ItemView: View {
     /// - Parameter focusFirstEmpty: opened from inline add (ⓘ): focus the first empty
     ///   field of Price, Link, Note (ID-09).
     /// - Parameter presentingSizeClass: the presenter's `horizontalSizeClass` (detents, ID-10).
-    init(item: ItemModel, focusFirstEmpty: Bool = false, presentingSizeClass: UserInterfaceSizeClass? = nil) {
+    init(item: ItemModel, focusFirstEmpty: Bool = false, presentingSizeClass: UserInterfaceSizeClass? = nil,
+         deleteRequests: Int = 0) {
         self.item = item
         self.presentingSizeClass = presentingSizeClass
+        self.deleteRequests = deleteRequests
         let draft = ItemDraft(item: item)
         initialDraft = draft
         _draft = State(initialValue: draft)
@@ -170,6 +175,9 @@ struct ItemView: View {
         .task {
             // After the sheet is on screen; focusing during the presentation is ignored.
             if let initialFocus { focus = initialFocus }
+        }
+        .onChange(of: deleteRequests) {
+            showsDeleteConfirmation = true
         }
         .onChange(of: focus) { old, _ in
             if old == .quantity { quantityText = "\(draft.quantity)" }

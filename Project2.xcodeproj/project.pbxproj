@@ -45,6 +45,8 @@
 		5FB6C0DE2F05000100000002 /* PurchaseBarLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB6C0DE2F05000100000001 /* PurchaseBarLayout.swift */; };
 		5FB6C0DE2F05000100000004 /* PurchaseBarColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB6C0DE2F05000100000003 /* PurchaseBarColors.swift */; };
 		5FB6C0DE2F05000100000006 /* PurchaseBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB6C0DE2F05000100000005 /* PurchaseBarView.swift */; };
+		5FB7C0DE2F15000100000002 /* NewItemTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB7C0DE2F15000100000001 /* NewItemTarget.swift */; };
+		5FB7C0DE2F15000100000004 /* PlannerCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB7C0DE2F15000100000003 /* PlannerCommands.swift */; };
 		5FCB6D2E2DF976930099AB52 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5FCB6D272DF976930099AB52 /* Assets.xcassets */; };
 		5FCB6D2F2DF976930099AB52 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D282DF976930099AB52 /* ContentView.swift */; };
 		5FCB6D322DF976930099AB52 /* ListViewInside.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB6D232DF976930099AB52 /* ListViewInside.swift */; };
@@ -119,6 +121,8 @@
 		5FB6C0DE2F05000100000001 /* PurchaseBarLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseBarLayout.swift; sourceTree = "<group>"; };
 		5FB6C0DE2F05000100000003 /* PurchaseBarColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseBarColors.swift; sourceTree = "<group>"; };
 		5FB6C0DE2F05000100000005 /* PurchaseBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseBarView.swift; sourceTree = "<group>"; };
+		5FB7C0DE2F15000100000001 /* NewItemTarget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewItemTarget.swift; sourceTree = "<group>"; };
+		5FB7C0DE2F15000100000003 /* PlannerCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlannerCommands.swift; sourceTree = "<group>"; };
 		5FCB6D162DF976930099AB52 /* GroupModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupModel.swift; sourceTree = "<group>"; };
 		5FCB6D172DF976930099AB52 /* ItemModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemModel.swift; sourceTree = "<group>"; };
 		5FCB6D182DF976930099AB52 /* ListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListModel.swift; sourceTree = "<group>"; };
@@ -226,6 +230,7 @@
 				5FB3C0DE2ED5000100000009 /* ListStatusText.swift */,
 				5FB6C0DE2F05000100000003 /* PurchaseBarColors.swift */,
 				5FB6C0DE2F05000100000001 /* PurchaseBarLayout.swift */,
+				5FB7C0DE2F15000100000001 /* NewItemTarget.swift */,
 				5FB3C0DE2ED500010000000B /* ListShareText.swift */,
 				5FB5C0DE2EF5000100000001 /* MoneyInput.swift */,
 				5FB5C0DE2EF5000100000005 /* ItemDraft.swift */,
@@ -255,6 +260,7 @@
 				5FB5C0DE2EF500010000000B /* ReorderGroupsView.swift */,
 				5FB5C0DE2EF500010000000D /* UndoToast.swift */,
 				5FB6C0DE2F05000100000005 /* PurchaseBarView.swift */,
+				5FB7C0DE2F15000100000003 /* PlannerCommands.swift */,
 				5FB5C0DE2EF500010000000F /* InlineItemRow.swift */,
 				5FB5C0DE2EF5000100000011 /* InlineNameField.swift */,
 			);
@@ -452,6 +458,8 @@
 				5FB3C0DE2ED500010000000A /* ListStatusText.swift in Sources */,
 				5FB6C0DE2F05000100000004 /* PurchaseBarColors.swift in Sources */,
 				5FB6C0DE2F05000100000002 /* PurchaseBarLayout.swift in Sources */,
+				5FB7C0DE2F15000100000002 /* NewItemTarget.swift in Sources */,
+				5FB7C0DE2F15000100000004 /* PlannerCommands.swift in Sources */,
 				5FB3C0DE2ED500010000000C /* ListShareText.swift in Sources */,
 				5FB3C0DE2ED500010000000E /* AppNavigation.swift in Sources */,
 				5FB3C0DE2ED5000100000010 /* ListIconBadge.swift in Sources */,

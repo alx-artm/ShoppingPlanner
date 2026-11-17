@@ -41,6 +41,7 @@ struct Project2App: App {
             }
             .preferredColorScheme(selectedTheme.colorScheme)
         }
+        .commands { PlannerCommands() }
     }
 }
 
