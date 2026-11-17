@@ -10,8 +10,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # One job definition, run three times in parallel by the matrix: "Unit Tests"
-  # and the UI tests split into two shards. Each instance gets its own runner and
+  # One job definition, run four times in parallel by the matrix: "Unit Tests",
+  # the iPhone UI tests split into two shards, and a small iPad UI job. Each instance gets its own runner and
   # simulator, so the fast unit tests report in a few minutes while the slow UI
   # tests are still running, and a failure in one doesn't hide the result of the
   # others (fail-fast: false). The matrix keeps the shared steps (Xcode,
@@ -22,6 +22,12 @@ jobs:
   # shards are split by test class and balanced by measured time (~16 min each
   # locally). A new UI test class must be added to one of the two lists below,
   # otherwise it doesn't run in CI.
+  #
+  # Why a small iPad job: iPad has its own system behaviour (number pad in a
+  # popover, hardware-keyboard mode, form sheets, keyboard shortcuts) that the
+  # iPhone never shows. It runs only the classes that touch it, not the whole
+  # suite, which would double CI time. iPad-only classes (KeyboardShortcutsUITests)
+  # skip themselves on iPhone, so they are listed only here.
   test:
     name: ${{ matrix.name }}
     runs-on: macos-26
@@ -31,21 +37,31 @@ jobs:
       matrix:
         include:
           - name: Unit Tests
+            device: iPhone 17 Pro
             only-testing: -only-testing:Project2Tests
             artifact: UnitTestResults
           - name: UI Tests (1/2)
+            device: iPhone 17 Pro
             only-testing: >-
               -only-testing:Project2UITests/ListDetailUITests
               -only-testing:Project2UITests/HomeUITests
               -only-testing:Project2UITests/SettingsUITests
             artifact: UITestResults-1
           - name: UI Tests (2/2)
+            device: iPhone 17 Pro
             only-testing: >-
               -only-testing:Project2UITests/PlannerUITests
               -only-testing:Project2UITests/InlineAddUITests
               -only-testing:Project2UITests/ItemDetailsUITests
               -only-testing:Project2UITests/ListInfoUITests
             artifact: UITestResults-2
+          - name: UI Tests (iPad)
+            device: iPad Air 11-inch (M4)
+            only-testing: >-
+              -only-testing:Project2UITests/InlineAddUITests
+              -only-testing:Project2UITests/ItemDetailsUITests
+              -only-testing:Project2UITests/KeyboardShortcutsUITests
+            artifact: UITestResults-iPad
     steps:
       - uses: actions/checkout@v7
 
@@ -62,9 +78,10 @@ jobs:
           # Pinned, not "newest": otherwise the device and iOS version change
           # whenever GitHub updates the runner image, and tests can turn red with
           # no change in our code. Reproduce locally on the same pair (see
-          # LESSONS.md, lesson 17). To move to a newer iOS, change these two
-          # lines in a separate PR and run the whole suite.
-          SIM_DEVICE: iPhone 17 Pro
+          # LESSONS.md, lesson 17). The device comes from the matrix (iPhone or
+          # iPad). To move to a newer iOS, change SIM_RUNTIME in a separate PR
+          # and run the whole suite.
+          SIM_DEVICE: ${{ matrix.device }}
           SIM_RUNTIME: com.apple.CoreSimulator.SimRuntime.iOS-26-5
         run: |
           if ! xcrun simctl list runtimes --json | jq -e --arg r "$SIM_RUNTIME" \
