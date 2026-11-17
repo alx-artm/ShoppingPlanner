@@ -162,11 +162,11 @@ struct ListDetailScreen {
         let field = startInline(in: group)
         field.typeText(name)
         if let price {
-            app.buttons["inline.accessory.price"].waitAndTap()
-            focusedInlineField("inline.priceField").typeText(price)
+            tapAccessory("price")
+            app.typeNumber(price, into: focusedInlineField("inline.priceField"))
         }
         if quantity > 1 {
-            app.buttons["inline.accessory.quantity"].waitAndTap()
+            tapAccessory("quantity")
             let increment = app.buttons["inline.quantityStepper-Increment"].waitToAppear()
             for _ in 1..<quantity { increment.tap() }
         }
@@ -193,10 +193,17 @@ struct ListDetailScreen {
         return field
     }
 
+    /// A button of the inline accessory bar: "price", "quantity", "link", "details", "done".
+    /// On iPad the price's number pad popover is closed first, or it would eat the tap.
+    func tapAccessory(_ name: String, file: StaticString = #filePath, line: UInt = #line) {
+        app.dismissNumberPadPopover(file: file, line: line)
+        app.buttons["inline.accessory.\(name)"].waitAndTap(file: file, line: line)
+    }
+
     /// Done on the keyboard's accessory bar: saves a non-empty draft and closes inline add.
-    func inlineDone() {
-        app.buttons["inline.accessory.done"].waitAndTap()
-        app.textFields["inline.nameField"].waitToDisappear()
+    func inlineDone(file: StaticString = #filePath, line: UInt = #line) {
+        tapAccessory("done", file: file, line: line)
+        app.textFields["inline.nameField"].waitToDisappear(file: file, line: line)
     }
 
     /// Taps the purchase bar at `fraction` (0...1) of its width, in the middle of its 44 pt row.
@@ -315,15 +322,23 @@ struct ItemEditScreen {
     /// Replaces the text of a field (select all is not reliable, so delete key by key).
     /// The tap goes to the field's right end, so the cursor lands after the text
     /// in both leading- and trailing-aligned fields.
+    /// Price and quantity are typed on the iPad number pad popover (see `typeNumber`).
     func replaceText(of field: XCUIElement, with text: String) {
+        app.dismissNumberPadPopover()
         field.waitToBeHittable()
         field.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap()
         let current = field.value as? String ?? ""
-        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count + 2) + text)
+        let keys = String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count + 2) + text
+        if ["itemEdit.priceField", "itemEdit.quantityField"].contains(field.identifier) {
+            app.typeNumber(keys, into: field)
+        } else {
+            field.typeText(keys)
+        }
     }
 
     /// "Delete Item" → confirm. The sheet closes, then the item is deleted (ID-11).
     func delete() {
+        app.dismissNumberPadPopover()
         deleteButton.scrollIntoViewLazily(within: form).tap()
         app.buttons["itemEdit.deleteAlert.confirmButton"].firstMatch.waitAndTap()
         nameField.waitToDisappear()
@@ -331,18 +346,22 @@ struct ItemEditScreen {
 
     /// ✓ → the sheet closes.
     func done() {
+        app.dismissNumberPadPopover()
         doneButton.waitAndTap()
         nameField.waitToDisappear()
     }
 
-    /// ✕ → the sheet closes without saving.
+    /// ✕ → the sheet closes without saving. From inline ⓘ the price field has the focus, so
+    /// on iPad its number pad popover is open and is closed first.
     func cancel() {
+        app.dismissNumberPadPopover()
         cancelButton.waitAndTap()
         nameField.waitToDisappear()
     }
 
     /// Group picker → choose `group`.
     func moveToGroup(_ group: String) {
+        app.dismissNumberPadPopover()
         groupPicker.scrollIntoViewLazily(within: form).tap()
         app.buttons[group].firstMatch.waitAndTap()
     }
@@ -600,13 +619,14 @@ struct ListInfoScreen {
     @discardableResult
     func typeBudget(_ amount: String) -> ListInfoScreen {
         budgetField.scrollIntoViewLazily(within: form, maxSwipes: 8).tap()
-        budgetField.typeText(amount)
+        app.typeNumber(amount, into: budgetField)
         return self
     }
 
     /// ✓ → the sheet closes.
     @discardableResult
     func done() -> HomeScreen {
+        app.dismissNumberPadPopover()
         doneButton.waitAndTap()
         nameField.waitToDisappear()
         return HomeScreen(app: app).waitUntilShown()
@@ -615,6 +635,7 @@ struct ListInfoScreen {
     /// ✕ → the sheet closes without saving.
     @discardableResult
     func cancel() -> HomeScreen {
+        app.dismissNumberPadPopover()
         cancelButton.waitAndTap()
         nameField.waitToDisappear()
         return HomeScreen(app: app).waitUntilShown()

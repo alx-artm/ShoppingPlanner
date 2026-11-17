@@ -228,6 +228,57 @@ extension XCUIElement {
     }
 }
 
+// MARK: - Number pad on iPad
+
+/// On iPad (iPadOS 26+) a `.decimalPad` / `.numberPad` field doesn't get the docked keyboard:
+/// its keys open in a small popover next to the field, and the system puts a full-window
+/// "dismiss popup" region behind it. The first tap outside the popover only closes it; it
+/// never reaches the button under the finger (a real user taps twice too). So after a price,
+/// quantity or budget, a tap on ✓, Cancel or an accessory button was silently lost.
+///
+/// `typeText` makes it worse: XCTest sends hardware key events, iPad switches to its
+/// hardware-keyboard mode (the popover goes, a 64 pt bar stays), and the next touch is spent
+/// switching back to the on-screen keyboard. So on iPad numbers are typed on the popover's
+/// own keys, and the popover is closed on purpose before the next tap.
+/// On iPhone the number pad is docked: both helpers fall back to plain typing / do nothing.
+extension XCUIApplication {
+    /// The number pad popover (iPad only): a popover with keyboard keys in it.
+    var numberPadPopover: XCUIElement { popovers.containing(.key, identifier: nil).firstMatch }
+
+    /// Types `text` into the focused number field: on the popover's keys on iPad, with
+    /// `typeText` elsewhere. `XCUIKeyboardKey.delete` is the popover's "Delete" key.
+    @MainActor
+    func typeNumber(_ text: String, into field: XCUIElement,
+                    file: StaticString = #filePath, line: UInt = #line) {
+        let pad = numberPadPopover
+        // The popover opens with the focus. Without it (iPhone, or a Mac keyboard connected
+        // to the simulator) there is a docked keyboard or none, and plain typing is right.
+        guard UIDevice.current.userInterfaceIdiom == .pad, pad.waitForExistence(timeout: 3) else {
+            field.typeText(text)
+            return
+        }
+        for character in text {
+            let label = String(character) == XCUIKeyboardKey.delete.rawValue ? "Delete" : String(character)
+            pad.keys[label].firstMatch.waitAndTap(file: file, line: line)
+        }
+    }
+
+    /// Closes the iPad number pad popover if it is open, so that the next tap reaches its
+    /// target. The tap goes to the focused field, the popover's anchor: the dismiss region
+    /// takes it (and if it ever didn't, a tap on the focused field changes nothing).
+    @MainActor
+    func dismissNumberPadPopover(file: StaticString = #filePath, line: UInt = #line) {
+        let pad = numberPadPopover
+        guard pad.exists else { return }
+        let focused = descendants(matching: .textField)
+            .matching(NSPredicate(format: "hasKeyboardFocus == true")).firstMatch
+        // A coordinate tap: an element tap would refuse the field as covered (not hittable).
+        let target = focused.exists ? focused : windows.firstMatch
+        target.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        pad.waitToDisappear(file: file, line: line)
+    }
+}
+
 /// One pixel of a screenshot, to tell a tinted (highlighted) background from a plain one.
 enum ScreenshotPixel {
     /// RGBA of the pixel `inset` pixels in from the top-left corner.
