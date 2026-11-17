@@ -49,6 +49,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Xcode stays "latest": a new Xcode can still run the pinned iOS 26.5
+      # simulator below, and the build catches new compiler warnings early.
       - name: Select latest Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -56,21 +58,35 @@ jobs:
 
       - name: Pick iPhone simulator
         id: sim
+        env:
+          # Pinned, not "newest": otherwise the device and iOS version change
+          # whenever GitHub updates the runner image, and tests can turn red with
+          # no change in our code. Reproduce locally on the same pair (see
+          # LESSONS.md, lesson 17). To move to a newer iOS, change these two
+          # lines in a separate PR and run the whole suite.
+          SIM_DEVICE: iPhone 17 Pro
+          SIM_RUNTIME: com.apple.CoreSimulator.SimRuntime.iOS-26-5
         run: |
-          # Newest available iOS runtime, first iPhone device on it.
-          UDID=$(xcrun simctl list devices available --json | jq -r '
-            .devices | to_entries
-            | map(select(.key | startswith("com.apple.CoreSimulator.SimRuntime.iOS-")))
-            | sort_by(.key | sub(".*iOS-"; "") | split("-") | map(tonumber))
-            | reverse
-            | map(.value[] | select(.name | startswith("iPhone")))
-            | first | .udid // empty')
-          if [ -z "$UDID" ]; then
-            echo "::error::No available iPhone simulator found"
-            xcrun simctl list devices available
+          if ! xcrun simctl list runtimes --json | jq -e --arg r "$SIM_RUNTIME" \
+              '.runtimes[] | select(.identifier == $r and .isAvailable)' > /dev/null; then
+            echo "::error::Runtime $SIM_RUNTIME is not on this runner image. Update SIM_RUNTIME in ci.yml."
+            xcrun simctl list runtimes
             exit 1
           fi
-          xcrun simctl list devices available | grep "$UDID"
+          UDID=$(xcrun simctl list devices available --json | jq -r \
+            --arg r "$SIM_RUNTIME" --arg d "$SIM_DEVICE" \
+            '.devices[$r] // [] | map(select(.name == $d)) | first | .udid // empty')
+          if [ -z "$UDID" ]; then
+            # The runtime is there but the image has no such device: create it.
+            DEVICE_TYPE=$(xcrun simctl list devicetypes --json | jq -r --arg d "$SIM_DEVICE" \
+              '.devicetypes[] | select(.name == $d) | .identifier')
+            if [ -z "$DEVICE_TYPE" ]; then
+              echo "::error::Device type \"$SIM_DEVICE\" is not known to this Xcode. Update SIM_DEVICE in ci.yml."
+              exit 1
+            fi
+            UDID=$(xcrun simctl create "$SIM_DEVICE" "$DEVICE_TYPE" "$SIM_RUNTIME")
+          fi
+          xcrun simctl list devices | grep "$UDID"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
 
       - name: Prepare simulator keyboard
