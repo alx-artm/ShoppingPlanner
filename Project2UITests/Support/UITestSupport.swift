@@ -277,6 +277,26 @@ extension XCUIApplication {
         target.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         pad.waitToDisappear(file: file, line: line)
     }
+
+    /// Gets the iPad keyboard into its final place before a tap on a control *inside* a sheet
+    /// (a Stepper) while a number field has the focus. Whatever the number was typed with, the
+    /// next touch anywhere brings the docked on-screen keyboard back: after the number pad
+    /// popover closes (iPadOS 27) or after `typeText` switched to hardware-keyboard mode
+    /// (iPadOS 26, no popover). The form sheet slides up for that keyboard mid-touch, so the
+    /// touch misses its target (a user taps "+" again). Here that touch goes to the focused
+    /// field itself: the popover doesn't reopen and the text doesn't change; taps that wait
+    /// for idle afterwards hit the settled layout. No-op on iPhone (docked keyboard).
+    /// Toolbar buttons (✓, ✕) don't need this: `dismissNumberPadPopover` is enough there.
+    @MainActor
+    func settleKeyboardBeforeTapInSheet(file: StaticString = #filePath, line: UInt = #line) {
+        guard UIDevice.current.userInterfaceIdiom == .pad else { return }
+        let focused = descendants(matching: .textField)
+            .matching(NSPredicate(format: "hasKeyboardFocus == true")).firstMatch
+        guard focused.exists else { return }
+        dismissNumberPadPopover(file: file, line: line)
+        focused.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap()
+        keyboards.firstMatch.waitToAppear(file: file, line: line)
+    }
 }
 
 /// One pixel of a screenshot, to tell a tinted (highlighted) background from a plain one.

@@ -23,6 +23,7 @@ struct ListViewInside: View {
     @Environment(AppNavigation.self) private var navigation
     @Environment(\.openURL) private var openURL
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     let list: ListModel
 
     @State private var sheet: ListSheet?
@@ -171,7 +172,8 @@ struct ListViewInside: View {
         .sheet(item: $sheet) { sheet in
             switch sheet {
             case .editItem(let item, let focusFirstEmpty):
-                ItemView(item: item, focusFirstEmpty: focusFirstEmpty)
+                ItemView(item: item, focusFirstEmpty: focusFirstEmpty,
+                         presentingSizeClass: horizontalSizeClass)
             case .listInfo: ListInfoView(mode: .edit(list))
             case .reorderGroups: ReorderGroupsView(list: list)
             }

@@ -359,6 +359,13 @@ struct ItemEditScreen {
         nameField.waitToDisappear()
     }
 
+    /// Stepper "+" once. After a typed price or quantity the iPad keyboard is settled first
+    /// (see `settleKeyboardBeforeTapInSheet`).
+    func incrementQuantity(file: StaticString = #filePath, line: UInt = #line) {
+        app.settleKeyboardBeforeTapInSheet(file: file, line: line)
+        quantityIncrement.waitToBeHittable(file: file, line: line).tap()
+    }
+
     /// Group picker → choose `group`.
     func moveToGroup(_ group: String) {
         app.dismissNumberPadPopover()
