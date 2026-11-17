@@ -75,9 +75,9 @@ enum PurchaseBarColors {
         Color(uiColor: UIColor { traits in segmentRGB(color, traits: traits).uiColor })
     }
 
-    /// The dashes of items without a price (LD-29: secondary). A plain gray, not the
-    /// hierarchical `.secondary`, which inside a tinted view is a faded tint.
-    static let dash = Color(uiColor: .secondaryLabel)
+    /// The dashed squares of items without a price (LD-29: secondary). A plain gray, not
+    /// the hierarchical `.secondary`, which inside a tinted view is a faded tint.
+    static let unpriced = Color(uiColor: .secondaryLabel)
 
     /// The list color, or the closest variant of it with ≥ 3:1 against every background
     /// the summary bar can show in `traits`.

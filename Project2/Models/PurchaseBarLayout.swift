@@ -6,8 +6,8 @@
 //  as a pure function: items (id, line total, bought) + width → segments.
 //  No SwiftUI and no SwiftData, so every rule is unit-tested with plain arrays.
 //
-//  [ bought (filled) | to buy (outlined) | ⋮ ⋮ ⋮ ]
-//  └──── priced zone, ∝ line totals ────┘ └ dashes: items without a price
+//  [ bought (filled) | to buy (outlined) | ▢ ▢ ▢ ]
+//  └──── priced zone, ∝ line totals ────┘ └ squares: items without a price
 //
 //  Money stays `Decimal`: shares are computed as `lineTotal / planned` in
 //  `Decimal` and only the resulting fraction becomes a width in points.
@@ -20,7 +20,7 @@ struct PurchaseBarLayout<ItemID: Hashable & Sendable>: Hashable, Sendable {
     /// One item of the list, in list order (groups, then items).
     struct Item: Hashable, Sendable {
         var id: ItemID
-        /// `nil` = no price: drawn as a dash, not part of the proportions (LD-24).
+        /// `nil` = no price: drawn as a square, not part of the proportions (LD-24).
         var lineTotal: Decimal?
         var isComplete: Bool
     }
@@ -54,25 +54,27 @@ struct PurchaseBarLayout<ItemID: Hashable & Sendable>: Hashable, Sendable {
     struct Metrics: Hashable, Sendable {
         /// Narrower segments are merged into "other" (LD-23).
         var minSegmentWidth: CGFloat = 6
-        var dashWidth: CGFloat = 4
-        /// Space before each dash, so the first one is apart from the priced zone.
-        var dashSpacing: CGFloat = 3
+        /// Side of an unpriced square; the view passes the bar height (LD-24).
+        var squareSize: CGFloat = 10
+        /// Space between two squares and between the priced zone and the first one; the
+        /// view passes the gap it draws between segments.
+        var squareSpacing: CGFloat = 1.5
         /// More unpriced items are only counted in the label (LD-24).
-        var maxDashes = 3
+        var maxSquares = 3
     }
 
     let width: CGFloat
     /// Left to right: bought segments, then the ones to buy (LD-22).
     let segments: [Segment]
-    /// Width of the proportional part: `width` minus the dash zone (LD-21).
+    /// Width of the proportional part: `width` minus the square zone (LD-21).
     let pricedWidth: CGFloat
     /// Width of the bought side; `boughtWidth / pricedWidth == boughtFraction` (LD-22).
     let boughtWidth: CGFloat
     /// Items without a price.
     let unpricedCount: Int
-    /// Left edges of the dashes, at most `maxDashes` (LD-24).
-    let dashXs: [CGFloat]
-    let dashWidth: CGFloat
+    /// Left edges of the unpriced squares, at most `maxSquares` (LD-24).
+    let squareXs: [CGFloat]
+    let squareSize: CGFloat
 
     /// No item has a price: no bar, only the label "N items without price" (LD-25).
     var isBarVisible: Bool { !segments.isEmpty }
@@ -83,7 +85,7 @@ struct PurchaseBarLayout<ItemID: Hashable & Sendable>: Hashable, Sendable {
     init(items: [Item], width: CGFloat, metrics: Metrics = Metrics()) {
         let width = max(width, 0)
         self.width = width
-        dashWidth = metrics.dashWidth
+        squareSize = metrics.squareSize
 
         let priced = items.compactMap { item in item.lineTotal.map { (item: item, total: $0) } }
         unpricedCount = items.count - priced.count
@@ -93,16 +95,20 @@ struct PurchaseBarLayout<ItemID: Hashable & Sendable>: Hashable, Sendable {
             segments = []
             pricedWidth = 0
             boughtWidth = 0
-            dashXs = []
+            squareXs = []
             return
         }
 
-        // LD-24: dashes have a fixed width, at the end.
-        let dashCount = min(unpricedCount, max(metrics.maxDashes, 0))
-        let step = metrics.dashWidth + metrics.dashSpacing
-        let pricedWidth = max(width - CGFloat(dashCount) * step, 0)
+        // LD-24: squares have a fixed size, at the end. Each one takes a slot of
+        // size + spacing and sits in its middle, the same way the view insets every
+        // segment by half the gap on both sides, so all the drawn gaps are equal.
+        // A bar too narrow for them shows fewer, so they never spill past its end.
+        let step = metrics.squareSize + metrics.squareSpacing
+        let fitting = step > 0 ? Int((width / step).rounded(.down)) : 0
+        let squareCount = min(unpricedCount, max(metrics.maxSquares, 0), fitting)
+        let pricedWidth = max(width - CGFloat(squareCount) * step, 0)
         self.pricedWidth = pricedWidth
-        dashXs = (0..<dashCount).map { pricedWidth + metrics.dashSpacing + CGFloat($0) * step }
+        squareXs = (0..<squareCount).map { pricedWidth + metrics.squareSpacing / 2 + CGFloat($0) * step }
 
         // LD-21: width ∝ lineTotal / planned. If every price is 0, the plan is 0 and
         // nothing is proportional: each item gets an equal share instead.
@@ -132,7 +138,7 @@ struct PurchaseBarLayout<ItemID: Hashable & Sendable>: Hashable, Sendable {
     }
 
     /// The segment under a tap at `x` (LD-27). Segments tile the priced zone, so a tap on a
-    /// narrow one or between two (the drawn gap) goes to the nearest. Taps on the dashes
+    /// narrow one or between two (the drawn gap) goes to the nearest. Taps on the squares
     /// hit nothing: those items have no amount to show.
     func segmentIndex(at x: CGFloat) -> Int? {
         guard isBarVisible, x <= pricedWidth else { return nil }

@@ -4,8 +4,8 @@
 //
 //  The segmented purchase bar in the list summary bar (spec 04 "Purchase bar",
 //  LD-20...LD-29): one segment per priced item, width ∝ its line total; bought
-//  segments filled on the left, the rest outlined on the right, dashes for
-//  items without a price. The geometry comes from `PurchaseBarLayout`, the
+//  segments filled on the left, the rest outlined on the right, dashed squares
+//  for items without a price. The geometry comes from `PurchaseBarLayout`, the
 //  texts from `PurchaseBarText`, the colors from `PurchaseBarColors`.
 //
 //  - Checking an item off moves its segment to the bought side (≤ 0.35 s);
@@ -29,7 +29,6 @@ struct PurchaseBarView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric(relativeTo: .subheadline) private var minSegmentWidth: CGFloat = 6
     @ScaledMetric(relativeTo: .subheadline) private var barHeight: CGFloat = 10
-    @ScaledMetric(relativeTo: .subheadline) private var dashWidth: CGFloat = 4
 
     @State private var width: CGFloat = 0
     @State private var otherPopover: OtherPopover?
@@ -46,7 +45,7 @@ struct PurchaseBarView: View {
         let layout = PurchaseBarLayout(
             items: items.map { .init(id: $0.persistentModelID, lineTotal: $0.lineTotal, isComplete: $0.isComplete) },
             width: width,
-            metrics: .init(minSegmentWidth: minSegmentWidth, dashWidth: dashWidth)
+            metrics: .init(minSegmentWidth: minSegmentWidth, squareSize: barHeight, squareSpacing: Self.gap)
         )
         let itemsByID = Dictionary(items.map { ($0.persistentModelID, $0) }, uniquingKeysWith: { first, _ in first })
         let voiceOverOrder = layout.itemIDsInBarOrder
@@ -63,7 +62,7 @@ struct PurchaseBarView: View {
                 otherList(layout.segments.first { $0.kind == .other(isBought: popover.isBought) },
                           itemsByID: itemsByID)
             }
-            // LD-28: one element; the labels next to it and the dashes are not part of it.
+            // LD-28: one element; the labels next to it and the squares are not part of it.
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(verbatim: PurchaseBarText.label))
             .accessibilityValue(Text(verbatim: voiceOverValue(order: voiceOverOrder, itemsByID: itemsByID)))
@@ -105,10 +104,9 @@ struct PurchaseBarView: View {
                     .frame(width: drawn, height: barHeight)
                     .offset(x: segment.x + (segment.width - drawn) / 2)
             }
-            ForEach(Array(layout.dashXs.enumerated()), id: \.offset) { _, x in
-                RoundedRectangle(cornerRadius: 1.5, style: .continuous)
-                    .strokeBorder(PurchaseBarColors.dash, style: StrokeStyle(lineWidth: 1.5, dash: [2, 2]))
-                    .frame(width: layout.dashWidth, height: barHeight)
+            ForEach(Array(layout.squareXs.enumerated()), id: \.offset) { _, x in
+                UnpricedSquare()
+                    .frame(width: layout.squareSize, height: layout.squareSize)
                     .offset(x: x)
             }
         }
@@ -196,6 +194,12 @@ struct PurchaseBarView: View {
     }
 }
 
+/// Segments and unpriced squares share one look: corner radius and line width.
+private enum BarStyle {
+    static let cornerRadius: CGFloat = 3
+    static let lineWidth: CGFloat = 1.5
+}
+
 /// Filled in the list color when bought, outlined when not (LD-29). The fill fades, so
 /// checking an item off animates from outline to fill.
 private struct SegmentShape: View {
@@ -203,10 +207,32 @@ private struct SegmentShape: View {
     let color: Color
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: 3, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: BarStyle.cornerRadius, style: .continuous)
         shape
             .fill(color.opacity(isBought ? 1 : 0))
-            .overlay { shape.strokeBorder(color, lineWidth: 1.5) }
+            .overlay { shape.strokeBorder(color, lineWidth: BarStyle.lineWidth) }
+    }
+}
+
+/// An item without a price (LD-24): a square with a dashed outline, no fill. The dashes
+/// are fitted to the square's size: one on each corner and one in the middle of each
+/// side, so the pattern stays readable at 10 pt and scales with Dynamic Type.
+private struct UnpricedSquare: View {
+    var body: some View {
+        GeometryReader { proxy in
+            let side = min(proxy.size.width, proxy.size.height)
+            // `strokeBorder` strokes the shape inset by half the line width.
+            let inset = side - BarStyle.lineWidth
+            let radius = max(BarStyle.cornerRadius - BarStyle.lineWidth / 2, 0)
+            let perimeter = 4 * (inset - 2 * radius) + 2 * .pi * radius
+            // 8 dashes and 8 gaps of equal length. The path starts in the middle of the
+            // right side, so a half-dash phase centers a dash there (and on every corner).
+            let unit = perimeter / 16
+            RoundedRectangle(cornerRadius: BarStyle.cornerRadius, style: .continuous)
+                .strokeBorder(PurchaseBarColors.unpriced,
+                              style: StrokeStyle(lineWidth: BarStyle.lineWidth, lineCap: .butt,
+                                                 dash: [unit, unit], dashPhase: unit / 2))
+        }
     }
 }
 

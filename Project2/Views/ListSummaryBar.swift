@@ -21,6 +21,7 @@ struct ListSummaryBar: View {
     var onShowItem: (PersistentIdentifier) -> Void = { _ in }
 
     @Environment(\.locale) private var locale
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         let summary = list.summary
@@ -66,19 +67,27 @@ struct ListSummaryBar: View {
                 }
             }
 
-            HStack(spacing: 8) {
-                if text.showsProgress {
-                    PurchaseBarView(list: list, summary: summary, onShowItem: onShowItem)
-                    Text(verbatim: text.progress)
-                        .monospacedDigit()
-                        .fixedSize()
-                        .accessibilityIdentifier("listDetail.progress")
-                }
-                // "+2 without price", or alone "3 items without price" without a bar (LD-24, LD-25).
-                if let unpriced = text.unpriced {
-                    Text(verbatim: unpriced)
-                        .fixedSize()
-                        .accessibilityIdentifier("listDetail.unpriced")
+            Group {
+                if text.showsProgress, dynamicTypeSize.isAccessibilitySize {
+                    // Accessibility sizes: the labels would squeeze the bar to nothing in one
+                    // row, so the bar gets the full width and the labels go below it.
+                    VStack(alignment: .leading, spacing: 0) {
+                        PurchaseBarView(list: list, summary: summary, onShowItem: onShowItem)
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            progress(text)
+                            unpriced(text)
+                        }
+                    }
+                } else {
+                    HStack(spacing: 8) {
+                        if text.showsProgress {
+                            PurchaseBarView(list: list, summary: summary, onShowItem: onShowItem)
+                            progress(text)
+                                .fixedSize()
+                        }
+                        unpriced(text)
+                            .fixedSize()
+                    }
                 }
             }
             .font(.subheadline)
@@ -88,6 +97,21 @@ struct ListSummaryBar: View {
             BudgetText(status: text.status, form: .full)
                 .font(.subheadline)
                 .accessibilityIdentifier("listDetail.budget")
+        }
+    }
+
+    private func progress(_ text: ListSummaryText) -> some View {
+        Text(verbatim: text.progress)
+            .monospacedDigit()
+            .accessibilityIdentifier("listDetail.progress")
+    }
+
+    /// "+2 without price", or alone "3 items without price" without a bar (LD-24, LD-25).
+    @ViewBuilder
+    private func unpriced(_ text: ListSummaryText) -> some View {
+        if let unpriced = text.unpriced {
+            Text(verbatim: unpriced)
+                .accessibilityIdentifier("listDetail.unpriced")
         }
     }
 

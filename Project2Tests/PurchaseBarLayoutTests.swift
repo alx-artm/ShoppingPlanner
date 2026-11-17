@@ -50,11 +50,11 @@ struct PurchaseBarLayoutTests {
         }
     }
 
-    @Test("LD-21 priced widths fill the bar minus the dash zone; segments tile without gaps")
+    @Test("LD-21 priced widths fill the bar minus the square zone; segments tile without gaps")
     func widthsFillPricedZone() {
-        let metrics = Layout.Metrics(minSegmentWidth: 6, dashWidth: 4, dashSpacing: 3, maxDashes: 3)
+        let metrics = Layout.Metrics(minSegmentWidth: 6, squareSize: 10, squareSpacing: 2, maxSquares: 3)
         let layout = Self.layout(["A 10", "B 20✓", "C -", "D 30", "E -"], width: 200, metrics: metrics)
-        #expect(abs(layout.pricedWidth - 186) < 0.001, "200 − 2 dashes × (4 + 3)")
+        #expect(abs(layout.pricedWidth - 176) < 0.001, "200 − 2 squares × (10 + 2)")
         let sum = layout.segments.reduce(CGFloat(0)) { $0 + $1.width }
         #expect(abs(sum - layout.pricedWidth) < 0.001)
         #expect(layout.segments.first?.x == 0)
@@ -169,19 +169,33 @@ struct PurchaseBarLayoutTests {
 
     // MARK: - LD-24 / LD-25 items without a price
 
-    @Test("LD-24 unpriced items are fixed-width dashes at the end, at most 3",
+    @Test("LD-24 unpriced items are fixed-size squares at the end, at most 3",
           arguments: [(0, 0), (1, 1), (3, 3), (7, 3)])
-    func dashes(unpriced: Int, expectedDashes: Int) {
-        let metrics = Layout.Metrics(minSegmentWidth: 6, dashWidth: 4, dashSpacing: 3, maxDashes: 3)
+    func squares(unpriced: Int, expectedSquares: Int) {
+        let metrics = Layout.Metrics(minSegmentWidth: 6, squareSize: 10, squareSpacing: 2, maxSquares: 3)
         let specs = ["A 10", "B 20"] + (0..<unpriced).map { "U\($0) -" }
         let layout = Self.layout(specs, width: 200, metrics: metrics)
         #expect(layout.unpricedCount == unpriced)
-        #expect(layout.dashXs.count == expectedDashes)
-        #expect(layout.dashXs == (0..<expectedDashes).map { layout.pricedWidth + 3 + CGFloat($0) * 7 })
-        if let last = layout.dashXs.last {
-            #expect(abs(last + 4 - 200) < 0.001, "the last dash ends at the bar's end")
+        #expect(layout.squareSize == 10)
+        #expect(abs(layout.pricedWidth - (200 - CGFloat(expectedSquares) * 12)) < 0.001)
+        // Each square is centred in a slot of size + spacing, like a segment in its width,
+        // so the drawn gaps (half spacing on each side) all equal the spacing.
+        #expect(layout.squareXs.count == expectedSquares)
+        #expect(layout.squareXs == (0..<expectedSquares).map { layout.pricedWidth + 1 + CGFloat($0) * 12 })
+        if let last = layout.squareXs.last {
+            #expect(abs(last + 10 - 199) < 0.001, "the last square ends half a gap before the bar's end")
         }
-        #expect(layout.dashXs.allSatisfy { $0 >= layout.pricedWidth }, "after every priced segment")
+        #expect(layout.squareXs.allSatisfy { $0 >= layout.pricedWidth }, "after every priced segment")
+    }
+
+    @Test("LD-24 a bar too narrow for every square shows fewer, never past its end")
+    func squaresFitTheBar() {
+        let metrics = Layout.Metrics(minSegmentWidth: 6, squareSize: 10, squareSpacing: 2, maxSquares: 3)
+        let layout = Self.layout(["A 10", "U0 -", "U1 -", "U2 -"], width: 30, metrics: metrics)
+        #expect(layout.squareXs.count == 2, "30 pt fits two 12 pt slots")
+        #expect(layout.unpricedCount == 3, "the label still counts all of them")
+        #expect(layout.squareXs.allSatisfy { $0 + 10 <= 30 })
+        #expect(Self.layout(["A 10", "U0 -"], width: 0, metrics: metrics).squareXs.isEmpty)
     }
 
     @Test("LD-25 all items without a price: no bar")
@@ -189,7 +203,7 @@ struct PurchaseBarLayoutTests {
         let layout = Self.layout(["A -", "B -", "C -"])
         #expect(!layout.isBarVisible)
         #expect(layout.segments.isEmpty)
-        #expect(layout.dashXs.isEmpty)
+        #expect(layout.squareXs.isEmpty)
         #expect(layout.unpricedCount == 3)
         #expect(layout.segmentIndex(at: 10) == nil)
     }
@@ -231,14 +245,14 @@ struct PurchaseBarLayoutTests {
 
     @Test("LD-27 a tap goes to the segment under it; past the priced zone nothing is hit")
     func hitTesting() throws {
-        let metrics = Layout.Metrics(minSegmentWidth: 6, dashWidth: 4, dashSpacing: 3, maxDashes: 3)
-        let layout = Self.layout(["A 50✓", "B 50", "C -"], width: 107, metrics: metrics)
+        let metrics = Layout.Metrics(minSegmentWidth: 6, squareSize: 10, squareSpacing: 2, maxSquares: 3)
+        let layout = Self.layout(["A 50✓", "B 50", "C -"], width: 112, metrics: metrics)
         #expect(layout.pricedWidth == 100)
         #expect(layout.segmentIndex(at: 10) == 0)
         #expect(layout.segmentIndex(at: 60) == 1)
         #expect(layout.segmentIndex(at: 100) == 1, "the right edge belongs to the last segment")
         #expect(layout.segmentIndex(at: -5) == 0, "left of the bar: the nearest segment")
-        #expect(layout.segmentIndex(at: 104) == nil, "a dash")
+        #expect(layout.segmentIndex(at: 106) == nil, "an unpriced square")
     }
 
     // MARK: - LD-28 VoiceOver texts
