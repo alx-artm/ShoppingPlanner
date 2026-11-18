@@ -201,7 +201,7 @@ final class InlineAddUITests: XCTestCase {
         XCTAssertFalse(app.textFields["inline.linkField"].exists, "the field is not in the row yet")
         let link = eva.focusedInlineField("inline.linkField")
         app.typeText("kites.example.com") // into whatever has the focus, like a user
-        XCTAssertEqual(link.value as? String, "kites.example.com")
+        link.waitForValue("kites.example.com") // the last keys can land after typeText returns
         XCTAssertEqual(name.value as? String, "Kite", "the link didn't go into the name")
         eva.inlineDone()
 

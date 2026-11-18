@@ -194,6 +194,21 @@ extension XCUIElement {
                        "label is '\(label)', expected '\(expected)'", file: file, line: line)
     }
 
+    /// Waits until the text in `value` equals `expected`. Typing (`app.typeText`) returns
+    /// before the app has handled the last keys, so reading `value` right after it can see
+    /// only part of the text (CI run 44339039959: "kites.example" for "kites.example.com").
+    @MainActor
+    func waitForValue(_ expected: String, timeout: TimeInterval = uiTimeout,
+                      file: StaticString = #filePath, line: UInt = #line) {
+        waitToAppear(timeout: timeout, file: file, line: line)
+        let predicate = NSPredicate(format: "value == %@", expected)
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: self)
+        let result = XCTWaiter().wait(for: [expectation], timeout: timeout)
+        XCTAssertEqual(result, .completed,
+                       "value is '\(value as? String ?? "nil")', expected '\(expected)'",
+                       file: file, line: line)
+    }
+
     /// Waits until `label` contains `fragment`.
     @MainActor
     func waitForLabel(containing fragment: String, timeout: TimeInterval = uiTimeout,
