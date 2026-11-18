@@ -38,8 +38,13 @@ struct ListViewInside: View {
     @State private var inline: InlineAdd?
     @State private var inlineDraft = ItemDraft()
     @FocusState private var inlineFocus: InlineField?
+    /// [Price] / [Link] asked for this field's keyboard; it takes it once the field is in the row.
+    /// SwiftUI doesn't promise to keep a focus value for a field that isn't built yet.
+    @State private var pendingInlineFocus: InlineField?
     /// The inline name field has the keyboard (a UIKit field, outside `inlineFocus`).
     @State private var isEditingInlineName = false
+    /// Bumped to give the inline name field the keyboard once (opening inline add).
+    @State private var inlineNameFocusRequest = 0
 
     /// Any inline field has the keyboard.
     private var isTypingInline: Bool { isEditingInlineName || inlineFocus != nil }
@@ -279,9 +284,11 @@ struct ListViewInside: View {
 
             if inline?.groupID == group.uuid {
                 InlineItemRow(draft: $inlineDraft, isEditingName: $isEditingInlineName,
+                              nameFocusRequest: inlineNameFocusRequest,
                               extras: inline?.extras ?? InlineExtras(),
                               currencyCode: list.currencyCode, focus: $inlineFocus,
                               onReturn: submitInline,
+                              onFieldAppear: inlineFieldAppeared,
                               accessory: nameFieldAccessoryBar)
                     .id(InlineAdd.rowID)
             } else {
@@ -367,19 +374,13 @@ struct ListViewInside: View {
     /// Above the keyboard: [Price] [Qty] [Link] … [ⓘ] [Done] (spec 04 Inline add, LD-15).
     @ViewBuilder
     private var accessoryBar: some View {
-        Button("Price", systemImage: "tag") {
-            inline?.extras.showsPrice = true
-            inlineFocus = .price
-        }
+        Button("Price", systemImage: "tag") { showInlineField(.price) }
         .accessibilityIdentifier("inline.accessory.price")
         Button("Quantity", systemImage: "number") {
             inline?.extras.showsQuantity.toggle()
         }
         .accessibilityIdentifier("inline.accessory.quantity")
-        Button("Link", systemImage: "link") {
-            inline?.extras.showsLink = true
-            inlineFocus = .link
-        }
+        Button("Link", systemImage: "link") { showInlineField(.link) }
         .accessibilityIdentifier("inline.accessory.link")
         Spacer()
         Button("Details", systemImage: "info.circle") { openInlineDetails() }
@@ -401,13 +402,45 @@ struct ListViewInside: View {
             .tint(.primary)
     }
 
+    /// [Price] / [Link]: shows the field in the row and gives it the keyboard (LD-15).
+    /// A field already in the row is focused at once. A new one is inserted by the next
+    /// render, so the focus waits for it in `pendingInlineFocus` and moves in its `onAppear`:
+    /// no race between the insertion and the focus change, however slow the device.
+    private func showInlineField(_ field: InlineField) {
+        guard let current = inline else { return }
+        if current.extras.isShown(field) {
+            pendingInlineFocus = nil
+            inlineFocus = field
+            return
+        }
+        pendingInlineFocus = field
+        if let delay = LaunchConfiguration.inlineFieldDelayOverride {
+            // UI tests: the field arrives late, as on a slow device; the focus must still follow.
+            Task { @MainActor in
+                try? await Task.sleep(for: delay)
+                if inline?.groupID == current.groupID { inline?.extras.show(field) }
+            }
+        } else {
+            inline?.extras.show(field)
+        }
+    }
+
+    /// A price or link field is in the row: it takes the keyboard if [Price] / [Link] asked for it.
+    private func inlineFieldAppeared(_ field: InlineField) {
+        guard pendingInlineFocus == field else { return }
+        pendingInlineFocus = nil
+        inlineFocus = field
+    }
+
     /// "＋ New Item" → a text field with the keyboard. Another open draft is saved first.
     private func startInline(in group: GroupModel, createdGroup: Bool = false) {
         if inline != nil { commitInline() }
         uiState.setExpanded(true, for: group.uuid)
         inlineDraft = ItemDraft(groupID: group.uuid)
         inline = InlineAdd(groupID: group.uuid, createdGroup: createdGroup)
+        pendingInlineFocus = nil
         isEditingInlineName = true
+        inlineNameFocusRequest += 1
     }
 
     /// Saves a draft with a name (LD-12); returns the new item.
@@ -434,6 +467,7 @@ struct ListViewInside: View {
         commitInline(draft)
         inlineDraft = ItemDraft(groupID: groupID)
         inline?.extras = InlineExtras()
+        pendingInlineFocus = nil
         inline?.createdGroup = false
         inline?.submitCount += 1
     }
@@ -443,6 +477,7 @@ struct ListViewInside: View {
         guard let current = inline else { return }
         let saved = commitInline()
         inline = nil
+        pendingInlineFocus = nil
         inlineFocus = nil
         isEditingInlineName = false
         // LD-05a: the "Items" group made for the first item goes away if nothing was added.
@@ -457,6 +492,7 @@ struct ListViewInside: View {
     private func openInlineDetails() {
         let item = commitInline()
         inline = nil
+        pendingInlineFocus = nil
         inlineFocus = nil
         isEditingInlineName = false
         if let item { sheet = .editItem(item, focusFirstEmpty: true) }

@@ -26,8 +26,12 @@ import UIKit
 struct InlineNameField<Accessory: View>: UIViewRepresentable {
     /// Mirror of the typed text, for the draft. Read only from the SwiftUI side.
     @Binding var text: String
-    /// The field has the keyboard. Set to `true` to focus it.
+    /// The field has the keyboard (reported by the field). Set to `false` to close the keyboard.
     @Binding var isEditing: Bool
+    /// Each new value asks for the keyboard once (opening inline add). Not `isEditing`: that
+    /// value can be stale for one update after the keyboard moved to the price or link field,
+    /// and "editing but not first responder" then took the keyboard back (CI run 44129716390).
+    let focusRequest: Int
     /// Return: the line typed (not trimmed; the store trims on commit, LD-16).
     /// The field is already empty when this is called.
     let onReturn: (String) -> Void
@@ -39,7 +43,12 @@ struct InlineNameField<Accessory: View>: UIViewRepresentable {
     }
 
     func makeUIView(context: Context) -> UITextField {
-        let field = UITextField()
+        let field = WindowAwareTextField()
+        // A request made before the field was in a window (just inserted into the list) was
+        // ignored by UIKit; it is granted once the field is in one.
+        field.onMoveToWindow = { [weak coordinator = context.coordinator] field in
+            coordinator?.grantFocusRequest(to: field)
+        }
         field.text = text
         field.placeholder = String(localized: "Item name")
         field.font = .preferredFont(forTextStyle: .body)
@@ -73,9 +82,10 @@ struct InlineNameField<Accessory: View>: UIViewRepresentable {
         if text.isEmpty, !field.isFirstResponder, field.text?.isEmpty == false {
             field.text = ""
         }
-        if isEditing, !field.isFirstResponder {
-            // After the field is in a window: becoming first responder before that is ignored.
-            Task { @MainActor in field.becomeFirstResponder() }
+        let coordinator = context.coordinator
+        coordinator.focusRequest.receive(focusRequest)
+        if coordinator.focusRequest.isPending {
+            coordinator.grantFocusRequest(to: field)
         } else if !isEditing, field.isFirstResponder {
             field.resignFirstResponder()
         }
@@ -85,6 +95,7 @@ struct InlineNameField<Accessory: View>: UIViewRepresentable {
     final class Coordinator: NSObject, UITextFieldDelegate {
         var parent: InlineNameField
         var accessoryHost: UIHostingController<Accessory>?
+        var focusRequest = FocusRequest()
 
         init(parent: InlineNameField) {
             self.parent = parent
@@ -94,11 +105,24 @@ struct InlineNameField<Accessory: View>: UIViewRepresentable {
             parent.text = field.text ?? ""
         }
 
+        /// Becomes first responder for a pending request, in the next main-actor turn (not
+        /// during a SwiftUI update) and only if the request is still pending then.
+        func grantFocusRequest(to field: UITextField) {
+            guard focusRequest.isPending, !field.isFirstResponder else { return }
+            Task { @MainActor in
+                if self.focusRequest.isPending, field.window != nil, !field.isFirstResponder {
+                    field.becomeFirstResponder()
+                }
+            }
+        }
+
         func textFieldDidBeginEditing(_ field: UITextField) {
+            focusRequest.editingChanged()
             if !parent.isEditing { parent.isEditing = true }
         }
 
         func textFieldDidEndEditing(_ field: UITextField) {
+            focusRequest.editingChanged()
             if parent.isEditing { parent.isEditing = false }
         }
 
@@ -110,5 +134,38 @@ struct InlineNameField<Accessory: View>: UIViewRepresentable {
             parent.onReturn(line)
             return false // keep the keyboard for the next item
         }
+    }
+}
+
+/// When a field asks for the keyboard: once for each new request value, until it begins or
+/// ends editing. After the keyboard has moved on ([Price] / [Link], Done), only the user or a
+/// new request brings it back; a stale "is editing" never does (CI run 44129716390).
+struct FocusRequest: Equatable {
+    /// The last request value seen; `nil` before the first one.
+    private(set) var handled: Int?
+    /// A request not granted yet.
+    private(set) var isPending = false
+
+    /// The request value from the latest update; a new value asks for the keyboard.
+    mutating func receive(_ request: Int) {
+        guard request != handled else { return }
+        handled = request
+        isPending = true
+    }
+
+    /// The field began or ended editing: the request is used up or superseded.
+    mutating func editingChanged() {
+        isPending = false
+    }
+}
+
+/// A `UITextField` that reports when it is added to a window, the earliest moment it can
+/// become first responder.
+final class WindowAwareTextField: UITextField {
+    var onMoveToWindow: ((UITextField) -> Void)?
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window != nil { onMoveToWindow?(self) }
     }
 }

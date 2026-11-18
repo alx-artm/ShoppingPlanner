@@ -185,8 +185,8 @@ struct ListDetailScreen {
     }
 
     /// An inline extra field ("inline.priceField", "inline.linkField") once it has the keyboard.
-    /// The accessory button shows the field first and moves the focus on a later update, so on
-    /// a slow machine (CI) typing right after `waitToAppear` lands before the focus does.
+    /// The accessory button inserts the field first and moves the focus when it appears, so on
+    /// a slow machine (CI) typing right after `waitToAppear` could land before the focus does.
     func focusedInlineField(_ identifier: String) -> XCUIElement {
         let field = app.textFields[identifier].waitToAppear()
         XCTAssertTrue(field.waitForKeyboardFocus(), "\(identifier) has the keyboard")

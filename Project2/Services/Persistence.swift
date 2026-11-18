@@ -53,6 +53,16 @@ enum LaunchConfiguration {
         seconds(after: uiTestsRowHighlightSecondsArgument)
     }
 
+    /// Together with `-UITests`: `-UITestsInlineFieldDelaySeconds 1` inserts the inline price /
+    /// link field that much later after [Price] / [Link], as on a slow device, so a UI test
+    /// proves the keyboard still moves to it instead of staying in the name field.
+    static let uiTestsInlineFieldDelaySecondsArgument = "-UITestsInlineFieldDelaySeconds"
+
+    /// The delay asked for by a UI test, `nil` in a normal launch.
+    static var inlineFieldDelayOverride: Duration? {
+        seconds(after: uiTestsInlineFieldDelaySecondsArgument)
+    }
+
     private static func seconds(after argument: String) -> Duration? {
         let arguments = ProcessInfo.processInfo.arguments
         guard isUITesting,

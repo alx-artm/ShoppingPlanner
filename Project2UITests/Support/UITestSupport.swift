@@ -23,6 +23,8 @@ enum Launch {
     static let undoToastSeconds = "-UITestsUndoToastSeconds"
     /// Keeps the row highlight after a purchase bar tap for this many seconds instead of ~1.
     static let rowHighlightSeconds = "-UITestsRowHighlightSeconds"
+    /// Inserts the inline price / link field this many seconds after [Price] / [Link].
+    static let inlineFieldDelaySeconds = "-UITestsInlineFieldDelaySeconds"
 
     /// In-memory store with `SeedData` (or empty with `emptyStore: true`), in English / en_US
     /// unless another language and region are given.
@@ -34,13 +36,18 @@ enum Launch {
     ///
     /// `longRowHighlight`: the row picked in the purchase bar stays highlighted a minute
     /// instead of ~1 s, so the test checks it without racing that timer.
+    ///
+    /// `slowInlineFields`: the inline price / link field appears a second after its accessory
+    /// button, as on a slow device, to prove the keyboard still moves to it.
     @MainActor
     static func app(emptyStore: Bool = false, language: String = "en", region: String = "en_US",
-                    longUndoToast: Bool = false, longRowHighlight: Bool = false) -> XCUIApplication {
+                    longUndoToast: Bool = false, longRowHighlight: Bool = false,
+                    slowInlineFields: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [uiTests] + (emptyStore ? [Launch.emptyStore] : [])
             + (longUndoToast ? [undoToastSeconds, "60"] : [])
             + (longRowHighlight ? [rowHighlightSeconds, "60"] : [])
+            + (slowInlineFields ? [inlineFieldDelaySeconds, "1"] : [])
             + locale(language: language, region: region)
         app.launch()
         return app

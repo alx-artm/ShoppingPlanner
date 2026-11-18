@@ -171,6 +171,43 @@ final class InlineAddUITests: XCTestCase {
         XCTAssertFalse(app.buttons["item.menu.openLink"].firstMatch.label.isEmpty)
     }
 
+    /// LD-15: the price field shows up later than the [Price] tap (a slow device, CI run
+    /// 44129716390); the keyboard still moves to it, so the digits don't go into the name.
+    @MainActor
+    func testPriceFieldAppearingLateStillGetsTheKeyboard() {
+        let app = Launch.app(slowInlineFields: true)
+        let eva = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
+
+        let name = eva.startInline(in: "Toys")
+        name.typeText("Kite")
+        eva.tapAccessory("price")
+        XCTAssertFalse(app.textFields["inline.priceField"].exists, "the field is not in the row yet")
+        app.typeNumber("7", into: eva.focusedInlineField("inline.priceField"))
+        XCTAssertEqual(name.value as? String, "Kite", "the digits didn't go into the name")
+        eva.inlineDone()
+
+        eva.itemTotal("Kite").waitForLabel("$7.00")
+    }
+
+    /// LD-15: the same for [Link]: a late link field still gets the keyboard.
+    @MainActor
+    func testLinkFieldAppearingLateStillGetsTheKeyboard() {
+        let app = Launch.app(slowInlineFields: true)
+        let eva = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
+
+        let name = eva.startInline(in: "Toys")
+        name.typeText("Kite")
+        eva.tapAccessory("link")
+        XCTAssertFalse(app.textFields["inline.linkField"].exists, "the field is not in the row yet")
+        let link = eva.focusedInlineField("inline.linkField")
+        app.typeText("kites.example.com") // into whatever has the focus, like a user
+        XCTAssertEqual(link.value as? String, "kites.example.com")
+        XCTAssertEqual(name.value as? String, "Kite", "the link didn't go into the name")
+        eva.inlineDone()
+
+        eva.itemRow("Kite").waitToAppear()
+    }
+
     /// LD-12: Done with an empty draft creates nothing.
     @MainActor
     func testEmptyDraftIsDropped() {
