@@ -26,8 +26,12 @@ import UIKit
 struct InlineNameField<Accessory: View>: UIViewRepresentable {
     /// Mirror of the typed text, for the draft. Read only from the SwiftUI side.
     @Binding var text: String
-    /// The field has the keyboard. Set to `true` to focus it.
+    /// The field has the keyboard (reported by the field). Set to `false` to close the keyboard.
     @Binding var isEditing: Bool
+    /// Each new value asks for the keyboard once (opening inline add). Not `isEditing`: that
+    /// value can be stale for one update after the keyboard moved to the price or link field,
+    /// and "editing but not first responder" then took the keyboard back (CI run 44129716390).
+    let focusRequest: Int
     /// Return: the line typed (not trimmed; the store trims on commit, LD-16).
     /// The field is already empty when this is called.
     let onReturn: (String) -> Void
@@ -39,7 +43,12 @@ struct InlineNameField<Accessory: View>: UIViewRepresentable {
     }
 
     func makeUIView(context: Context) -> UITextField {
-        let field = UITextField()
+        let field = WindowAwareTextField()
+        // A request made before the field was in a window (just inserted into the list) was
+        // ignored by UIKit; it is granted once the field is in one.
+        field.onMoveToWindow = { [weak coordinator = context.coordinator] field in
+            coordinator?.grantFocusRequest(to: field)
+        }
         field.text = text
         field.placeholder = String(localized: "Item name")
         field.font = .preferredFont(forTextStyle: .body)
@@ -73,9 +82,21 @@ struct InlineNameField<Accessory: View>: UIViewRepresentable {
         if text.isEmpty, !field.isFirstResponder, field.text?.isEmpty == false {
             field.text = ""
         }
-        if isEditing, !field.isFirstResponder {
-            // After the field is in a window: becoming first responder before that is ignored.
-            Task { @MainActor in field.becomeFirstResponder() }
+        let coordinator = context.coordinator
+        if LaunchConfiguration.dropsInlineNameFocusOnce, !coordinator.droppedFocusForUITest,
+           !text.isEmpty, field.isFirstResponder {
+            // UI tests only: lose the keyboard inside this update, as the list sometimes does.
+            coordinator.droppedFocusForUITest = true
+            field.resignFirstResponder()
+        }
+        coordinator.focusRequest.receive(focusRequest)
+        if coordinator.focusRequest.isPending {
+            coordinator.grantFocusRequest(to: field)
+        } else if isEditing, !field.isFirstResponder {
+            // This update still says "editing", yet the field lost the keyboard: the loss came
+            // from inside an update (the list re-laying out the row), not from the user. See
+            // `FocusRequest.shouldReclaim`.
+            coordinator.reclaimFocusIfUnclaimed(field)
         } else if !isEditing, field.isFirstResponder {
             field.resignFirstResponder()
         }
@@ -85,6 +106,9 @@ struct InlineNameField<Accessory: View>: UIViewRepresentable {
     final class Coordinator: NSObject, UITextFieldDelegate {
         var parent: InlineNameField
         var accessoryHost: UIHostingController<Accessory>?
+        var focusRequest = FocusRequest()
+        /// `-UITestsDropInlineNameFocus` already took the keyboard away once.
+        var droppedFocusForUITest = false
 
         init(parent: InlineNameField) {
             self.parent = parent
@@ -94,11 +118,37 @@ struct InlineNameField<Accessory: View>: UIViewRepresentable {
             parent.text = field.text ?? ""
         }
 
+        /// Becomes first responder for a pending request, in the next main-actor turn (not
+        /// during a SwiftUI update) and only if the request is still pending then.
+        func grantFocusRequest(to field: UITextField) {
+            guard focusRequest.isPending, !field.isFirstResponder else { return }
+            Task { @MainActor in
+                if self.focusRequest.isPending, field.window != nil, !field.isFirstResponder {
+                    field.becomeFirstResponder()
+                }
+            }
+        }
+
+        /// The field lost the keyboard inside a view update: takes it back in the next main-actor
+        /// turn, unless another field (price, link) has it by then.
+        func reclaimFocusIfUnclaimed(_ field: UITextField) {
+            Task { @MainActor in
+                let reclaim = FocusRequest.shouldReclaim(
+                    updateSaysEditing: true,
+                    isInWindow: field.window != nil,
+                    isFirstResponder: field.isFirstResponder,
+                    anotherFieldHasKeyboard: UIResponder.currentFirstResponder is UITextInput)
+                if reclaim { field.becomeFirstResponder() }
+            }
+        }
+
         func textFieldDidBeginEditing(_ field: UITextField) {
+            focusRequest.editingChanged()
             if !parent.isEditing { parent.isEditing = true }
         }
 
         func textFieldDidEndEditing(_ field: UITextField) {
+            focusRequest.editingChanged()
             if parent.isEditing { parent.isEditing = false }
         }
 
@@ -110,5 +160,68 @@ struct InlineNameField<Accessory: View>: UIViewRepresentable {
             parent.onReturn(line)
             return false // keep the keyboard for the next item
         }
+    }
+}
+
+/// When a field asks for the keyboard: once for each new request value, until it begins or
+/// ends editing. After the keyboard has moved on ([Price] / [Link], Done), only the user or a
+/// new request brings it back; a stale "is editing" never does (CI run 44129716390).
+struct FocusRequest: Equatable {
+    /// The last request value seen; `nil` before the first one.
+    private(set) var handled: Int?
+    /// A request not granted yet.
+    private(set) var isPending = false
+
+    /// The request value from the latest update; a new value asks for the keyboard.
+    mutating func receive(_ request: Int) {
+        guard request != handled else { return }
+        handled = request
+        isPending = true
+    }
+
+    /// The field began or ended editing: the request is used up or superseded.
+    mutating func editingChanged() {
+        isPending = false
+    }
+
+    /// Takes the keyboard back after losing it, without a request? Only when a view update
+    /// still said the field is being edited (the loss happened inside an update, e.g. the list
+    /// re-laying out the row: CI run on PR #8, `testDetailsButtonSavesAndOpensDetails`) and,
+    /// checked a turn later, no other responder holds the keyboard.
+    ///
+    /// - A user dismissal (scroll, the iPad hide-keyboard key, Back) reaches SwiftUI before
+    ///   the next update, so `updateSaysEditing` is false: the inline row closes as specified.
+    /// - A hand-off to the price or link field leaves another first responder: never taken
+    ///   back (CI run 44129716390). A non-text first responder (on iPad, the hosting view
+    ///   for keyboard shortcuts) doesn't hold the keyboard and doesn't count.
+    static func shouldReclaim(updateSaysEditing: Bool, isInWindow: Bool, isFirstResponder: Bool,
+                              anotherFieldHasKeyboard: Bool) -> Bool {
+        updateSaysEditing && isInWindow && !isFirstResponder && !anotherFieldHasKeyboard
+    }
+}
+
+extension UIResponder {
+    private static weak var foundFirstResponder: UIResponder?
+
+    /// The current first responder of the app, if any (an action sent to `nil` goes to it).
+    static var currentFirstResponder: UIResponder? {
+        foundFirstResponder = nil
+        UIApplication.shared.sendAction(#selector(reportAsFirstResponder), to: nil, from: nil, for: nil)
+        return foundFirstResponder
+    }
+
+    @objc private func reportAsFirstResponder() {
+        UIResponder.foundFirstResponder = self
+    }
+}
+
+/// A `UITextField` that reports when it is added to a window, the earliest moment it can
+/// become first responder.
+final class WindowAwareTextField: UITextField {
+    var onMoveToWindow: ((UITextField) -> Void)?
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window != nil { onMoveToWindow?(self) }
     }
 }

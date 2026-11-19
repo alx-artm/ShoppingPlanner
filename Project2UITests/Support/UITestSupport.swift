@@ -23,6 +23,10 @@ enum Launch {
     static let undoToastSeconds = "-UITestsUndoToastSeconds"
     /// Keeps the row highlight after a purchase bar tap for this many seconds instead of ~1.
     static let rowHighlightSeconds = "-UITestsRowHighlightSeconds"
+    /// Inserts the inline price / link field this many seconds after [Price] / [Link].
+    static let inlineFieldDelaySeconds = "-UITestsInlineFieldDelaySeconds"
+    /// The inline name field loses the keyboard once, inside a view update, at the first character.
+    static let dropInlineNameFocus = "-UITestsDropInlineNameFocus"
 
     /// In-memory store with `SeedData` (or empty with `emptyStore: true`), in English / en_US
     /// unless another language and region are given.
@@ -34,13 +38,23 @@ enum Launch {
     ///
     /// `longRowHighlight`: the row picked in the purchase bar stays highlighted a minute
     /// instead of ~1 s, so the test checks it without racing that timer.
+    ///
+    /// `slowInlineFields`: the inline price / link field appears a second after its accessory
+    /// button, as on a slow device, to prove the keyboard still moves to it.
+    ///
+    /// `dropInlineNameFocus`: the inline name field loses the keyboard once, inside a view update,
+    /// at the first typed character, to prove it takes the keyboard back.
     @MainActor
     static func app(emptyStore: Bool = false, language: String = "en", region: String = "en_US",
-                    longUndoToast: Bool = false, longRowHighlight: Bool = false) -> XCUIApplication {
+                    longUndoToast: Bool = false, longRowHighlight: Bool = false,
+                    slowInlineFields: Bool = false,
+                    dropInlineNameFocus: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [uiTests] + (emptyStore ? [Launch.emptyStore] : [])
             + (longUndoToast ? [undoToastSeconds, "60"] : [])
             + (longRowHighlight ? [rowHighlightSeconds, "60"] : [])
+            + (slowInlineFields ? [inlineFieldDelaySeconds, "1"] : [])
+            + (dropInlineNameFocus ? [Launch.dropInlineNameFocus] : [])
             + locale(language: language, region: region)
         app.launch()
         return app
@@ -185,6 +199,21 @@ extension XCUIElement {
         let result = XCTWaiter().wait(for: [expectation], timeout: timeout)
         XCTAssertEqual(result, .completed,
                        "label is '\(label)', expected '\(expected)'", file: file, line: line)
+    }
+
+    /// Waits until the text in `value` equals `expected`. Typing (`app.typeText`) returns
+    /// before the app has handled the last keys, so reading `value` right after it can see
+    /// only part of the text (CI run 44339039959: "kites.example" for "kites.example.com").
+    @MainActor
+    func waitForValue(_ expected: String, timeout: TimeInterval = uiTimeout,
+                      file: StaticString = #filePath, line: UInt = #line) {
+        waitToAppear(timeout: timeout, file: file, line: line)
+        let predicate = NSPredicate(format: "value == %@", expected)
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: self)
+        let result = XCTWaiter().wait(for: [expectation], timeout: timeout)
+        XCTAssertEqual(result, .completed,
+                       "value is '\(value as? String ?? "nil")', expected '\(expected)'",
+                       file: file, line: line)
     }
 
     /// Waits until `label` contains `fragment`.

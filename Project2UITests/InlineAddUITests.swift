@@ -171,6 +171,43 @@ final class InlineAddUITests: XCTestCase {
         XCTAssertFalse(app.buttons["item.menu.openLink"].firstMatch.label.isEmpty)
     }
 
+    /// LD-15: the price field shows up later than the [Price] tap (a slow device, CI run
+    /// 44129716390); the keyboard still moves to it, so the digits don't go into the name.
+    @MainActor
+    func testPriceFieldAppearingLateStillGetsTheKeyboard() {
+        let app = Launch.app(slowInlineFields: true)
+        let eva = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
+
+        let name = eva.startInline(in: "Toys")
+        name.typeText("Kite")
+        eva.tapAccessory("price")
+        XCTAssertFalse(app.textFields["inline.priceField"].exists, "the field is not in the row yet")
+        app.typeNumber("7", into: eva.focusedInlineField("inline.priceField"))
+        XCTAssertEqual(name.value as? String, "Kite", "the digits didn't go into the name")
+        eva.inlineDone()
+
+        eva.itemTotal("Kite").waitForLabel("$7.00")
+    }
+
+    /// LD-15: the same for [Link]: a late link field still gets the keyboard.
+    @MainActor
+    func testLinkFieldAppearingLateStillGetsTheKeyboard() {
+        let app = Launch.app(slowInlineFields: true)
+        let eva = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
+
+        let name = eva.startInline(in: "Toys")
+        name.typeText("Kite")
+        eva.tapAccessory("link")
+        XCTAssertFalse(app.textFields["inline.linkField"].exists, "the field is not in the row yet")
+        let link = eva.focusedInlineField("inline.linkField")
+        app.typeText("kites.example.com") // into whatever has the focus, like a user
+        link.waitForValue("kites.example.com") // the last keys can land after typeText returns
+        XCTAssertEqual(name.value as? String, "Kite", "the link didn't go into the name")
+        eva.inlineDone()
+
+        eva.itemRow("Kite").waitToAppear()
+    }
+
     /// LD-12: Done with an empty draft creates nothing.
     @MainActor
     func testEmptyDraftIsDropped() {
@@ -214,6 +251,24 @@ final class InlineAddUITests: XCTestCase {
                       "the price field has the focus")
         editor.cancel()
         eva.itemRow("Kite").waitToAppear()
+    }
+
+    /// LD-13: the name field loses the keyboard inside a view update while typing (seen on a
+    /// slow CI runner, PR #8); it takes it back, so inline add stays open and ⓘ still works.
+    @MainActor
+    func testNameFieldTakesBackKeyboardLostInsideUpdate() {
+        let eva = HomeScreen(app: Launch.app(dropInlineNameFocus: true)).waitUntilShown().open(row: "Eva")
+
+        let field = eva.startInline(in: "Toys")
+        // The keyboard goes away at "K"; keys typed before it is back would be lost, so wait.
+        field.typeText("K")
+        XCTAssertTrue(field.waitForKeyboardFocus(), "the name field has the keyboard again")
+        eva.app.typeText("ite") // into whatever has the focus, like a user
+        eva.tapAccessory("details")
+
+        let editor = ItemEditScreen(app: eva.app).waitUntilShown()
+        XCTAssertEqual(editor.nameField.value as? String, "Kite")
+        editor.cancel()
     }
 
     /// LD-05a: in a list without groups, the first item creates the group "Items".

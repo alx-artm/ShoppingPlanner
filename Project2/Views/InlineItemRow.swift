@@ -25,17 +25,36 @@ struct InlineExtras: Equatable {
     var showsPrice = false
     var showsQuantity = false
     var showsLink = false
+
+    /// The field is in the row (or about to be, once the row renders).
+    func isShown(_ field: InlineField) -> Bool {
+        switch field {
+        case .price: showsPrice
+        case .link: showsLink
+        }
+    }
+
+    mutating func show(_ field: InlineField) {
+        switch field {
+        case .price: showsPrice = true
+        case .link: showsLink = true
+        }
+    }
 }
 
 struct InlineItemRow<Accessory: View>: View {
     @Binding var draft: ItemDraft
     /// The name field has the keyboard (it is a UIKit field, see `InlineNameField`).
     @Binding var isEditingName: Bool
+    /// Each new value gives the name field the keyboard once (see `InlineNameField`).
+    let nameFocusRequest: Int
     let extras: InlineExtras
     let currencyCode: String
     let focus: FocusState<InlineField?>.Binding
     /// Return in the name field, with the line typed.
     let onReturn: (String) -> Void
+    /// A price or link field is now in the row: the screen moves a pending focus to it.
+    let onFieldAppear: (InlineField) -> Void
     /// The keyboard accessory bar of the name field.
     let accessory: Accessory
 
@@ -50,7 +69,8 @@ struct InlineItemRow<Accessory: View>: View {
                     .foregroundStyle(.quaternary)
                     .frame(width: checkboxSize, height: checkboxSize)
                     .accessibilityHidden(true)
-                InlineNameField(text: $draft.name, isEditing: $isEditingName, onReturn: onReturn,
+                InlineNameField(text: $draft.name, isEditing: $isEditingName,
+                                focusRequest: nameFocusRequest, onReturn: onReturn,
                                 accessory: accessory)
                     .frame(minHeight: 44)
             }
@@ -69,6 +89,7 @@ struct InlineItemRow<Accessory: View>: View {
                                 .accessibilityIdentifier("inline.total")
                         }
                     }
+                    .onAppear { onFieldAppear(.price) }
                 }
                 if extras.showsQuantity {
                     Stepper(value: $draft.quantity, in: PlannerStore.quantityRange) {
@@ -87,6 +108,7 @@ struct InlineItemRow<Accessory: View>: View {
                         .focused(focus, equals: .link)
                         .accessibilityLabel(Text("Link"))
                         .accessibilityIdentifier("inline.linkField")
+                        .onAppear { onFieldAppear(.link) }
                 }
             }
             .padding(.leading, checkboxSize + 4)
