@@ -63,6 +63,15 @@ enum LaunchConfiguration {
         seconds(after: uiTestsInlineFieldDelaySecondsArgument)
     }
 
+    /// Together with `-UITests`: the inline name field loses the keyboard once, inside a view
+    /// update, when its first character arrives, so a UI test proves the field takes it back
+    /// (a loss from inside an update, as on a slow CI runner) instead of closing inline add.
+    static let uiTestsDropInlineNameFocusArgument = "-UITestsDropInlineNameFocus"
+
+    static var dropsInlineNameFocusOnce: Bool {
+        isUITesting && ProcessInfo.processInfo.arguments.contains(uiTestsDropInlineNameFocusArgument)
+    }
+
     private static func seconds(after argument: String) -> Duration? {
         let arguments = ProcessInfo.processInfo.arguments
         guard isUITesting,

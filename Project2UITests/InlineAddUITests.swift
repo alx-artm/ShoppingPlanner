@@ -253,6 +253,24 @@ final class InlineAddUITests: XCTestCase {
         eva.itemRow("Kite").waitToAppear()
     }
 
+    /// LD-13: the name field loses the keyboard inside a view update while typing (seen on a
+    /// slow CI runner, PR #8); it takes it back, so inline add stays open and ⓘ still works.
+    @MainActor
+    func testNameFieldTakesBackKeyboardLostInsideUpdate() {
+        let eva = HomeScreen(app: Launch.app(dropInlineNameFocus: true)).waitUntilShown().open(row: "Eva")
+
+        let field = eva.startInline(in: "Toys")
+        // The keyboard goes away at "K"; keys typed before it is back would be lost, so wait.
+        field.typeText("K")
+        XCTAssertTrue(field.waitForKeyboardFocus(), "the name field has the keyboard again")
+        eva.app.typeText("ite") // into whatever has the focus, like a user
+        eva.tapAccessory("details")
+
+        let editor = ItemEditScreen(app: eva.app).waitUntilShown()
+        XCTAssertEqual(editor.nameField.value as? String, "Kite")
+        editor.cancel()
+    }
+
     /// LD-05a: in a list without groups, the first item creates the group "Items".
     @MainActor
     func testFirstItemCreatesGroup() {

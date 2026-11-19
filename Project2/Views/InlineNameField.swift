@@ -83,9 +83,20 @@ struct InlineNameField<Accessory: View>: UIViewRepresentable {
             field.text = ""
         }
         let coordinator = context.coordinator
+        if LaunchConfiguration.dropsInlineNameFocusOnce, !coordinator.droppedFocusForUITest,
+           !text.isEmpty, field.isFirstResponder {
+            // UI tests only: lose the keyboard inside this update, as the list sometimes does.
+            coordinator.droppedFocusForUITest = true
+            field.resignFirstResponder()
+        }
         coordinator.focusRequest.receive(focusRequest)
         if coordinator.focusRequest.isPending {
             coordinator.grantFocusRequest(to: field)
+        } else if isEditing, !field.isFirstResponder {
+            // This update still says "editing", yet the field lost the keyboard: the loss came
+            // from inside an update (the list re-laying out the row), not from the user. See
+            // `FocusRequest.shouldReclaim`.
+            coordinator.reclaimFocusIfUnclaimed(field)
         } else if !isEditing, field.isFirstResponder {
             field.resignFirstResponder()
         }
@@ -96,6 +107,8 @@ struct InlineNameField<Accessory: View>: UIViewRepresentable {
         var parent: InlineNameField
         var accessoryHost: UIHostingController<Accessory>?
         var focusRequest = FocusRequest()
+        /// `-UITestsDropInlineNameFocus` already took the keyboard away once.
+        var droppedFocusForUITest = false
 
         init(parent: InlineNameField) {
             self.parent = parent
@@ -113,6 +126,19 @@ struct InlineNameField<Accessory: View>: UIViewRepresentable {
                 if self.focusRequest.isPending, field.window != nil, !field.isFirstResponder {
                     field.becomeFirstResponder()
                 }
+            }
+        }
+
+        /// The field lost the keyboard inside a view update: takes it back in the next main-actor
+        /// turn, unless another field (price, link) has it by then.
+        func reclaimFocusIfUnclaimed(_ field: UITextField) {
+            Task { @MainActor in
+                let reclaim = FocusRequest.shouldReclaim(
+                    updateSaysEditing: true,
+                    isInWindow: field.window != nil,
+                    isFirstResponder: field.isFirstResponder,
+                    anotherFieldHasKeyboard: UIResponder.currentFirstResponder is UITextInput)
+                if reclaim { field.becomeFirstResponder() }
             }
         }
 
@@ -156,6 +182,36 @@ struct FocusRequest: Equatable {
     /// The field began or ended editing: the request is used up or superseded.
     mutating func editingChanged() {
         isPending = false
+    }
+
+    /// Takes the keyboard back after losing it, without a request? Only when a view update
+    /// still said the field is being edited (the loss happened inside an update, e.g. the list
+    /// re-laying out the row: CI run on PR #8, `testDetailsButtonSavesAndOpensDetails`) and,
+    /// checked a turn later, no other responder holds the keyboard.
+    ///
+    /// - A user dismissal (scroll, the iPad hide-keyboard key, Back) reaches SwiftUI before
+    ///   the next update, so `updateSaysEditing` is false: the inline row closes as specified.
+    /// - A hand-off to the price or link field leaves another first responder: never taken
+    ///   back (CI run 44129716390). A non-text first responder (on iPad, the hosting view
+    ///   for keyboard shortcuts) doesn't hold the keyboard and doesn't count.
+    static func shouldReclaim(updateSaysEditing: Bool, isInWindow: Bool, isFirstResponder: Bool,
+                              anotherFieldHasKeyboard: Bool) -> Bool {
+        updateSaysEditing && isInWindow && !isFirstResponder && !anotherFieldHasKeyboard
+    }
+}
+
+extension UIResponder {
+    private static weak var foundFirstResponder: UIResponder?
+
+    /// The current first responder of the app, if any (an action sent to `nil` goes to it).
+    static var currentFirstResponder: UIResponder? {
+        foundFirstResponder = nil
+        UIApplication.shared.sendAction(#selector(reportAsFirstResponder), to: nil, from: nil, for: nil)
+        return foundFirstResponder
+    }
+
+    @objc private func reportAsFirstResponder() {
+        UIResponder.foundFirstResponder = self
     }
 }
 

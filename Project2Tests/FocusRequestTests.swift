@@ -6,6 +6,9 @@
 //  Regression for CI run 44129716390: after [Price] the keyboard moved to the price field
 //  and the name field took it back, because "editing but not first responder" (a stale
 //  value for one update) counted as a request.
+//  Regression for the CI failure on PR #8 (testDetailsButtonSavesAndOpensDetails): the
+//  field lost the keyboard inside a view update and nothing took it back; such a loss is
+//  taken back unless another field has the keyboard (`shouldReclaim`).
 //
 
 import Testing
@@ -55,5 +58,37 @@ struct FocusRequestTests {
         request.receive(1)
         request.receive(1)
         #expect(request.isPending)
+    }
+
+    // MARK: - Taking the keyboard back after an unrequested loss
+
+    @Test("lost inside a view update, nobody else has the keyboard: taken back")
+    func reclaimAfterLossInsideUpdate() {
+        #expect(FocusRequest.shouldReclaim(updateSaysEditing: true, isInWindow: true,
+                                           isFirstResponder: false, anotherFieldHasKeyboard: false))
+    }
+
+    @Test("the price or link field has the keyboard: never taken back (CI run 44129716390)")
+    func noReclaimFromAnotherField() {
+        #expect(!FocusRequest.shouldReclaim(updateSaysEditing: true, isInWindow: true,
+                                            isFirstResponder: false, anotherFieldHasKeyboard: true))
+    }
+
+    @Test("the user dismissed the keyboard: the update already says not editing")
+    func noReclaimAfterUserDismissal() {
+        #expect(!FocusRequest.shouldReclaim(updateSaysEditing: false, isInWindow: true,
+                                            isFirstResponder: false, anotherFieldHasKeyboard: false))
+    }
+
+    @Test("the row left the screen (Back): not taken back")
+    func noReclaimOutsideWindow() {
+        #expect(!FocusRequest.shouldReclaim(updateSaysEditing: true, isInWindow: false,
+                                            isFirstResponder: false, anotherFieldHasKeyboard: false))
+    }
+
+    @Test("already has the keyboard again: nothing to do")
+    func noReclaimWhenFocused() {
+        #expect(!FocusRequest.shouldReclaim(updateSaysEditing: true, isInWindow: true,
+                                            isFirstResponder: true, anotherFieldHasKeyboard: true))
     }
 }

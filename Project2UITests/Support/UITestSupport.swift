@@ -25,6 +25,8 @@ enum Launch {
     static let rowHighlightSeconds = "-UITestsRowHighlightSeconds"
     /// Inserts the inline price / link field this many seconds after [Price] / [Link].
     static let inlineFieldDelaySeconds = "-UITestsInlineFieldDelaySeconds"
+    /// The inline name field loses the keyboard once, inside a view update, at the first character.
+    static let dropInlineNameFocus = "-UITestsDropInlineNameFocus"
 
     /// In-memory store with `SeedData` (or empty with `emptyStore: true`), in English / en_US
     /// unless another language and region are given.
@@ -39,15 +41,20 @@ enum Launch {
     ///
     /// `slowInlineFields`: the inline price / link field appears a second after its accessory
     /// button, as on a slow device, to prove the keyboard still moves to it.
+    ///
+    /// `dropInlineNameFocus`: the inline name field loses the keyboard once, inside a view update,
+    /// at the first typed character, to prove it takes the keyboard back.
     @MainActor
     static func app(emptyStore: Bool = false, language: String = "en", region: String = "en_US",
                     longUndoToast: Bool = false, longRowHighlight: Bool = false,
-                    slowInlineFields: Bool = false) -> XCUIApplication {
+                    slowInlineFields: Bool = false,
+                    dropInlineNameFocus: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [uiTests] + (emptyStore ? [Launch.emptyStore] : [])
             + (longUndoToast ? [undoToastSeconds, "60"] : [])
             + (longRowHighlight ? [rowHighlightSeconds, "60"] : [])
             + (slowInlineFields ? [inlineFieldDelaySeconds, "1"] : [])
+            + (dropInlineNameFocus ? [Launch.dropInlineNameFocus] : [])
             + locale(language: language, region: region)
         app.launch()
         return app
