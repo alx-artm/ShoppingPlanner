@@ -22,6 +22,9 @@ final class AppNavigation {
     /// value means the list is pushed; going back sets it to `nil`.
     var selectedListID: UUID?
 
+    /// Screens pushed in Home's column (the sidebar): only the Archive today (spec 10, AR-14).
+    var sidebarPath: [SidebarRoute] = []
+
     /// What happens to a list once its detail screen has closed.
     enum PendingAction: Equatable {
         case delete
@@ -36,6 +39,11 @@ final class AppNavigation {
 
     init(selectedListID: UUID? = nil) {
         self.selectedListID = selectedListID
+    }
+
+    /// Opens the Archive in Home's column (AR-14).
+    func showArchive() {
+        sidebarPath = [.archive]
     }
 
     func select(_ list: ListModel) {
@@ -90,4 +98,9 @@ final class AppNavigation {
             selectedListID = nil
         }
     }
+}
+
+/// A screen pushed in Home's column of the split view.
+enum SidebarRoute: Hashable {
+    case archive
 }

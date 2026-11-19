@@ -22,8 +22,17 @@ struct ContentView: View {
 
     var body: some View {
         NavigationSplitView {
-            HomeView()
-                .navigationSplitViewColumnWidth(min: 320, ideal: 360, max: 480)
+            // Its own stack, so the Archive opens inside this column (spec 10, AR-14):
+            // iPhone pushes it over Home, iPad keeps it in the sidebar.
+            NavigationStack(path: $navigation.sidebarPath) {
+                HomeView()
+                    .navigationDestination(for: SidebarRoute.self) { route in
+                        switch route {
+                        case .archive: ArchiveView()
+                        }
+                    }
+            }
+            .navigationSplitViewColumnWidth(min: 320, ideal: 360, max: 480)
         } detail: {
             detail
         }
