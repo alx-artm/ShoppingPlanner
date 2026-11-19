@@ -31,6 +31,8 @@ extension Tag {
     @Tag static var listInfo: Self
     /// Split-view navigation and deleting an open list (spec 08 AD-xx, DM-18).
     @Tag static var navigation: Self
+    /// List Archive: archive, restore, Home sections and the Archive screen (spec 10, AR-xx).
+    @Tag static var archive: Self
 }
 
 /// The app's own strings (`String(localized:)`) are resolved in the language the

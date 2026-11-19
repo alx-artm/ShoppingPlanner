@@ -74,6 +74,8 @@ struct SchemaTests {
         #expect(list.color == .blue)
         #expect(list.budget == nil)
         #expect(list.currencyCode == "USD")
+        #expect(list.archivedAt == nil, "AR-01 a new list is not archived")
+        #expect(list.isArchived == false)
 
         let group = GroupModel()
         #expect(group.sortIndex == 0)

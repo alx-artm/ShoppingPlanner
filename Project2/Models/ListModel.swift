@@ -31,6 +31,10 @@ extension SchemaV1 {
         /// ISO 4217 code. All sums of the list are expressed in this currency.
         var currencyCode: String = "USD"
         var createdAt: Date = Date.now
+        /// When the list was moved to the Archive (spec 10, AR-01); `nil` for an active list.
+        /// One optional date instead of a flag + date: the two can't disagree, and the date
+        /// orders the Archive and fills the banner of an archived list.
+        var archivedAt: Date? = nil
 
         @Relationship(deleteRule: .cascade, inverse: \GroupModel.list)
         var groups: [GroupModel]? = []
@@ -45,7 +49,8 @@ extension SchemaV1 {
             sortIndex: Double = 0,
             budget: Decimal? = nil,
             currencyCode: String = "USD",
-            createdAt: Date = .now
+            createdAt: Date = .now,
+            archivedAt: Date? = nil
         ) {
             self.uuid = uuid
             self.name = name
@@ -57,6 +62,7 @@ extension SchemaV1 {
             self.budget = budget
             self.currencyCode = currencyCode
             self.createdAt = createdAt
+            self.archivedAt = archivedAt
         }
     }
 }
@@ -64,6 +70,9 @@ extension SchemaV1 {
 extension ListModel {
     /// Used when a group or item is not attached to a list (drafts, previews).
     static let fallbackCurrencyCode = "USD"
+
+    /// In the Archive: hidden from Home's sections, shown on the Archive screen (spec 10).
+    var isArchived: Bool { archivedAt != nil }
 
     /// Unknown raw values (e.g. written by a newer app version) fall back to `.symbol` (DM-09).
     var iconKind: ListIconKind {
