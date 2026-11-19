@@ -373,6 +373,18 @@ struct ArchiveTests {
         #expect(a.isArchived == false)
     }
 
+    @Test("AR-14 the Archive opens in Home's column and keeps the detail's selection")
+    func showArchive() {
+        let navigation = AppNavigation()
+        let a = f.store.createList(name: "A")
+        navigation.select(a)
+
+        navigation.showArchive()
+
+        #expect(navigation.sidebarPath == [.archive])
+        #expect(navigation.selectedListID == a.uuid)
+    }
+
     @Test("AR-26 an archived list keeps its selection: the open screen stays (with the banner)")
     func archivedSelectionKept() throws {
         let navigation = AppNavigation()

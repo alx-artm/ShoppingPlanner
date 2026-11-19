@@ -670,3 +670,119 @@ struct TemplatePickerScreen {
         return ListInfoScreen(app: app).waitUntilShown()
     }
 }
+
+// MARK: - List Archive (spec 10)
+
+extension HomeScreen {
+    /// "Archive N" at the end of Home (AR-08).
+    var archiveRow: XCUIElement { app.buttons["home.archiveRow"] }
+    /// "No Active Lists": every list is archived (AR-13).
+    var emptyActiveState: XCUIElement { app.descendants(matching: .any)["home.emptyActiveState"].firstMatch }
+    /// The "In Archive" header of the search results (AR-20).
+    var searchArchiveSection: XCUIElement { app.staticTexts["home.searchArchiveSection"] }
+
+    /// An archived list's row in the search results (AR-20).
+    func archivedRow(_ name: String) -> XCUIElement { ArchiveScreen.row(name, in: app) }
+
+    /// Swipe right on a row → "Archive" (AR-10). A full swipe would run Pin, the first action.
+    func archiveWithSwipe(row name: String) {
+        let archiveButton = app.buttons["home.swipe.archive"]
+        row(name).scrollIntoView(within: list).perform("Partial swipe right", until: archiveButton,
+                                                       recover: { backFromMisfiredGesture(on: row(name)) }) {
+            let start = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.5))
+            let end = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.5))
+            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
+        }.waitAndTap()
+    }
+
+    /// Long press a tile → "Archive" (AR-10).
+    func archiveFromContextMenu(card name: String) {
+        openContextMenu(card: name, until: app.buttons["home.menu.archive"]).waitAndTap()
+    }
+
+    /// Long press a row → "Archive" (AR-10).
+    func archiveFromContextMenu(row name: String) {
+        row(name).scrollIntoView(within: list)
+            .perform("Long press", until: app.buttons["home.menu.archive"],
+                     recover: { backFromMisfiredGesture(on: row(name)) }) {
+                $0.press(forDuration: 1.5)
+            }.waitAndTap()
+    }
+
+    /// The Archive row → the Archive screen (AR-14).
+    func openArchive() -> ArchiveScreen {
+        archiveRow.scrollIntoView(within: list).waitAndTap()
+        return ArchiveScreen(app: app).waitUntilShown()
+    }
+}
+
+@MainActor
+struct ArchiveScreen {
+    let app: XCUIApplication
+
+    var list: XCUIElement { app.collectionViews["archive.list"] }
+    var emptyState: XCUIElement { app.descendants(matching: .any)["archive.emptyState"].firstMatch }
+    var searchField: XCUIElement { app.searchFields["Search Archive"] }
+
+    /// Rows are identified by uuid ("archive.row.<uuid>"); the VoiceOver label starts with the name.
+    static func row(_ name: String, in app: XCUIApplication) -> XCUIElement {
+        app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label BEGINSWITH %@",
+                                         "archive.row.", "\(name),")).firstMatch
+    }
+
+    func row(_ name: String) -> XCUIElement { Self.row(name, in: app) }
+
+    @discardableResult
+    func waitUntilShown(file: StaticString = #filePath, line: UInt = #line) -> ArchiveScreen {
+        app.navigationBars["Archive"].waitToAppear(file: file, line: line)
+        return self
+    }
+
+    /// Tap a row → the archived list (iPhone: push; iPad: the detail column).
+    func open(_ name: String) -> ListDetailScreen {
+        row(name).waitAndTap()
+        return ListDetailScreen(app: app).waitUntilShown()
+    }
+
+    /// Swipe right on a row → "Restore" (AR-17). A full swipe runs Restore at once.
+    func restoreWithSwipe(_ name: String) {
+        let restoreButton = app.buttons["archive.swipe.restore"]
+        let target = row(name)
+        let result = app.descendants(matching: .any).matching(NSPredicate(
+            format: "identifier IN %@", ["archive.swipe.restore", "archive.emptyState"])).firstMatch
+        target.waitToAppear().perform("Swipe right", until: result, recover: { backFromMisfiredGesture(on: target) }) {
+            $0.swipeRight()
+        }
+        if restoreButton.exists { restoreButton.tap() }
+    }
+
+    /// Long press a row → `action` of its context menu (restore, duplicate, share, delete).
+    func contextMenu(_ name: String, _ action: String) {
+        let target = row(name)
+        target.waitToAppear().perform("Long press", until: app.buttons["archive.menu.\(action)"],
+                                      recover: { backFromMisfiredGesture(on: target) }) {
+            $0.press(forDuration: 1.5)
+        }.waitAndTap()
+    }
+
+    /// A gesture received as a tap opened the list: go back to the Archive (iPhone).
+    func backFromMisfiredGesture(on element: XCUIElement) {
+        let detail = ListDetailScreen(app: app)
+        guard !element.isHittable, detail.menuButton.exists, detail.backButton.exists else { return }
+        detail.backButton.tap()
+        waitUntilShown()
+    }
+
+    /// Back to Home (the Archive's back button).
+    @discardableResult
+    func goBack() -> HomeScreen {
+        app.navigationBars["Archive"].buttons["BackButton"].waitAndTap()
+        return HomeScreen(app: app).waitUntilShown()
+    }
+}
+
+extension ListDetailScreen {
+    /// "Archived on <date>" with Restore, on top of an archived list (AR-16).
+    var archivedBanner: XCUIElement { app.descendants(matching: .any)["list.archivedBanner"].firstMatch }
+    var archivedBannerRestoreButton: XCUIElement { app.buttons["list.archivedBanner.restoreButton"] }
+}

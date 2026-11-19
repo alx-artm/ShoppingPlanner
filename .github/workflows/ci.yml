@@ -28,6 +28,8 @@ jobs:
   # iPhone never shows. It runs only the classes that touch it, not the whole
   # suite, which would double CI time. iPad-only classes (KeyboardShortcutsUITests)
   # skip themselves on iPhone, so they are listed only here.
+  # ArchiveUITests runs on iPad too: archiving the list open in the detail column
+  # must close it first ("Select a List", spec 10 AR-12).
   test:
     name: ${{ matrix.name }}
     runs-on: macos-26
@@ -46,6 +48,7 @@ jobs:
               -only-testing:Project2UITests/ListDetailUITests
               -only-testing:Project2UITests/HomeUITests
               -only-testing:Project2UITests/SettingsUITests
+              -only-testing:Project2UITests/ArchiveUITests
             artifact: UITestResults-1
           - name: UI Tests (2/2)
             device: iPhone 17 Pro
@@ -61,6 +64,7 @@ jobs:
               -only-testing:Project2UITests/InlineAddUITests
               -only-testing:Project2UITests/ItemDetailsUITests
               -only-testing:Project2UITests/KeyboardShortcutsUITests
+              -only-testing:Project2UITests/ArchiveUITests
             artifact: UITestResults-iPad
     steps:
       - uses: actions/checkout@v7
