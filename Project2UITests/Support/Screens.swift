@@ -559,8 +559,13 @@ extension HomeScreen {
         return ListInfoScreen(app: app).waitUntilShown()
     }
 
+    /// Types `text` into Home's search field. On iPad the sidebar keeps the field hidden
+    /// above the first row until the list is pulled down, as the user would do.
     @discardableResult
     func search(_ text: String) -> HomeScreen {
+        if !searchField.waitForExistence(timeout: 2) {
+            list.swipeDown(velocity: .slow)
+        }
         searchField.waitAndTap()
         searchField.typeText(text)
         return self
