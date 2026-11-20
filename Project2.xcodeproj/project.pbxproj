@@ -45,6 +45,7 @@
 		5FB9C0DE2F05000100000004 /* ArchiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB9C0DE2F05000100000003 /* ArchiveView.swift */; };
 		5FB9C0DE2F05000100000002 /* ArchivedListRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB9C0DE2F05000100000001 /* ArchivedListRow.swift */; };
 		5FB5C0DE2EF5000100000010 /* InlineItemRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB5C0DE2EF500010000000F /* InlineItemRow.swift */; };
+		5FB5C0DE2EF50001000000A2 /* InlineFocus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB5C0DE2EF50001000000A1 /* InlineFocus.swift */; };
 		5FB5C0DE2EF5000100000012 /* InlineNameField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB5C0DE2EF5000100000011 /* InlineNameField.swift */; };
 		5FB6C0DE2F05000100000002 /* PurchaseBarLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB6C0DE2F05000100000001 /* PurchaseBarLayout.swift */; };
 		5FB6C0DE2F05000100000004 /* PurchaseBarColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB6C0DE2F05000100000003 /* PurchaseBarColors.swift */; };
@@ -125,6 +126,7 @@
 		5FB9C0DE2F05000100000003 /* ArchiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchiveView.swift; sourceTree = "<group>"; };
 		5FB9C0DE2F05000100000001 /* ArchivedListRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchivedListRow.swift; sourceTree = "<group>"; };
 		5FB5C0DE2EF500010000000F /* InlineItemRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineItemRow.swift; sourceTree = "<group>"; };
+		5FB5C0DE2EF50001000000A1 /* InlineFocus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineFocus.swift; sourceTree = "<group>"; };
 		5FB5C0DE2EF5000100000011 /* InlineNameField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineNameField.swift; sourceTree = "<group>"; };
 		5FB6C0DE2F05000100000001 /* PurchaseBarLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseBarLayout.swift; sourceTree = "<group>"; };
 		5FB6C0DE2F05000100000003 /* PurchaseBarColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseBarColors.swift; sourceTree = "<group>"; };
@@ -274,6 +276,7 @@
 				5FB6C0DE2F05000100000005 /* PurchaseBarView.swift */,
 				5FB7C0DE2F15000100000003 /* PlannerCommands.swift */,
 				5FB5C0DE2EF500010000000F /* InlineItemRow.swift */,
+				5FB5C0DE2EF50001000000A1 /* InlineFocus.swift */,
 				5FB5C0DE2EF5000100000011 /* InlineNameField.swift */,
 			);
 			path = Views;
@@ -491,6 +494,7 @@
 				5FB9C0DE2F05000100000002 /* ArchivedListRow.swift in Sources */,
 				5FB6C0DE2F05000100000006 /* PurchaseBarView.swift in Sources */,
 				5FB5C0DE2EF5000100000010 /* InlineItemRow.swift in Sources */,
+				5FB5C0DE2EF50001000000A2 /* InlineFocus.swift in Sources */,
 				5FB5C0DE2EF5000100000012 /* InlineNameField.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

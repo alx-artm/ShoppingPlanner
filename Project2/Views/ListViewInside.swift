@@ -40,17 +40,14 @@ struct ListViewInside: View {
     /// The group being added to inline, `nil` when inline add is closed.
     @State private var inline: InlineAdd?
     @State private var inlineDraft = ItemDraft()
-    @FocusState private var inlineFocus: InlineField?
-    /// [Price] / [Link] asked for this field's keyboard; it takes it once the field is in the row.
-    /// SwiftUI doesn't promise to keep a focus value for a field that isn't built yet.
-    @State private var pendingInlineFocus: InlineField?
-    /// The inline name field has the keyboard (a UIKit field, outside `inlineFocus`).
-    @State private var isEditingInlineName = false
-    /// Bumped to give the inline name field the keyboard once (opening inline add).
-    @State private var inlineNameFocusRequest = 0
+    /// Who has the keyboard in the inline row: the one source of truth (see `InlineFocus`).
+    @State private var inlineFocus = InlineFocus()
+    /// Carries `inlineFocus` out for the SwiftUI price and link fields. Set only from
+    /// `moveInlineFocus`; the user's changes come back through `.onChange` into `inlineFocus`.
+    @FocusState private var inlineFieldFocus: InlineField?
 
     /// Any inline field has the keyboard.
-    private var isTypingInline: Bool { isEditingInlineName || inlineFocus != nil }
+    private var isTypingInline: Bool { inlineFocus.isTyping }
 
     /// A group just added with "Add Group", to scroll to once its section is in the list.
     @State private var addedGroupID: PersistentIdentifier?
@@ -186,6 +183,14 @@ struct ListViewInside: View {
             }
             ToolbarItemGroup(placement: .keyboard) {
                 if inline != nil { accessoryBar }
+            }
+        }
+        .onChange(of: inlineFieldFocus) { old, new in
+            // The user moved the keyboard to or away from the price / link field.
+            if let new {
+                reportInlineFocus { $0.began(new) }
+            } else if let old {
+                reportInlineFocus { $0.ended(old) }
             }
         }
         .onChange(of: isTypingInline) { _, isTyping in
@@ -355,10 +360,13 @@ struct ListViewInside: View {
             }
 
             if inline?.groupID == group.uuid {
-                InlineItemRow(draft: $inlineDraft, isEditingName: $isEditingInlineName,
-                              nameFocusRequest: inlineNameFocusRequest,
+                InlineItemRow(draft: $inlineDraft, focus: inlineFocus,
+                              fieldFocus: $inlineFieldFocus,
                               extras: inline?.extras ?? InlineExtras(),
-                              currencyCode: list.currencyCode, focus: $inlineFocus,
+                              currencyCode: list.currencyCode,
+                              onNameFocusChange: { hasFocus in
+                                  reportInlineFocus { hasFocus ? $0.began(.name) : $0.ended(.name) }
+                              },
                               onReturn: submitInline,
                               onFieldAppear: inlineFieldAppeared,
                               accessory: nameFieldAccessoryBar)
@@ -499,18 +507,43 @@ struct ListViewInside: View {
             .tint(.primary)
     }
 
+    /// A command of the screen moves the inline focus: the owner changes, then the SwiftUI
+    /// fields follow in the same update. The name field follows the owner by itself
+    /// (`InlineNameField`); price and link through `inlineFieldFocus`. A price or link field
+    /// is focused only when the owner changed (a field scrolled back into view mustn't take
+    /// the keyboard); "nobody" always clears it, as closing did before.
+    private func moveInlineFocus(_ command: (inout InlineFocus) -> Void) {
+        var focus = inlineFocus
+        command(&focus)
+        let changed = focus != inlineFocus
+        if changed { inlineFocus = focus }
+        switch focus.field {
+        case .price, .link: if changed { inlineFieldFocus = focus.field }
+        case nil: inlineFieldFocus = nil
+        // The name field takes the keyboard itself; a price or link field that has it gives it
+        // up then, which comes back through `.onChange(of: inlineFieldFocus)` and is ignored.
+        case .name: break
+        }
+    }
+
+    /// A field reports that the user moved the keyboard: only the owner changes. The fields
+    /// already are where the user put them, so nothing is sent back to them (a late "ended" of
+    /// one field mustn't take the keyboard from the next one).
+    private func reportInlineFocus(_ report: (inout InlineFocus) -> Void) {
+        var focus = inlineFocus
+        report(&focus)
+        if focus != inlineFocus { inlineFocus = focus }
+    }
+
     /// [Price] / [Link]: shows the field in the row and gives it the keyboard (LD-15).
     /// A field already in the row is focused at once. A new one is inserted by the next
-    /// render, so the focus waits for it in `pendingInlineFocus` and moves in its `onAppear`:
+    /// render, so the focus waits for it (`InlineFocus.pending`) and moves in its `onAppear`:
     /// no race between the insertion and the focus change, however slow the device.
     private func showInlineField(_ field: InlineField) {
         guard let current = inline else { return }
-        if current.extras.isShown(field) {
-            pendingInlineFocus = nil
-            inlineFocus = field
-            return
-        }
-        pendingInlineFocus = field
+        let isShown = current.extras.isShown(field)
+        moveInlineFocus { $0.request(field, isShown: isShown) }
+        if isShown { return }
         if let delay = LaunchConfiguration.inlineFieldDelayOverride {
             // UI tests: the field arrives late, as on a slow device; the focus must still follow.
             Task { @MainActor in
@@ -524,9 +557,7 @@ struct ListViewInside: View {
 
     /// A price or link field is in the row: it takes the keyboard if [Price] / [Link] asked for it.
     private func inlineFieldAppeared(_ field: InlineField) {
-        guard pendingInlineFocus == field else { return }
-        pendingInlineFocus = nil
-        inlineFocus = field
+        moveInlineFocus { $0.fieldAppeared(field) }
     }
 
     /// "＋ New Item" → a text field with the keyboard. Another open draft is saved first.
@@ -535,9 +566,7 @@ struct ListViewInside: View {
         uiState.setExpanded(true, for: group.uuid)
         inlineDraft = ItemDraft(groupID: group.uuid)
         inline = InlineAdd(groupID: group.uuid, createdGroup: createdGroup)
-        pendingInlineFocus = nil
-        isEditingInlineName = true
-        inlineNameFocusRequest += 1
+        moveInlineFocus { $0.focusName() }
     }
 
     /// Saves a draft with a name (LD-12); returns the new item.
@@ -564,7 +593,7 @@ struct ListViewInside: View {
         commitInline(draft)
         inlineDraft = ItemDraft(groupID: groupID)
         inline?.extras = InlineExtras()
-        pendingInlineFocus = nil
+        moveInlineFocus { $0.nextItem() }
         inline?.createdGroup = false
         inline?.submitCount += 1
     }
@@ -574,9 +603,7 @@ struct ListViewInside: View {
         guard let current = inline else { return }
         let saved = commitInline()
         inline = nil
-        pendingInlineFocus = nil
-        inlineFocus = nil
-        isEditingInlineName = false
+        moveInlineFocus { $0.close() }
         // LD-05a: the "Items" group made for the first item goes away if nothing was added.
         if saved == nil, current.createdGroup,
            let group = list.groups?.first(where: { $0.uuid == current.groupID }),
@@ -589,9 +616,7 @@ struct ListViewInside: View {
     private func openInlineDetails() {
         let item = commitInline()
         inline = nil
-        pendingInlineFocus = nil
-        inlineFocus = nil
-        isEditingInlineName = false
+        moveInlineFocus { $0.close() }
         if let item { sheet = .editItem(item, focusFirstEmpty: true) }
     }
 

@@ -14,21 +14,16 @@
 
 import SwiftUI
 
-/// Which SwiftUI inline field has the keyboard (the name field is tracked separately,
-/// it is a UIKit field).
-enum InlineField: Hashable {
-    case price, link
-}
-
 /// The extra fields shown in the inline row, opened from the accessory bar.
 struct InlineExtras: Equatable {
     var showsPrice = false
     var showsQuantity = false
     var showsLink = false
 
-    /// The field is in the row (or about to be, once the row renders).
+    /// The field is in the row (or about to be, once the row renders). The name always is.
     func isShown(_ field: InlineField) -> Bool {
         switch field {
+        case .name: true
         case .price: showsPrice
         case .link: showsLink
         }
@@ -36,6 +31,7 @@ struct InlineExtras: Equatable {
 
     mutating func show(_ field: InlineField) {
         switch field {
+        case .name: break
         case .price: showsPrice = true
         case .link: showsLink = true
         }
@@ -44,13 +40,14 @@ struct InlineExtras: Equatable {
 
 struct InlineItemRow<Accessory: View>: View {
     @Binding var draft: ItemDraft
-    /// The name field has the keyboard (it is a UIKit field, see `InlineNameField`).
-    @Binding var isEditingName: Bool
-    /// Each new value gives the name field the keyboard once (see `InlineNameField`).
-    let nameFocusRequest: Int
+    /// The owner of the row's focus; the fields carry it out.
+    let focus: InlineFocus
+    /// The SwiftUI price and link fields follow this (the screen sets it from `focus`).
+    let fieldFocus: FocusState<InlineField?>.Binding
     let extras: InlineExtras
     let currencyCode: String
-    let focus: FocusState<InlineField?>.Binding
+    /// The name field got or lost the keyboard (the user, or a command carried out).
+    let onNameFocusChange: (Bool) -> Void
     /// Return in the name field, with the line typed.
     let onReturn: (String) -> Void
     /// A price or link field is now in the row: the screen moves a pending focus to it.
@@ -69,9 +66,9 @@ struct InlineItemRow<Accessory: View>: View {
                     .foregroundStyle(.quaternary)
                     .frame(width: checkboxSize, height: checkboxSize)
                     .accessibilityHidden(true)
-                InlineNameField(text: $draft.name, isEditing: $isEditingName,
-                                focusRequest: nameFocusRequest, onReturn: onReturn,
-                                accessory: accessory)
+                InlineNameField(text: $draft.name, focus: focus.field,
+                                focusRequest: focus.nameRequest, onFocusChange: onNameFocusChange,
+                                onReturn: onReturn, accessory: accessory)
                     .frame(minHeight: 44)
             }
 
@@ -79,7 +76,7 @@ struct InlineItemRow<Accessory: View>: View {
                 if extras.showsPrice {
                     HStack {
                         MoneyField("Price", value: $draft.price, currencyCode: currencyCode,
-                                   focus: focus, field: .price, identifier: "inline.priceField")
+                                   focus: fieldFocus, field: .price, identifier: "inline.priceField")
                         if let total = draft.lineTotal(listCurrencyCode: currencyCode) {
                             // The live line total (spec 04 Inline add, step 3).
                             Text(verbatim: "= " + MoneyFormat.string(total, currencyCode: currencyCode, locale: locale))
@@ -105,7 +102,7 @@ struct InlineItemRow<Accessory: View>: View {
                         .textContentType(.URL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                        .focused(focus, equals: .link)
+                        .focused(fieldFocus, equals: .link)
                         .accessibilityLabel(Text("Link"))
                         .accessibilityIdentifier("inline.linkField")
                         .onAppear { onFieldAppear(.link) }
