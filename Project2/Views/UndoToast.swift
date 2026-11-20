@@ -28,7 +28,8 @@ struct UndoToast: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     /// How long a toast stays: 4 s (a UI test can make it longer, see `LaunchConfiguration`).
-    static var duration: Duration {
+    /// `nonisolated`: it reads only launch arguments, and `DeletedItem` (not on the main actor) uses it.
+    nonisolated static var duration: Duration {
         LaunchConfiguration.undoToastDurationOverride ?? .seconds(4)
     }
 

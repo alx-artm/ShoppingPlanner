@@ -59,13 +59,17 @@ enum Launch {
                     dropInlineNameFocus: Bool = false,
                     contentSize: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = [uiTests] + (emptyStore ? [Launch.emptyStore] : [])
-            + (longUndoToast ? [undoToastSeconds, "60"] : [])
-            + (longRowHighlight ? [rowHighlightSeconds, "60"] : [])
-            + (slowInlineFields ? [inlineFieldDelaySeconds, String(slowInlineFieldSeconds)] : [])
-            + (dropInlineNameFocus ? [Launch.dropInlineNameFocus] : [])
-            + (contentSize.map { ["-UIPreferredContentSizeCategoryName", $0] } ?? [])
-            + locale(language: language, region: region)
+        // Appended one by one: one long `+` chain of optional arrays takes the
+        // type checker too long on newer Xcode (CI failed with "unable to type-check").
+        var arguments: [String] = [uiTests]
+        if emptyStore { arguments.append(Launch.emptyStore) }
+        if longUndoToast { arguments += [undoToastSeconds, "60"] }
+        if longRowHighlight { arguments += [rowHighlightSeconds, "60"] }
+        if slowInlineFields { arguments += [inlineFieldDelaySeconds, String(slowInlineFieldSeconds)] }
+        if dropInlineNameFocus { arguments.append(Launch.dropInlineNameFocus) }
+        if let contentSize { arguments += ["-UIPreferredContentSizeCategoryName", contentSize] }
+        arguments += locale(language: language, region: region)
+        app.launchArguments = arguments
         app.launch()
         return app
     }
