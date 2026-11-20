@@ -395,4 +395,61 @@ struct ArchiveTests {
         navigation.dropSelectionIfMissing(existing: Set(try allLists().map(\.uuid)))
         #expect(navigation.selectedListID == a.uuid)
     }
+
+    // MARK: - AR-23, AR-25 texts
+
+    /// The `.lproj` of one language, so a text is checked in that language whatever the
+    /// test host runs in.
+    static func languageBundle(_ language: String) throws -> Bundle {
+        let path = try #require(Bundle.main.path(forResource: language, ofType: "lproj"))
+        return try #require(Bundle(path: path))
+    }
+
+    /// The same key as Home's Archive row (`HomeView.archiveRow`): an `Int` is `%lld`.
+    static func archiveRowLabel(_ count: Int, language: String, locale: String) throws -> String {
+        String(localized: "Archive, \(count) lists", bundle: try languageBundle(language),
+               locale: Locale(identifier: locale))
+    }
+
+    @Test("AR-23 RU: the Archive row's VoiceOver count uses список / списка / списков",
+          arguments: [(1, "Архив, 1 список"), (2, "Архив, 2 списка"), (4, "Архив, 4 списка"),
+                      (5, "Архив, 5 списков"), (11, "Архив, 11 списков"), (12, "Архив, 12 списков"),
+                      (21, "Архив, 21 список"), (22, "Архив, 22 списка"), (25, "Архив, 25 списков"),
+                      (101, "Архив, 101 список"), (111, "Архив, 111 списков")])
+    func archiveRowPluralRussian(count: Int, expected: String) throws {
+        #expect(try Self.archiveRowLabel(count, language: "ru", locale: "ru_RU") == expected)
+    }
+
+    @Test("AR-23 EN: 'Archive, 1 list', 'Archive, N lists'",
+          arguments: [(1, "Archive, 1 list"), (2, "Archive, 2 lists"), (11, "Archive, 11 lists"),
+                      (21, "Archive, 21 lists")])
+    func archiveRowPluralEnglish(count: Int, expected: String) throws {
+        #expect(try Self.archiveRowLabel(count, language: "en", locale: "en_US") == expected)
+    }
+
+    /// The RU column of spec 10's Texts table. A key missing from the catalog would come back
+    /// as the English key itself.
+    nonisolated static let russianTexts: [(key: String, ru: String)] = [
+        ("action.archive", "В архив"),
+        ("Archive", "Архив"),
+        ("Restore", "Вернуть"),
+        ("Archived on %@", "В архиве с %@"),
+        ("Search Archive", "Поиск в архиве"),
+        ("In Archive", "В архиве"),
+        ("No Archived Lists", "Архив пуст"),
+        ("Archived lists keep all their items and prices.",
+         "В архиве списки хранятся со всеми товарами и ценами."),
+        ("No Active Lists", "Нет активных списков"),
+        ("Create a new list or restore one from the Archive.",
+         "Создайте новый список или верните его из архива."),
+        ("“%@” archived", "Список «%@» перемещён в архив"),
+        ("“%@” restored", "Список «%@» возвращён"),
+    ]
+
+    @Test("AR-25 every text of spec 10 has its Russian translation", arguments: russianTexts)
+    func russianCatalog(key: String, ru: String) throws {
+        let bundle = try Self.languageBundle("ru")
+        #expect(bundle.localizedString(forKey: key, value: nil, table: nil) == ru)
+    }
 }
+

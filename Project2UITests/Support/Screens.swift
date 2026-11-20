@@ -714,6 +714,17 @@ extension HomeScreen {
             }.waitAndTap()
     }
 
+    /// Long press an "In Archive" search row until its menu shows `item` (AR-18, AR-20).
+    /// A press received as a tap opens the list: go back and press again.
+    @discardableResult
+    func openArchivedRowMenu(_ name: String, until item: XCUIElement) -> XCUIElement {
+        archivedRow(name).scrollIntoView(within: list)
+            .perform("Long press", until: item,
+                     recover: { backFromMisfiredGesture(on: archivedRow(name)) }) {
+                $0.press(forDuration: 1.5)
+            }
+    }
+
     /// The Archive row → the Archive screen (AR-14).
     func openArchive() -> ArchiveScreen {
         archiveRow.scrollIntoView(within: list).waitAndTap()

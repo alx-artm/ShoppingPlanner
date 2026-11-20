@@ -135,19 +135,44 @@ final class ArchiveUITests: XCTestCase {
 
         home.search("vic")
         home.searchArchiveSection.waitToAppear()
-        let victoria = home.archivedRow("Victoria").waitToAppear()
+        home.archivedRow("Victoria").waitToAppear()
         XCTAssertFalse(home.archiveRow.exists, "the section replaces the Archive row while searching")
         XCTAssertFalse(app.staticTexts["No Results"].exists)
         home.row("Eva").waitToDisappear()
 
-        victoria.perform("Long press", until: app.buttons["archive.menu.delete"]) {
-            $0.press(forDuration: 1.5)
-        }.waitAndTap()
+        home.openArchivedRowMenu("Victoria", until: app.buttons["archive.menu.delete"]).waitAndTap()
         app.buttons["home.deleteAlert.confirmButton"].firstMatch.waitAndTap()
 
         home.archivedRow("Victoria").waitToDisappear()
         home.searchArchiveSection.waitToDisappear()
         app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "No Results")).firstMatch
             .waitToAppear()
+    }
+
+    /// AR-04, AR-17, AR-18, AR-20: an "In Archive" search row has the Archive's menu, without
+    /// Pin or List Info. Duplicate makes an active copy among the results while the original
+    /// stays archived; Restore moves it to the active results and the section goes.
+    @MainActor
+    func testSearchInArchiveDuplicatesAndRestores() {
+        let app = Launch.app()
+        let home = HomeScreen(app: app).waitUntilShown()
+        home.archiveWithSwipe(row: "Victoria")
+        home.archiveRow.waitToAppear()
+
+        home.search("vic")
+        home.archivedRow("Victoria").waitToAppear()
+        XCTAssertFalse(home.row("Victoria").exists, "archived: not among the active results")
+
+        let duplicate = home.openArchivedRowMenu("Victoria", until: app.buttons["archive.menu.duplicate"])
+        let homeOnly = app.buttons.matching(NSPredicate(format: "label IN %@", ["Pin", "Unpin", "List Info"]))
+        XCTAssertEqual(homeOnly.count, 0, "an archived list can't be pinned or edited from its menu")
+        duplicate.waitAndTap()
+        home.row("Victoria copy").waitToAppear()
+        home.archivedRow("Victoria").waitToAppear()
+
+        home.openArchivedRowMenu("Victoria", until: app.buttons["archive.menu.restore"]).waitAndTap()
+        home.searchArchiveSection.waitToDisappear()
+        home.row("Victoria").waitToAppear()
+        home.row("Victoria copy").waitToAppear()
     }
 }
