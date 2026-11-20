@@ -38,6 +38,8 @@ protocol PlannerStoring: AnyObject {
     func togglePin(_ list: ListModel)
     func moveList(in section: [ListModel], fromOffsets source: IndexSet, toOffset destination: Int)
     @discardableResult func duplicateList(_ list: ListModel) -> ListModel
+    func archiveList(_ list: ListModel)
+    func restoreList(_ list: ListModel)
     func deleteList(_ list: ListModel)
 
     // Groups
@@ -203,7 +205,8 @@ final class PlannerStore: PlannerStoring {
         if let budget = Self.validBudget(draft.budget) {
             list.budget = budget
         }
-        if list.isPinned != draft.isPinned {
+        // An archived list is never pinned (AR-02); List Info hides the toggle for it.
+        if list.isPinned != draft.isPinned && !list.isArchived {
             movePin(of: list, to: draft.isPinned)
         }
         save()
@@ -240,7 +243,9 @@ final class PlannerStore: PlannerStoring {
     }
 
     /// Pins (last in Pinned, HM-08) or unpins (first in All Lists, HM-26).
+    /// An archived list can't be pinned (spec 10: no Pin in the Archive).
     func togglePin(_ list: ListModel) {
+        guard !list.isArchived else { return }
         movePin(of: list, to: !list.isPinned)
         save()
     }
@@ -251,7 +256,8 @@ final class PlannerStore: PlannerStoring {
     }
 
     /// Copies the list with all groups and items (DM-19). Items come back not completed.
-    /// The copy is not pinned and comes first in "All Lists" (HM-11).
+    /// The copy is not pinned and comes first in "All Lists" (HM-11). It is always active,
+    /// also when the original is archived (AR-04): `ListModel` starts with `archivedAt == nil`.
     @discardableResult
     func duplicateList(_ list: ListModel) -> ListModel {
         let copy = ListModel(
@@ -303,7 +309,29 @@ final class PlannerStore: PlannerStoring {
         return copy
     }
 
-    /// Deletes the list with its groups and items (cascade, DM-08).
+    /// Moves the list to the Archive (AR-02): `archivedAt = now`, not pinned. Groups, items,
+    /// budget, currency, icon and color stay as they are. Archiving an archived list changes
+    /// nothing, so its date stays the day it was first archived.
+    /// The caller closes the list's screen first (AR-12, `AppNavigation.requestArchive`).
+    func archiveList(_ list: ListModel) {
+        guard !list.isArchived else { return }
+        list.archivedAt = now()
+        list.isPinned = false
+        save()
+    }
+
+    /// Brings an archived list back (AR-03, AR-06): not pinned and first in "All Lists",
+    /// where the user looks for it, like an unpinned list (HM-26) or a copy (HM-11).
+    func restoreList(_ list: ListModel) {
+        guard list.isArchived else { return }
+        let section = lists(pinned: false).filter { $0 !== list }.map(\.sortIndex)
+        list.sortIndex = PlannerOrdering.indexBefore(section)
+        list.isPinned = false
+        list.archivedAt = nil
+        save()
+    }
+
+    /// Deletes the list with its groups and items (cascade, DM-08), archived or not (AR-05).
     /// The caller must close any screen that shows the list first (DM-18).
     func deleteList(_ list: ListModel) {
         context.delete(list)
@@ -477,9 +505,11 @@ final class PlannerStore: PlannerStoring {
 
     // MARK: - Helpers
 
-    /// Lists of one Home section in display order.
+    /// Active lists of one Home section in display order; archived lists are in no section (AR-07).
     func lists(pinned: Bool) -> [ListModel] {
-        let descriptor = FetchDescriptor<ListModel>(predicate: #Predicate { $0.isPinned == pinned })
+        let descriptor = FetchDescriptor<ListModel>(predicate: #Predicate {
+            $0.isPinned == pinned && $0.archivedAt == nil
+        })
         do {
             return PlannerOrdering.sortedLists(try context.fetch(descriptor))
         } catch {

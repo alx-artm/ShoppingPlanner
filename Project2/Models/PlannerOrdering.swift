@@ -70,6 +70,16 @@ enum PlannerOrdering {
         }
     }
 
+    /// The Archive (AR-15): the last archived first; same date → the newer list first.
+    static func sortedArchivedLists(_ lists: [ListModel]) -> [ListModel] {
+        lists.sorted {
+            let left = $0.archivedAt ?? .distantPast
+            let right = $1.archivedAt ?? .distantPast
+            if left != right { return left > right }
+            return $0.createdAt > $1.createdAt
+        }
+    }
+
     // MARK: - sortIndex arithmetic
 
     /// Smallest gap between neighbours before a section has to be renumbered.

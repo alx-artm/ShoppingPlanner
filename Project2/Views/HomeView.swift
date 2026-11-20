@@ -20,6 +20,10 @@
 //  handles, and Done ends it. It is not a nav-bar "Edit" button, because Home
 //  has nothing else to edit: a list's details are "List Info" (HM-36).
 //
+//  Archived lists (spec 10) are not in Pinned / All Lists. The last section is
+//  one "Archive N" row that opens the Archive in this column; while searching,
+//  matching archived lists show in an "In Archive" section instead (AR-20).
+//
 
 import SwiftData
 import SwiftUI
@@ -80,13 +84,39 @@ struct HomeView: View {
                     .moveDisabled(isSearching)
                 }
             }
+
+            if sections.showsNoActiveLists {
+                // In the list, not an overlay: the Archive row under it must stay tappable (AR-13).
+                Section {
+                    noActiveListsState
+                        .listRowBackground(Color.clear)
+                }
+            }
+
+            if !sections.archiveMatches.isEmpty {
+                Section {
+                    ForEach(sections.archiveMatches) { list in
+                        ArchivedListRow(list: list) { listToDelete = list }
+                    }
+                } header: {
+                    Text("In Archive")
+                        .accessibilityIdentifier("home.searchArchiveSection")
+                }
+            }
+
+            // AR-09: not a list (no selection, swipe, menu or reordering), hidden in reorder mode.
+            if sections.showsArchiveRow && !editMode.isEditing {
+                Section {
+                    archiveRow(count: sections.archivedCount)
+                }
+            }
         }
         .listStyle(.insetGrouped)
         .environment(\.editMode, $editMode)
         .overlay {
             if lists.isEmpty {
                 emptyState
-            } else if sections.isEmpty {
+            } else if sections.showsNoSearchResults {
                 ContentUnavailableView.search(text: query)
             }
         }
@@ -112,24 +142,9 @@ struct HomeView: View {
                 SettingsView()
             }
         }
-        .confirmationDialog(
-            Text("Delete “\(listToDelete?.name ?? "")”?"),
-            isPresented: Binding(
-                get: { listToDelete != nil },
-                set: { if !$0 { listToDelete = nil } }
-            ),
-            titleVisibility: .visible,
-            presenting: listToDelete
-        ) { list in
-            Button("Delete List", role: .destructive) {
-                // Closes the detail first if this list is open there (HM-10, DM-18).
-                navigation.requestDeletion(of: list, using: store)
-            }
-            .accessibilityIdentifier("home.deleteAlert.confirmButton")
-            Button("Cancel", role: .cancel) {}
-                .accessibilityIdentifier("home.deleteAlert.cancelButton")
-        } message: { _ in
-            Text("All groups and items will be deleted.")
+        .deleteListConfirmation($listToDelete, identifierPrefix: "home") { list in
+            // Closes the detail first if this list is open there (HM-10, DM-18).
+            navigation.requestDeletion(of: list, using: store)
         }
     }
 
@@ -188,6 +203,7 @@ struct HomeView: View {
         // HM-16: the menu actions, reachable without a long press.
         .accessibilityAction(named: Text("Unpin")) { togglePin(list) }
         .accessibilityAction(named: Text("List Info")) { sheet = .editList(list) }
+        .accessibilityAction(named: Text(ArchiveText.archiveAction)) { archive(list) }
         .accessibilityAction(named: Text("Delete")) { listToDelete = list }
     }
 
@@ -207,6 +223,15 @@ struct HomeView: View {
             }
             .tint(.yellow)
             .accessibilityIdentifier("home.swipe.togglePin")
+
+            // AR-10: after Pin. No confirmation: Restore undoes it.
+            Button {
+                archive(list)
+            } label: {
+                Label(ArchiveText.archiveAction, systemImage: "archivebox")
+            }
+            .tint(.indigo)
+            .accessibilityIdentifier("home.swipe.archive")
         }
         .swipeActions(edge: .trailing) {
             // No destructive role: the row must stay until the deletion is confirmed (HM-10).
@@ -265,6 +290,12 @@ struct HomeView: View {
 
         Divider()
 
+        // AR-10: before Delete, with the other "put away" action. No confirmation (reversible).
+        Button(ArchiveText.archiveAction, systemImage: "archivebox") {
+            archive(list)
+        }
+        .accessibilityIdentifier("home.menu.archive")
+
         Button("Delete", systemImage: "trash", role: .destructive) {
             listToDelete = list
         }
@@ -279,6 +310,13 @@ struct HomeView: View {
 
     private func togglePin(_ list: ListModel) {
         animated { store.togglePin(list) }
+    }
+
+    /// AR-11, AR-12: leaves its section at once; an open list closes first.
+    private func archive(_ list: ListModel) {
+        let name = list.name
+        animated { navigation.requestArchive(of: list, using: store) }
+        ArchiveAnnouncement.archived(name)
     }
 
     /// The section change animates, unless Reduce Motion is on (HM-08).
@@ -342,6 +380,48 @@ struct HomeView: View {
             Label("More", systemImage: "ellipsis")
         }
         .accessibilityIdentifier("home.menuButton")
+    }
+
+    /// "Archive  N  >", the last section (AR-08). One VoiceOver element: "Archive, 3 lists" (AR-23).
+    private func archiveRow(count: Int) -> some View {
+        Button {
+            navigation.showArchive()
+        } label: {
+            HStack {
+                Label("Archive", systemImage: "archivebox")
+                Spacer(minLength: 8)
+                Text(count, format: .number)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                Image(systemName: "chevron.forward")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .contentShape(.rect)
+        }
+        .foregroundStyle(.primary)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Archive, \(count) lists"))
+        .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("home.archiveRow")
+    }
+
+    /// Every list is archived (AR-13): not the onboarding text, the Archive row stays below.
+    private var noActiveListsState: some View {
+        ContentUnavailableView {
+            Label("No Active Lists", systemImage: "cart")
+        } description: {
+            Text("Create a new list or restore one from the Archive.")
+        } actions: {
+            Button("New List") { newList() }
+                .buttonStyle(.borderedProminent)
+                .accessibilityIdentifier("home.emptyActiveState.newListButton")
+            Button("Start from Template") { sheet = .templates }
+                .buttonStyle(.borderless)
+                .accessibilityIdentifier("home.emptyActiveState.templateButton")
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("home.emptyActiveState")
     }
 
     /// No lists at all (HM-14). Centered by `ContentUnavailableView` in an overlay (AD-07).

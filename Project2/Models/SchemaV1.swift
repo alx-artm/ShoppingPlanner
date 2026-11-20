@@ -10,6 +10,11 @@
 //  - every stored attribute has a default value in its declaration or is optional;
 //  - every relationship is optional and declares its inverse.
 //
+//  `ListModel.archivedAt` (spec 10, M4.5) was added to V1 in place: an optional
+//  attribute with a `nil` default is a lightweight change, and V1 has not been
+//  released or deployed to CloudKit yet. A development store from before M4.5
+//  may need the app to be reinstalled.
+//
 //  Future changes go into `SchemaV2` (copy of the models + changes) plus a
 //  `MigrationStage` in `PlannerMigrationPlan`. Never edit a shipped schema
 //  version in place.

@@ -53,6 +53,10 @@ struct ListInfoView: View {
         if case .create = mode { true } else { false }
     }
 
+    private var isArchived: Bool {
+        if case .edit(let list) = mode { list.isArchived } else { false }
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -61,9 +65,12 @@ struct ListInfoView: View {
                 iconSection
                 budgetSection
 
-                Section {
-                    Toggle("Pin to Home", isOn: $draft.isPinned)
-                        .accessibilityIdentifier("listEdit.pinToggle")
+                // An archived list is not on Home, so it can't be pinned (spec 10).
+                if !isArchived {
+                    Section {
+                        Toggle("Pin to Home", isOn: $draft.isPinned)
+                            .accessibilityIdentifier("listEdit.pinToggle")
+                    }
                 }
 
                 if !isNew {

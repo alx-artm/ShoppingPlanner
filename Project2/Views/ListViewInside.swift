@@ -126,6 +126,8 @@ struct ListViewInside: View {
         .overlay {
             if groups.isEmpty { emptyState }
         }
+        // AR-16, AR-22: an archived list stays editable; the banner says so and offers Restore.
+        .archivedBanner(for: list, onRestore: restoreList)
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 8) {
                 if let deletedItem {
@@ -555,6 +557,20 @@ struct ListViewInside: View {
 
             Divider()
 
+            // AR-10: Archive before Delete List; an archived list offers Restore there (AR-06).
+            if list.isArchived {
+                Button("Restore", systemImage: "arrow.uturn.backward", action: restoreList)
+                    .accessibilityIdentifier("listDetail.menu.restore")
+            } else {
+                Button(ArchiveText.archiveAction, systemImage: "archivebox") {
+                    let name = list.name
+                    // Closes this screen first, archives when it is gone (AR-12).
+                    navigation.requestArchive(of: list, using: store)
+                    ArchiveAnnouncement.archived(name)
+                }
+                .accessibilityIdentifier("listDetail.menu.archive")
+            }
+
             Button("Delete List", systemImage: "trash", role: .destructive) {
                 showsDeleteListConfirmation = true
             }
@@ -586,6 +602,12 @@ struct ListViewInside: View {
 
     private func animated(_ change: () -> Void) {
         withAnimation(reduceMotion ? nil : .default, change)
+    }
+
+    /// The list stays open, the banner goes (AR-17).
+    private func restoreList() {
+        store.restoreList(list)
+        ArchiveAnnouncement.restored(list.name)
     }
 
     /// No confirmation; a toast offers Undo for a few seconds (LD-09, owner decision).
