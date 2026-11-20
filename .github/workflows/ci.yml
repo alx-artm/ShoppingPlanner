@@ -52,6 +52,7 @@ jobs:
               -only-testing:Project2UITests/HomeUITests
               -only-testing:Project2UITests/SettingsUITests
               -only-testing:Project2UITests/ArchiveUITests
+              -only-testing:Project2UITests/ListDetailLayoutUITests
             artifact: UITestResults-1
           - name: UI Tests (2/2)
             device: iPhone 17 Pro
@@ -69,6 +70,7 @@ jobs:
               -only-testing:Project2UITests/KeyboardShortcutsUITests
               -only-testing:Project2UITests/ArchiveUITests
               -only-testing:Project2UITests/HomeUITests
+              -only-testing:Project2UITests/ListDetailLayoutUITests
             artifact: UITestResults-iPad
             timeout: 60
     steps:
