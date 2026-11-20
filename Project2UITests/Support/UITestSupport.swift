@@ -25,6 +25,8 @@ enum Launch {
     static let rowHighlightSeconds = "-UITestsRowHighlightSeconds"
     /// Inserts the inline price / link field this many seconds after [Price] / [Link].
     static let inlineFieldDelaySeconds = "-UITestsInlineFieldDelaySeconds"
+    /// The delay `app(slowInlineFields: true)` asks for.
+    static let slowInlineFieldSeconds = 3
     /// The inline name field loses the keyboard once, inside a view update, at the first character.
     static let dropInlineNameFocus = "-UITestsDropInlineNameFocus"
 
@@ -39,8 +41,10 @@ enum Launch {
     /// `longRowHighlight`: the row picked in the purchase bar stays highlighted a minute
     /// instead of ~1 s, so the test checks it without racing that timer.
     ///
-    /// `slowInlineFields`: the inline price / link field appears a second after its accessory
-    /// button, as on a slow device, to prove the keyboard still moves to it.
+    /// `slowInlineFields`: the inline price / link field appears `slowInlineFieldSeconds` after
+    /// its accessory button, as on a slow device, to prove the keyboard still moves to it.
+    /// 3 s, not 1: on a slow CI runner XCUITest's tap plus its wait for idle took more than
+    /// a second (CI run 44544413753, iPad), so the field was already there when checked.
     ///
     /// `dropInlineNameFocus`: the inline name field loses the keyboard once, inside a view update,
     /// at the first typed character, to prove it takes the keyboard back.
@@ -53,7 +57,7 @@ enum Launch {
         app.launchArguments = [uiTests] + (emptyStore ? [Launch.emptyStore] : [])
             + (longUndoToast ? [undoToastSeconds, "60"] : [])
             + (longRowHighlight ? [rowHighlightSeconds, "60"] : [])
-            + (slowInlineFields ? [inlineFieldDelaySeconds, "1"] : [])
+            + (slowInlineFields ? [inlineFieldDelaySeconds, String(slowInlineFieldSeconds)] : [])
             + (dropInlineNameFocus ? [Launch.dropInlineNameFocus] : [])
             + locale(language: language, region: region)
         app.launch()
