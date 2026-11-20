@@ -24,6 +24,9 @@ struct ListViewInside: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    /// The icon column of the rows (LD-35), scaled like the item checkbox.
+    @ScaledMetric(relativeTo: .title2) private var iconColumn = ListRowGrid.iconColumnWidth
     let list: ListModel
 
     @State private var sheet: ListSheet?
@@ -64,6 +67,12 @@ struct ListViewInside: View {
     /// The row highlighted for a moment after a purchase bar tap (LD-27).
     @State private var highlight: RowHighlight?
 
+    /// Accessibility text sizes: the summary bar is one line until tapped (LD-33).
+    @State private var showsFullSummary = false
+    private var isSummaryCompact: Bool {
+        isTypingInline || (dynamicTypeSize.isAccessibilitySize && !showsFullSummary)
+    }
+
     private var showsCompleted: Bool {
         uiState.showsCompleted(list.uuid)
     }
@@ -74,18 +83,24 @@ struct ListViewInside: View {
         ScrollViewReader { proxy in
         List {
             ForEach(groups) { group in
-                section(for: group)
+                section(for: group, followsExpandedGroup: GroupRhythm.followsExpandedGroup(
+                    group, in: groups, isExpanded: { uiState.isExpanded($0.uuid) }))
             }
             if !groups.isEmpty {
                 Button {
                     startNewGroup()
                 } label: {
-                    Label("Add Group", systemImage: "folder.badge.plus")
+                    gridRow(systemImage: "folder.badge.plus", identifier: "listDetail.addGroupRow") { Text("Add Group") }
                 }
+                // Only the title: the icon (kept visible to UI tests for LD-35) isn't read.
+                .accessibilityLabel(Text("Add Group"))
                 .accessibilityIdentifier("listDetail.addGroupRow")
             }
         }
         .listStyle(.plain)
+        // LD-30: the plain style's 22 pt gap above every section header becomes a flat 8 pt;
+        // the header's own insets and `GroupRhythm` make up the rest.
+        .listSectionSpacing(GroupRhythm.sectionSpacing)
         .environment(\.editMode, $editMode)
         .onChange(of: inline) { old, new in
             // The new empty line after Return, and fields opened from the accessory bar,
@@ -128,17 +143,9 @@ struct ListViewInside: View {
         }
         // AR-16, AR-22: an archived list stays editable; the banner says so and offers Restore.
         .archivedBanner(for: list, onRestore: restoreList)
-        .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 8) {
-                if let deletedItem {
-                    UndoToast(deleted: deletedItem) { undoDelete(deletedItem) }
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
-                // Always visible, never scrolls away (LD-10); one line while typing (owner decision).
-                ListSummaryBar(list: list, isCompact: isTypingInline, onShowItem: reveal)
-            }
-            .animation(reduceMotion ? nil : .snappy, value: deletedItem)
-        }
+        // LD-34: a bar, not an inset: the list gets the system scroll edge effect under it,
+        // so rows passing behind the summary bar fade out instead of showing through.
+        .safeAreaBar(edge: .bottom) { bottomBar }
         .task(id: deletedItem?.id) {
             guard deletedItem != nil else { return }
             try? await Task.sleep(for: DeletedItem.duration)
@@ -243,9 +250,30 @@ struct ListViewInside: View {
         }
     }
 
+    /// The summary bar, with the "Undo" toast above it while it is shown.
+    private var bottomBar: some View {
+        VStack(spacing: 8) {
+            if let deletedItem {
+                UndoToast(deleted: deletedItem) { undoDelete(deletedItem) }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+            // Always visible, never scrolls away (LD-10); one line while typing (owner
+            // decision) and, until tapped, at accessibility text sizes (LD-33).
+            ListSummaryBar(list: list, isCompact: isSummaryCompact, onShowItem: reveal,
+                           onToggleForm: summaryToggle)
+        }
+        .animation(reduceMotion ? nil : .snappy, value: deletedItem)
+    }
+
+    /// Accessibility sizes, not typing: a tap switches the summary bar's form (LD-33).
+    private var summaryToggle: (() -> Void)? {
+        guard dynamicTypeSize.isAccessibilitySize, !isTypingInline else { return nil }
+        return { withAnimation(reduceMotion ? nil : .snappy) { showsFullSummary.toggle() } }
+    }
+
     // MARK: - Sections
 
-    private func section(for group: GroupModel) -> some View {
+    private func section(for group: GroupModel, followsExpandedGroup: Bool) -> some View {
         let isExpanded = uiState.isExpanded(group.uuid)
         return Section(isExpanded: Binding(
             get: { isExpanded },
@@ -278,7 +306,17 @@ struct ListViewInside: View {
                         Text("\(boughtCount) bought")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
+                            // A button whose label is one text exposes no children to UI tests;
+                            // this empty marker over the text lets them measure LD-35.
+                            .overlay {
+                                Color.clear
+                                    .accessibilityElement()
+                                    .accessibilityIdentifier("group.boughtRow.\(group.name).title")
+                            }
+                            // LD-35: on the text column, under the item names.
+                            .padding(.leading, iconColumn + ListRowGrid.spacing)
                     }
+                    .accessibilityLabel(Text("\(boughtCount) bought"))
                     .accessibilityHint(Text("Shows bought items"))
                     .accessibilityIdentifier("group.boughtRow.\(group.name)")
                 }
@@ -297,9 +335,10 @@ struct ListViewInside: View {
                 Button {
                     startInline(in: group)
                 } label: {
-                    Label("New Item", systemImage: "plus")
+                    gridRow(systemImage: "plus", identifier: "group.addItemButton.\(group.name)") { Text("New Item") }
                         .foregroundStyle(.tint)
                 }
+                .accessibilityLabel(Text("New Item"))
                 .accessibilityIdentifier("group.addItemButton.\(group.name)")
             }
         } header: {
@@ -309,7 +348,31 @@ struct ListViewInside: View {
                 onAddItem: { startInline(in: group) },
                 onDelete: { requestDelete(group) }
             )
+            .listRowInsets(.top, GroupRhythm.headerTopInset(followsExpandedGroup: followsExpandedGroup))
+            .listRowInsets(.bottom, GroupRhythm.headerBottomInset)
         }
+    }
+
+    /// A row on the leading grid (LD-35): the icon centered in the checkbox column, the text
+    /// where item names start. "＋ New Item" and "＋ Add Group".
+    /// `identifier` + ".icon" / ".title" lets UI tests measure the grid.
+    private func gridRow(systemImage: String, identifier: String,
+                         @ViewBuilder title: () -> Text) -> some View {
+        HStack(spacing: ListRowGrid.spacing) {
+            Image(systemName: systemImage)
+                .imageScale(.large)
+                // Tinted like a Label's icon in a list button; the title keeps its own color.
+                .foregroundStyle(.tint)
+                // Centered by its layout frame: "folder.badge.plus" has its badge on the right,
+                // so the folder itself sits on the axis of the chevron and the checkbox.
+                .frame(width: iconColumn)
+                .accessibilityIdentifier("\(identifier).icon")
+            title()
+                .accessibilityIdentifier("\(identifier).title")
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(minHeight: 44)
+        .contentShape(.rect)
     }
 
     private func row(_ item: ItemModel) -> some View {

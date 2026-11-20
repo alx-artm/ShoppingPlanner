@@ -114,6 +114,21 @@ enum GroupHeaderText {
             ? MoneyFormat.string(summary.planned, currencyCode: currencyCode, locale: locale)
             : "—"
     }
+
+    /// VoiceOver label of the header button (LD-31): "Vacation, 3 items, $145.00", or
+    /// "Home, 0 items, No price" without prices. No "(3)" brackets, which VoiceOver reads aloud.
+    ///
+    /// - Parameter bundle: where the translation comes from. The app passes `.main`; tests pass
+    ///   a language bundle (`ru.lproj`) to check the exact text in another language.
+    static func accessibilityLabel(name: String, itemCount: Int, summary: BudgetSummary,
+                                   currencyCode: String, locale: Locale, bundle: Bundle = .main) -> String {
+        let count = String(localized: "\(itemCount) items", bundle: bundle, locale: locale)
+        let amount = ListStatusText.hasPrices(summary)
+            ? MoneyFormat.string(summary.planned, currencyCode: currencyCode, locale: locale)
+            : String(localized: "No price", bundle: bundle, locale: locale,
+                     comment: "VoiceOver: the total of an item without a price (shown as \"—\").")
+        return [name, count, amount].joined(separator: ", ")
+    }
 }
 
 

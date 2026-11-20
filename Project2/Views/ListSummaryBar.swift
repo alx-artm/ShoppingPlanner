@@ -9,6 +9,9 @@
 //  Line 2 is the segmented purchase bar (LD-20...LD-29, `PurchaseBarView`);
 //  Home tiles keep the simple bar.
 //
+//  At accessibility text sizes the full form takes a third of the screen, so
+//  the bar starts compact and a tap switches the form (LD-33, `onToggleForm`).
+//
 
 import SwiftData
 import SwiftUI
@@ -19,6 +22,9 @@ struct ListSummaryBar: View {
     var isCompact = false
     /// A tap on a purchase bar segment: show the item in the list (LD-27).
     var onShowItem: (PersistentIdentifier) -> Void = { _ in }
+    /// Set when a tap may switch between the compact and the full form (LD-33): the compact
+    /// line becomes a button, and so does the full form's first line.
+    var onToggleForm: (() -> Void)?
 
     @Environment(\.locale) private var locale
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -29,13 +35,15 @@ struct ListSummaryBar: View {
         if text.isVisible {
             Group {
                 if isCompact {
-                    Text(verbatim: text.compact)
-                        .font(.subheadline.weight(.semibold))
-                        .monospacedDigit()
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                        .frame(maxWidth: .infinity)
-                        .accessibilityIdentifier("listDetail.summary.compact")
+                    toggleButton(hint: Text("Shows all totals")) {
+                        Text(verbatim: text.compact)
+                            .font(.subheadline.weight(.semibold))
+                            .monospacedDigit()
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                            .frame(maxWidth: .infinity)
+                            .accessibilityIdentifier("listDetail.summary.compact")
+                    }
                 } else {
                     full(text, summary: summary)
                 }
@@ -55,15 +63,17 @@ struct ListSummaryBar: View {
         // No spacing: the bar's row is 44 pt high (its tap area, LD-27), which already
         // leaves room above and below the texts.
         VStack(alignment: .leading, spacing: 0) {
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .firstTextBaseline) {
-                    toBuy(text)
-                    Spacer(minLength: 8)
-                    ofPlanned(text)
-                }
-                VStack(alignment: .leading, spacing: 2) {
-                    toBuy(text)
-                    ofPlanned(text)
+            toggleButton(hint: Text("Shows one line")) {
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline) {
+                        toBuy(text)
+                        Spacer(minLength: 8)
+                        ofPlanned(text)
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        toBuy(text)
+                        ofPlanned(text)
+                    }
                 }
             }
 
@@ -97,6 +107,22 @@ struct ListSummaryBar: View {
             BudgetText(status: text.status, form: .full)
                 .font(.subheadline)
                 .accessibilityIdentifier("listDetail.budget")
+        }
+    }
+
+    /// `content` as a button that switches the form when `onToggleForm` is set, else as is.
+    @ViewBuilder
+    private func toggleButton(hint: Text, @ViewBuilder content: () -> some View) -> some View {
+        if let onToggleForm {
+            Button(action: onToggleForm) {
+                content()
+                    .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(hint)
+            .accessibilityIdentifier("listDetail.summary.toggleForm")
+        } else {
+            content()
         }
     }
 

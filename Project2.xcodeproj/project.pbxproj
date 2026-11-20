@@ -37,6 +37,7 @@
 		5FB5C0DE2EF5000100000004 /* MoneyField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB5C0DE2EF5000100000003 /* MoneyField.swift */; };
 		5FB5C0DE2EF5000100000006 /* ItemDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB5C0DE2EF5000100000005 /* ItemDraft.swift */; };
 		5FB5C0DE2EF5000100000008 /* ListDetailText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB5C0DE2EF5000100000007 /* ListDetailText.swift */; };
+		5FC46C0DE2F0000100000002 /* GroupRhythm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FC46C0DE2F0000100000001 /* GroupRhythm.swift */; };
 		5FB5C0DE2EF500010000000A /* ListSummaryBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB5C0DE2EF5000100000009 /* ListSummaryBar.swift */; };
 		5FB5C0DE2EF500010000000C /* ReorderGroupsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB5C0DE2EF500010000000B /* ReorderGroupsView.swift */; };
 		5FB5C0DE2EF500010000000E /* UndoToast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB5C0DE2EF500010000000D /* UndoToast.swift */; };
@@ -116,6 +117,7 @@
 		5FB5C0DE2EF5000100000003 /* MoneyField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoneyField.swift; sourceTree = "<group>"; };
 		5FB5C0DE2EF5000100000005 /* ItemDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemDraft.swift; sourceTree = "<group>"; };
 		5FB5C0DE2EF5000100000007 /* ListDetailText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListDetailText.swift; sourceTree = "<group>"; };
+		5FC46C0DE2F0000100000001 /* GroupRhythm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupRhythm.swift; sourceTree = "<group>"; };
 		5FB5C0DE2EF5000100000009 /* ListSummaryBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListSummaryBar.swift; sourceTree = "<group>"; };
 		5FB5C0DE2EF500010000000B /* ReorderGroupsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReorderGroupsView.swift; sourceTree = "<group>"; };
 		5FB5C0DE2EF500010000000D /* UndoToast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoToast.swift; sourceTree = "<group>"; };
@@ -241,6 +243,7 @@
 				5FB5C0DE2EF5000100000001 /* MoneyInput.swift */,
 				5FB5C0DE2EF5000100000005 /* ItemDraft.swift */,
 				5FB5C0DE2EF5000100000007 /* ListDetailText.swift */,
+				5FC46C0DE2F0000100000001 /* GroupRhythm.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -479,6 +482,7 @@
 				5FB5C0DE2EF5000100000004 /* MoneyField.swift in Sources */,
 				5FB5C0DE2EF5000100000006 /* ItemDraft.swift in Sources */,
 				5FB5C0DE2EF5000100000008 /* ListDetailText.swift in Sources */,
+				5FC46C0DE2F0000100000002 /* GroupRhythm.swift in Sources */,
 				5FB5C0DE2EF500010000000A /* ListSummaryBar.swift in Sources */,
 				5FB5C0DE2EF500010000000C /* ReorderGroupsView.swift in Sources */,
 				5FB5C0DE2EF500010000000E /* UndoToast.swift in Sources */,
