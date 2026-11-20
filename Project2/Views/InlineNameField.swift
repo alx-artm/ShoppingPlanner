@@ -19,6 +19,11 @@
 //  SwiftUI's `.toolbar(placement: .keyboard)` doesn't reach a UIKit field, so
 //  the accessory bar is hosted as the field's `inputAccessoryView`.
 //
+//  Focus: the field doesn't decide who has the keyboard. The screen's
+//  `InlineFocus` does; this field becomes or resigns first responder to match
+//  it (`NameFieldFocus.action`) and reports the user's changes back through
+//  `onFocusChange`.
+//
 
 import SwiftUI
 import UIKit
@@ -26,12 +31,14 @@ import UIKit
 struct InlineNameField<Accessory: View>: UIViewRepresentable {
     /// Mirror of the typed text, for the draft. Read only from the SwiftUI side.
     @Binding var text: String
-    /// The field has the keyboard (reported by the field). Set to `false` to close the keyboard.
-    @Binding var isEditing: Bool
-    /// Each new value asks for the keyboard once (opening inline add). Not `isEditing`: that
-    /// value can be stale for one update after the keyboard moved to the price or link field,
-    /// and "editing but not first responder" then took the keyboard back (CI run 44129716390).
+    /// The inline field that should have the keyboard (`InlineFocus.field`): the field takes
+    /// it for `.name`, gives it up for `nil`, and leaves it alone while the price or link field
+    /// takes it.
+    let focus: InlineField?
+    /// Each new value asks for the keyboard once (`InlineFocus.nameRequest`).
     let focusRequest: Int
+    /// The field got (`true`) or lost (`false`) the keyboard: the one path back to the owner.
+    let onFocusChange: (Bool) -> Void
     /// Return: the line typed (not trimmed; the store trims on commit, LD-16).
     /// The field is already empty when this is called.
     let onReturn: (String) -> Void
@@ -90,15 +97,19 @@ struct InlineNameField<Accessory: View>: UIViewRepresentable {
             field.resignFirstResponder()
         }
         coordinator.focusRequest.receive(focusRequest)
-        if coordinator.focusRequest.isPending {
+        switch NameFieldFocus.action(focus: focus, requestPending: coordinator.focusRequest.isPending,
+                                     isFirstResponder: field.isFirstResponder) {
+        case .grantRequest:
             coordinator.grantFocusRequest(to: field)
-        } else if isEditing, !field.isFirstResponder {
-            // This update still says "editing", yet the field lost the keyboard: the loss came
+        case .reclaimIfUnclaimed:
+            // This update still says "name", yet the field lost the keyboard: the loss came
             // from inside an update (the list re-laying out the row), not from the user. See
             // `FocusRequest.shouldReclaim`.
             coordinator.reclaimFocusIfUnclaimed(field)
-        } else if !isEditing, field.isFirstResponder {
+        case .resign:
             field.resignFirstResponder()
+        case .none:
+            break
         }
     }
 
@@ -144,12 +155,12 @@ struct InlineNameField<Accessory: View>: UIViewRepresentable {
 
         func textFieldDidBeginEditing(_ field: UITextField) {
             focusRequest.editingChanged()
-            if !parent.isEditing { parent.isEditing = true }
+            parent.onFocusChange(true)
         }
 
         func textFieldDidEndEditing(_ field: UITextField) {
             focusRequest.editingChanged()
-            if parent.isEditing { parent.isEditing = false }
+            parent.onFocusChange(false)
         }
 
         func textFieldShouldReturn(_ field: UITextField) -> Bool {
@@ -163,9 +174,41 @@ struct InlineNameField<Accessory: View>: UIViewRepresentable {
     }
 }
 
-/// When a field asks for the keyboard: once for each new request value, until it begins or
-/// ends editing. After the keyboard has moved on ([Price] / [Link], Done), only the user or a
-/// new request brings it back; a stale "is editing" never does (CI run 44129716390).
+/// What the name field does in a view update to match the owner of the focus (`InlineFocus`).
+enum NameFieldFocus: Equatable {
+    /// Take the keyboard for a new request (opening inline add), once the field is in a window.
+    case grantRequest
+    /// The owner says "name" but the field lost the keyboard: take it back if nobody else has it.
+    case reclaimIfUnclaimed
+    /// The owner says no inline field has the keyboard (inline add closed): give it up.
+    case resign
+    case none
+
+    /// - Parameters:
+    ///   - focus: the owner's field in this update.
+    ///   - requestPending: a name request not granted yet (`FocusRequest.isPending`).
+    ///   - isFirstResponder: the field has the keyboard.
+    ///
+    /// While the owner says price or link, the name field does nothing: the other field takes
+    /// the keyboard, which ends editing here by itself. Resigning first would drop the keyboard
+    /// between the two fields; taking it back would steal it (CI run 44129716390).
+    static func action(focus: InlineField?, requestPending: Bool, isFirstResponder: Bool) -> NameFieldFocus {
+        switch focus {
+        case .name:
+            if requestPending { return .grantRequest }
+            return isFirstResponder ? .none : .reclaimIfUnclaimed
+        case nil:
+            return isFirstResponder ? .resign : .none
+        case .price, .link:
+            return .none
+        }
+    }
+}
+
+/// When the name field takes the keyboard for a request (`InlineFocus.nameRequest`): once for
+/// each new value, until it begins or ends editing. Unlike a reclaim, a request takes the
+/// keyboard even from another field (inline add opened in another group while its price field
+/// had it). The field may not be in a window yet; `WindowAwareTextField` grants it then.
 struct FocusRequest: Equatable {
     /// The last request value seen; `nil` before the first one.
     private(set) var handled: Int?
@@ -185,7 +228,7 @@ struct FocusRequest: Equatable {
     }
 
     /// Takes the keyboard back after losing it, without a request? Only when a view update
-    /// still said the field is being edited (the loss happened inside an update, e.g. the list
+    /// still said the name field has it (`InlineFocus.field == .name`) (the loss happened inside an update, e.g. the list
     /// re-laying out the row: CI run on PR #8, `testDetailsButtonSavesAndOpensDetails`) and,
     /// checked a turn later, no other responder holds the keyboard.
     ///
