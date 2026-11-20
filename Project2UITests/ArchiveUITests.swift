@@ -173,6 +173,7 @@ final class ArchiveUITests: XCTestCase {
         let copy = ListDetailScreen(app: app).waitUntilShown()
         app.navigationBars["Victoria copy"].waitToAppear()
         XCTAssertFalse(copy.archivedBanner.exists, "the copy is active")
+        copy.duplicateToast.waitToAppear() // HM-41: the same Duplicate as on Home
         if !isPad {
             copy.backButton.waitAndTap()
         }

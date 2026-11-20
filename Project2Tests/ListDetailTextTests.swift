@@ -175,3 +175,23 @@ struct ListDetailTextTests {
         #expect(style.isDimmed)
     }
 }
+
+@Suite("Duplicate texts")
+struct DuplicateTextTests {
+    @Test("HM-40 the copy's name: 'Eva copy' / «Eva (копия)», the suffix again for a copy of a copy")
+    func copyName() throws {
+        let en = try ListStatusTextTests.languageBundle("en")
+        let ru = try ListStatusTextTests.languageBundle("ru")
+        #expect(DuplicateText.copyName(of: "Eva", bundle: en) == "Eva copy")
+        #expect(DuplicateText.copyName(of: "Eva", bundle: ru) == "Eva (копия)")
+        #expect(DuplicateText.copyName(of: "Eva (копия)", bundle: ru) == "Eva (копия) (копия)")
+    }
+
+    @Test("HM-41 the toast names the original")
+    func toast() throws {
+        let en = try ListStatusTextTests.languageBundle("en")
+        let ru = try ListStatusTextTests.languageBundle("ru")
+        #expect(DuplicateText.created(originalName: "Eva", bundle: en) == "Copy of “Eva” created")
+        #expect(DuplicateText.created(originalName: "Eva", bundle: ru) == "Создана копия «Eva»")
+    }
+}

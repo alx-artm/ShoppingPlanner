@@ -158,4 +158,64 @@ struct AppNavigationTests {
         navigation.detailDidClose(using: f.store)
         #expect(try names().isEmpty)
     }
+
+    // MARK: - Duplicate (spec 02 HM-39...HM-43)
+
+    @Test("HM-39 Duplicate opens the copy and remembers it for the toast")
+    func duplicateOpensCopy() throws {
+        let eva = f.store.createList(name: "Eva")
+
+        let copy = navigation.openDuplicate(of: eva, using: f.store)
+
+        #expect(navigation.isSelected(copy))
+        #expect(navigation.recentDuplicate?.copyID == copy.uuid)
+        #expect(navigation.recentDuplicate?.originalName == "Eva")
+        #expect(try names() == ["Eva", copy.name])
+    }
+
+    @Test("HM-42 Undo on iPhone: back to Home, the copy is deleted once its screen has closed")
+    func undoFromHome() throws {
+        let eva = f.store.createList(name: "Eva")
+        let copy = navigation.openDuplicate(of: eva, using: f.store)
+
+        navigation.undoDuplicate(copy, using: f.store)
+
+        #expect(navigation.selectedListID == nil, "pop to Home / Archive")
+        #expect(navigation.recentDuplicate == nil)
+        #expect(navigation.pendingAction == .delete)
+        #expect(try names() == ["Eva", copy.name], "DM-18: not while its screen is up")
+        navigation.detailDidClose(using: f.store)
+        #expect(try names() == ["Eva"])
+    }
+
+    @Test("HM-42 Undo on iPad: the list open before Duplicate comes back in the detail")
+    func undoShowsPreviousList() throws {
+        let alex = f.store.createList(name: "Alex")
+        let eva = f.store.createList(name: "Eva")
+        navigation.select(alex)
+        let copy = navigation.openDuplicate(of: eva, using: f.store)
+
+        navigation.undoDuplicate(copy, using: f.store)
+        navigation.detailDidClose(using: f.store)
+
+        #expect(navigation.selectedListID == alex.uuid)
+        #expect(try names() == ["Alex", "Eva"])
+    }
+
+    @Test("HM-43 a new Duplicate replaces the toast; an old copy's Undo does nothing")
+    func newDuplicateReplacesToast() throws {
+        let eva = f.store.createList(name: "Eva")
+        let first = navigation.openDuplicate(of: eva, using: f.store)
+        let second = navigation.openDuplicate(of: eva, using: f.store)
+        #expect(navigation.recentDuplicate?.copyID == second.uuid)
+
+        navigation.undoDuplicate(first, using: f.store)
+        #expect(navigation.isSelected(second))
+        #expect(try f.context.fetch(FetchDescriptor<ListModel>()).count == 3)
+
+        let id = try #require(navigation.recentDuplicate?.id)
+        navigation.dismissDuplicateToast(id)
+        #expect(navigation.recentDuplicate == nil, "the copy stays without Undo")
+        #expect(try f.context.fetch(FetchDescriptor<ListModel>()).count == 3)
+    }
 }

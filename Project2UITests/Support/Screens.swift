@@ -80,6 +80,9 @@ struct ListDetailScreen {
     var emptyState: XCUIElement { app.descendants(matching: .any)["listDetail.emptyState"].firstMatch }
     var undoToast: XCUIElement { app.descendants(matching: .any)["undoToast"].firstMatch }
     var undoButton: XCUIElement { app.buttons["undoToast.undoButton"] }
+    /// "Copy of “Eva” created · Undo" after Duplicate (HM-41).
+    var duplicateToast: XCUIElement { app.descendants(matching: .any)["duplicateToast"].firstMatch }
+    var duplicateUndoButton: XCUIElement { app.buttons["duplicateToast.undoButton"] }
     func boughtRow(_ group: String) -> XCUIElement { app.buttons["group.boughtRow.\(group)"] }
     var total: XCUIElement { app.staticTexts["listDetail.total"] }
     /// Not scoped to `navigationBars`: on some devices (iPhone Duo) the system
@@ -703,6 +706,16 @@ extension HomeScreen {
     /// Long press a tile → "Archive" (AR-10).
     func archiveFromContextMenu(card name: String) {
         openContextMenu(card: name, until: app.buttons["home.menu.archive"]).waitAndTap()
+    }
+
+    /// Long press a row → "Duplicate": the copy opens (HM-39).
+    func duplicateFromContextMenu(row name: String) -> ListDetailScreen {
+        row(name).scrollIntoView(within: list)
+            .perform("Long press", until: app.buttons["home.menu.duplicate"],
+                     recover: { backFromMisfiredGesture(on: row(name)) }) {
+                $0.press(forDuration: 1.5)
+            }.waitAndTap()
+        return ListDetailScreen(app: app).waitUntilShown()
     }
 
     /// Long press a row → "Archive" (AR-10).
