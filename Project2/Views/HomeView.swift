@@ -278,8 +278,9 @@ struct HomeView: View {
         }
         .accessibilityIdentifier("home.menu.edit")
 
+        // HM-39: the copy opens, as from the Archive and the open list's ⋯.
         Button("Duplicate", systemImage: "plus.square.on.square") {
-            animated { store.duplicateList(list) }
+            animated { navigation.openDuplicate(of: list, using: store) }
         }
         .accessibilityIdentifier("home.menu.duplicate")
 

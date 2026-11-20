@@ -31,6 +31,10 @@ final class AppNavigation {
         case archive
     }
 
+    /// The copy just made by Duplicate, while its "Copy created · Undo" toast is up (HM-41).
+    /// A new Duplicate replaces it (HM-43).
+    private(set) var recentDuplicate: RecentDuplicate?
+
     /// A list waiting for its detail screen to close before it is deleted or archived.
     @ObservationIgnored private var pending: (list: ListModel, action: PendingAction)?
 
@@ -50,14 +54,38 @@ final class AppNavigation {
         selectedListID = list.uuid
     }
 
-    /// Duplicates an archived `list` and opens the active copy (spec 10, AR-04, owner
-    /// decision 6): iPhone pushes it, iPad shows it in the detail column. The user
-    /// duplicates an archived list to reuse it, so the copy opens for editing at once.
+    /// Duplicates `list` and opens the copy (spec 02 HM-39, spec 10 AR-04): iPhone pushes it,
+    /// iPad shows it in the detail column. The same from every place: Home's tiles, rows and
+    /// search, the Archive and the open list's ⋯. A copy is made to be changed, so it opens
+    /// for editing at once; the toast's Undo takes it back (HM-41, HM-42).
     @discardableResult
     func openDuplicate(of list: ListModel, using store: any PlannerStoring) -> ListModel {
+        let previous = selectedListID
         let copy = store.duplicateList(list)
+        recentDuplicate = RecentDuplicate(copyID: copy.uuid, originalName: list.name,
+                                          previousSelection: previous)
         select(copy)
         return copy
+    }
+
+    /// Undo in the toast (HM-42): deletes the copy and goes back to where the user was, the
+    /// list open before (iPad detail, or the original after ⋯ → Duplicate) or nothing (iPhone:
+    /// Home or the Archive; iPad: "Select a List"). The copy is on screen, so it is deleted
+    /// once its screen has closed (DM-18).
+    func undoDuplicate(_ copy: ListModel, using store: any PlannerStoring) {
+        guard let recent = recentDuplicate, recent.copyID == copy.uuid else { return }
+        recentDuplicate = nil
+        if isSelected(copy) {
+            pending = (copy, .delete)
+            selectedListID = recent.previousSelection
+        } else {
+            store.deleteList(copy)
+        }
+    }
+
+    /// The toast went away (timer, or the user left the copy): the copy stays (HM-43).
+    func dismissDuplicateToast(_ id: RecentDuplicate.ID) {
+        if recentDuplicate?.id == id { recentDuplicate = nil }
     }
 
     func isSelected(_ list: ListModel) -> Bool {
@@ -108,6 +136,16 @@ final class AppNavigation {
             selectedListID = nil
         }
     }
+}
+
+/// A copy made by Duplicate, remembered for its toast's Undo (HM-41, HM-42).
+struct RecentDuplicate: Identifiable, Equatable {
+    let id = UUID()
+    let copyID: UUID
+    /// The toast names the original: "Copy of “Eva” created".
+    let originalName: String
+    /// The list open before Duplicate, shown again after Undo; `nil` = none.
+    let previousSelection: UUID?
 }
 
 /// A screen pushed in Home's column of the split view.

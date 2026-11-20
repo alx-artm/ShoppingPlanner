@@ -146,6 +146,21 @@ struct ListViewInside: View {
         // LD-34: a bar, not an inset: the list gets the system scroll edge effect under it,
         // so rows passing behind the summary bar fade out instead of showing through.
         .safeAreaBar(edge: .bottom) { bottomBar }
+        .task(id: duplicateShownHere?.id) {
+            guard let duplicate = duplicateShownHere else { return }
+            // HM-44: said once the copy's screen is up; a moment later, so the push's own
+            // screen change doesn't cut the announcement off.
+            try? await Task.sleep(for: .milliseconds(600))
+            guard !Task.isCancelled else { return }
+            AccessibilityNotification.Announcement(
+                DuplicateText.created(originalName: duplicate.originalName)).post()
+            try? await Task.sleep(for: UndoToast.duration)
+            if !Task.isCancelled { navigation.dismissDuplicateToast(duplicate.id) }
+        }
+        // HM-41: the toast goes with the copy's screen; the copy stays.
+        .onDisappear {
+            if let duplicate = duplicateShownHere { navigation.dismissDuplicateToast(duplicate.id) }
+        }
         .task(id: deletedItem?.id) {
             guard deletedItem != nil else { return }
             try? await Task.sleep(for: DeletedItem.duration)
@@ -253,9 +268,14 @@ struct ListViewInside: View {
     /// The summary bar, with the "Undo" toast above it while it is shown.
     private var bottomBar: some View {
         VStack(spacing: 8) {
+            if let duplicate = duplicateShownHere {
+                // HM-41: this list is a copy just made by Duplicate; Undo takes it back.
+                UndoToast(duplicate: duplicate) { navigation.undoDuplicate(list, using: store) }
+                    .transition(toastTransition)
+            }
             if let deletedItem {
                 UndoToast(deleted: deletedItem) { undoDelete(deletedItem) }
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .transition(toastTransition)
             }
             // Always visible, never scrolls away (LD-10); one line while typing (owner
             // decision) and, until tapped, at accessibility text sizes (LD-33).
@@ -263,6 +283,18 @@ struct ListViewInside: View {
                            onToggleForm: summaryToggle)
         }
         .animation(reduceMotion ? nil : .snappy, value: deletedItem)
+        .animation(reduceMotion ? nil : .snappy, value: duplicateShownHere)
+    }
+
+    /// Slides up; with Reduce Motion it only fades in (HM-45).
+    private var toastTransition: AnyTransition {
+        reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity)
+    }
+
+    /// The Duplicate that made this list, while its toast is up (HM-41).
+    private var duplicateShownHere: RecentDuplicate? {
+        guard let duplicate = navigation.recentDuplicate, duplicate.copyID == list.uuid else { return nil }
+        return duplicate
     }
 
     /// Accessibility sizes, not typing: a tap switches the summary bar's form (LD-33).
@@ -614,7 +646,8 @@ struct ListViewInside: View {
             }
             .accessibilityIdentifier("listDetail.menu.share")
             Button("Duplicate", systemImage: "plus.square.on.square") {
-                navigation.select(store.duplicateList(list))
+                // HM-39: the same operation as on Home and in the Archive (toast with Undo).
+                navigation.openDuplicate(of: list, using: store)
             }
             .accessibilityIdentifier("listDetail.menu.duplicate")
 

@@ -162,3 +162,23 @@ enum PurchaseBarText {
             .joined(separator: ", ")
     }
 }
+
+/// Texts of a list's Duplicate (spec 02 HM-40, HM-41, HM-44).
+enum DuplicateText {
+    /// The copy's name: "Eva copy" / «Eva (копия)». Duplicating a copy adds the suffix again,
+    /// no numbering in v1.0 (HM-40).
+    ///
+    /// - Parameter bundle: where the translation comes from. The app passes `.main`; tests pass
+    ///   a language bundle (`ru.lproj`) to check the exact text in another language.
+    static func copyName(of name: String, bundle: Bundle = .main) -> String {
+        String(localized: "\(name) copy", bundle: bundle,
+               comment: "The name of the copy of a list. The argument is the name of the original list.")
+    }
+
+    /// The toast after Duplicate and its VoiceOver announcement: "Copy of “Eva” created" /
+    /// «Создана копия «Eva»», with the original's name (HM-41, HM-44).
+    static func created(originalName: String, bundle: Bundle = .main) -> String {
+        String(localized: "Copy of “\(originalName)” created", bundle: bundle,
+               comment: "Toast and VoiceOver announcement after Duplicate opened the copy of a list. The argument is the original list's name.")
+    }
+}

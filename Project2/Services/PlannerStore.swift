@@ -261,7 +261,7 @@ final class PlannerStore: PlannerStoring {
     @discardableResult
     func duplicateList(_ list: ListModel) -> ListModel {
         let copy = ListModel(
-            name: String(localized: "\(list.name) copy"),
+            name: DuplicateText.copyName(of: list.name),
             iconName: list.iconName,
             iconKind: list.iconKind,
             color: list.color,
