@@ -48,17 +48,23 @@ enum Launch {
     ///
     /// `dropInlineNameFocus`: the inline name field loses the keyboard once, inside a view update,
     /// at the first typed character, to prove it takes the keyboard back.
+    ///
+    /// `contentSize`: a Dynamic Type size for this launch only (`UIContentSizeCategory` raw
+    /// value, e.g. `UIContentSizeCategory.accessibilityLarge.rawValue`), the simulator's
+    /// setting is left alone.
     @MainActor
     static func app(emptyStore: Bool = false, language: String = "en", region: String = "en_US",
                     longUndoToast: Bool = false, longRowHighlight: Bool = false,
                     slowInlineFields: Bool = false,
-                    dropInlineNameFocus: Bool = false) -> XCUIApplication {
+                    dropInlineNameFocus: Bool = false,
+                    contentSize: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [uiTests] + (emptyStore ? [Launch.emptyStore] : [])
             + (longUndoToast ? [undoToastSeconds, "60"] : [])
             + (longRowHighlight ? [rowHighlightSeconds, "60"] : [])
             + (slowInlineFields ? [inlineFieldDelaySeconds, String(slowInlineFieldSeconds)] : [])
             + (dropInlineNameFocus ? [Launch.dropInlineNameFocus] : [])
+            + (contentSize.map { ["-UIPreferredContentSizeCategoryName", $0] } ?? [])
             + locale(language: language, region: region)
         app.launch()
         return app
