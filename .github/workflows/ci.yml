@@ -35,8 +35,9 @@ jobs:
   test:
     name: ${{ matrix.name }}
     runs-on: macos-26
-    # The iPad job is the longest (about 40 min on a hosted runner), so it gets more room.
-    timeout-minutes: ${{ matrix.timeout || 45 }}
+    # A guard against a hung simulator, not a target: jobs take 40–50 min on a hosted
+    # runner (run 44723434812: UI 1/2 was cancelled at 45 min while still passing).
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -72,7 +73,6 @@ jobs:
               -only-testing:Project2UITests/HomeUITests
               -only-testing:Project2UITests/ListDetailLayoutUITests
             artifact: UITestResults-iPad
-            timeout: 60
     steps:
       - uses: actions/checkout@v7
 
