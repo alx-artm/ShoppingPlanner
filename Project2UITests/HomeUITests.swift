@@ -244,14 +244,15 @@ final class HomeUITests: XCTestCase {
     /// HM-39: from search results too; without Undo the copy stays (HM-43).
     @MainActor
     func testDuplicateFromSearchOpensCopy() {
-        let app = Launch.app()
+        // 12 s, not 4: long enough to be seen on a slow runner, short enough to watch it go.
+        let app = Launch.app(toastSeconds: 12)
         let home = HomeScreen(app: app).waitUntilShown()
         home.search("vic")
 
         let copy = home.duplicateFromContextMenu(row: "Victoria")
         app.navigationBars["Victoria copy"].waitToAppear()
         copy.duplicateToast.waitToAppear()
-        copy.duplicateToast.waitToDisappear(timeout: 15)
+        copy.duplicateToast.waitToDisappear(timeout: 25)
         if !isPad {
             copy.backButton.waitAndTap()
         }

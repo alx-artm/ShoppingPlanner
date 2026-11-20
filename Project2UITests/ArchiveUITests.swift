@@ -155,7 +155,8 @@ final class ArchiveUITests: XCTestCase {
     /// Restore moves it to the active results and the section goes.
     @MainActor
     func testSearchInArchiveDuplicatesAndRestores() {
-        let app = Launch.app()
+        // The 4-second toast can be gone before a slow runner looks (CI run 44711126998).
+        let app = Launch.app(longUndoToast: true)
         let home = HomeScreen(app: app).waitUntilShown()
         home.archiveWithSwipe(row: "Victoria")
         home.archiveRow.waitToAppear()
