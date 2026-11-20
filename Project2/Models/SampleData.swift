@@ -115,6 +115,8 @@ final class SampleData {
     let uiState = LocalUIState.inMemory()
     let settings: AppSettings
     let navigation = AppNavigation()
+    /// Previews never fetch from the network.
+    let linkPreviews: LinkPreviewService
 
     let evaList: ListModel
     let victoriaList: ListModel
@@ -133,10 +135,12 @@ final class SampleData {
             alexList = lists.alex
             let settings = AppSettings.inMemory()
             self.settings = settings
-            store = PlannerStore(
+            let store = PlannerStore(
                 context: modelContainer.mainContext,
                 mainCurrencyCode: { settings.mainCurrencyCode }
             )
+            self.store = store
+            linkPreviews = LinkPreviewService(fetcher: NoNetworkLinkMetadataFetcher(), store: store)
         } catch {
             // Previews only: there is no user to show an error screen to.
             fatalError("Could not create preview data: \(error)")
@@ -145,7 +149,7 @@ final class SampleData {
 }
 
 extension View {
-    /// Injects the preview container, store, UI state and settings, like the app does.
+    /// Injects the preview container, store, UI state, settings and link previews, like the app does.
     @MainActor
     func sampleDataEnvironment() -> some View {
         modelContainer(SampleData.shared.modelContainer)
@@ -153,5 +157,6 @@ extension View {
             .environment(SampleData.shared.uiState)
             .environment(SampleData.shared.settings)
             .environment(SampleData.shared.navigation)
+            .environment(SampleData.shared.linkPreviews)
     }
 }

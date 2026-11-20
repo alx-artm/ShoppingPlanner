@@ -68,6 +68,7 @@
 		5FBAC0DE2F25000100000002 /* LinkPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FBAC0DE2F25000100000001 /* LinkPreview.swift */; };
 		5FBAC0DE2F25000100000004 /* LinkThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FBAC0DE2F25000100000003 /* LinkThumbnail.swift */; };
 		5FBAC0DE2F25000100000006 /* LinkMetadataFetching.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FBAC0DE2F25000100000005 /* LinkMetadataFetching.swift */; };
+		5FBAC0DE2F25000100000008 /* LinkPreviewService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FBAC0DE2F25000100000007 /* LinkPreviewService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -152,6 +153,7 @@
 		5FBAC0DE2F25000100000001 /* LinkPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkPreview.swift; sourceTree = "<group>"; };
 		5FBAC0DE2F25000100000003 /* LinkThumbnail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkThumbnail.swift; sourceTree = "<group>"; };
 		5FBAC0DE2F25000100000005 /* LinkMetadataFetching.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkMetadataFetching.swift; sourceTree = "<group>"; };
+		5FBAC0DE2F25000100000007 /* LinkPreviewService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkPreviewService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -221,6 +223,7 @@
 				5FB1C0DE2EB500010000000E /* PlannerStore.swift */,
 				5FB2C0DE2EC5000100000007 /* AppSettings.swift */,
 				5FBAC0DE2F25000100000005 /* LinkMetadataFetching.swift */,
+				5FBAC0DE2F25000100000007 /* LinkPreviewService.swift */,
 				5FB3C0DE2ED500010000000D /* AppNavigation.swift */,
 			);
 			path = Services;
@@ -505,6 +508,7 @@
 				5FB5C0DE2EF5000100000010 /* InlineItemRow.swift in Sources */,
 				5FB5C0DE2EF50001000000A2 /* InlineFocus.swift in Sources */,
 				5FB5C0DE2EF5000100000012 /* InlineNameField.swift in Sources */,
+				5FBAC0DE2F25000100000008 /* LinkPreviewService.swift in Sources */,
 				5FBAC0DE2F25000100000006 /* LinkMetadataFetching.swift in Sources */,
 				5FBAC0DE2F25000100000004 /* LinkThumbnail.swift in Sources */,
 				5FBAC0DE2F25000100000002 /* LinkPreview.swift in Sources */,

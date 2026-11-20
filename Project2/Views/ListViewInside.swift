@@ -19,6 +19,7 @@ import SwiftUI
 
 struct ListViewInside: View {
     @Environment(PlannerStore.self) private var store
+    @Environment(LinkPreviewService.self) private var linkPreviews
     @Environment(LocalUIState.self) private var uiState
     @Environment(AppNavigation.self) private var navigation
     @Environment(\.openURL) private var openURL
@@ -417,6 +418,9 @@ struct ListViewInside: View {
 
     private func row(_ item: ItemModel) -> some View {
         ItemRowView(item: item) { sheet = .editItem(item, focusFirstEmpty: false) }
+            // A shown row with a link but no preview fetches it (LP-01b). Rows of a collapsed
+            // group are never built, so they don't fetch.
+            .onAppear { linkPreviews.fetchIfNeeded(for: item) }
             // LD-09: Done / Undo on the leading edge, Delete (with an undo toast) on the trailing one.
             .swipeActions(edge: .leading) {
                 Button {
@@ -577,6 +581,7 @@ struct ListViewInside: View {
               let group = list.groups?.first(where: { $0.uuid == inline.groupID }) else { return nil }
         var item: ItemModel?
         animated { item = store.addItem(from: draft, to: group) }
+        if let item { linkPreviews.fetchIfNeeded(for: item) } // LP-01
         return item
     }
 
