@@ -60,7 +60,7 @@ final class PlannerUITests: XCTestCase {
         let party = home.open(row: "Party")
 
         party.addGroup(named: "Food")
-        // Decimal prices: testDecimalPriceKeepsTheSeparator (BUG-26).
+        // Decimal prices: testDecimalPriceWith… (BUG-26).
         party.addItem(named: "Cake", price: "12", quantity: 2, to: "Food")
 
         party.itemTotal("Cake").waitForLabel("$24.00")
@@ -71,21 +71,42 @@ final class PlannerUITests: XCTestCase {
         party.goBack().row("Party").waitForLabel(containing: "24")
     }
 
-    /// BUG-26: a decimal price keeps its separator, typed with "." or "," in en_US and ru_RU.
+    // BUG-26: a decimal price keeps its separator, typed with "." or "," in en_US and ru_RU.
+    // One test per case: each launches the app (~50 s on a slow CI runner), and four in one
+    // test went over the 180 s per-test allowance (CI run 44764424769).
+
     @MainActor
-    func testDecimalPriceKeepsTheSeparator() {
-        for (language, region, price) in [("en", "en_US", "12.5"), ("en", "en_US", "12,5"),
-                                          ("ru", "ru_RU", "12,5"), ("ru", "ru_RU", "12.5")] {
-            let app = Launch.app(language: language, region: region)
-            let eva = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
+    func testDecimalPriceWithPointInEnglishUS() {
+        assertDecimalPriceKeepsTheSeparator(language: "en", region: "en_US", price: "12.5")
+    }
 
-            eva.addItem(named: "Cake", price: price, quantity: 2, to: "Toys")
+    @MainActor
+    func testDecimalPriceWithCommaInEnglishUS() {
+        assertDecimalPriceKeepsTheSeparator(language: "en", region: "en_US", price: "12,5")
+    }
 
-            // 12.5 × 2, formatted like the app does for this region ("$25.00", "25,00 $").
-            let expected = Decimal(25).formatted(.currency(code: "USD").locale(Locale(identifier: region)))
-            eva.itemTotal("Cake").waitForLabel(expected)
-            app.terminate()
-        }
+    @MainActor
+    func testDecimalPriceWithCommaInRussian() {
+        assertDecimalPriceKeepsTheSeparator(language: "ru", region: "ru_RU", price: "12,5")
+    }
+
+    @MainActor
+    func testDecimalPriceWithPointInRussian() {
+        assertDecimalPriceKeepsTheSeparator(language: "ru", region: "ru_RU", price: "12.5")
+    }
+
+    /// Adds "Cake" at `price` × 2 in the given language / region and expects 25 in that region's format.
+    @MainActor
+    private func assertDecimalPriceKeepsTheSeparator(language: String, region: String, price: String,
+                                                     file: StaticString = #filePath, line: UInt = #line) {
+        let app = Launch.app(language: language, region: region)
+        let eva = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
+
+        eva.addItem(named: "Cake", price: price, quantity: 2, to: "Toys")
+
+        // 12.5 × 2, formatted like the app does for this region ("$25.00", "25,00 $").
+        let expected = Decimal(25).formatted(.currency(code: "USD").locale(Locale(identifier: region)))
+        eva.itemTotal("Cake").waitForLabel(expected, file: file, line: line)
     }
 
     /// DM-12: a new item needs a name: Return on a blank inline line saves nothing.

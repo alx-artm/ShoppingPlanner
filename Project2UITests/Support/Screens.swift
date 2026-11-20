@@ -135,17 +135,28 @@ struct ListDetailScreen {
 
     /// Long press a row → `action` of its context menu (edit, duplicate, openLink, delete).
     func contextMenu(_ item: String, _ action: String) {
+        openContextMenu(item, showing: action).waitAndTap()
+    }
+
+    /// Long press a row until its context menu shows `action`; returns that menu button
+    /// (not tapped). A press the slow runner took as a tap opened the item's details:
+    /// it is closed before the next attempt (CI run 44764424769).
+    @discardableResult
+    func openContextMenu(_ item: String, showing action: String,
+                         file: StaticString = #filePath, line: UInt = #line) -> XCUIElement {
         reveal(itemRow(item)).perform("Long press", until: app.buttons["item.menu.\(action)"],
-                                      recover: closeMisfiredItemDetails) {
+                                      file: file, line: line, recover: closeMisfiredItemDetails) {
             $0.press(forDuration: 1.2)
-        }.waitAndTap()
+        }
     }
 
     /// A gesture on a row that the busy app (slow CI runner) received as a tap opens the
     /// item's details sheet over the list: close it so the gesture can be retried.
+    /// Runs only before a retry, so a short wait for a sheet still sliding in costs nothing
+    /// on a passing run; without it a late sheet would cover the row on the next attempt.
     func closeMisfiredItemDetails() {
         let details = ItemEditScreen(app: app)
-        if details.cancelButton.exists { details.cancel() }
+        if details.cancelButton.waitForExistence(timeout: 2) { details.cancel() }
     }
 
     /// Swipe right on a row → Bought / Not Bought (LD-09).

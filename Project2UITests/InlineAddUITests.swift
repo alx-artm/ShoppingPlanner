@@ -95,7 +95,10 @@ final class InlineAddUITests: XCTestCase {
         let field = eva.startInline(in: "Toys")
         for round in 1...5 {
             app.typeText((round == 1 ? "" : "\n") + "Kite\nBall\nPuzzle")
-            XCTAssertEqual(field.value as? String, "Puzzle", "round \(round)")
+            // `typeText` returns before the app has handled the last keys (CI run 44764424769
+            // read "Ki"; the field showed "Puzzle" a second later), so wait for the value.
+            // A caret jump still fails: the text then settles to "uzzleP" and never matches.
+            XCTContext.runActivity(named: "round \(round)") { _ in field.waitForValue("Puzzle") }
         }
         app.typeText("\n")
         eva.inlineDone()
@@ -165,10 +168,9 @@ final class InlineAddUITests: XCTestCase {
         eva.app.descendants(matching: .any)
             .matching(NSPredicate(format: "identifier == %@ AND label CONTAINS %@", "item.link.Kite", "kites.example.com"))
             .firstMatch.waitToAppear()
-        eva.reveal(eva.itemRow("Kite")).perform("Long press", until: app.buttons["item.menu.openLink"]) {
-            $0.press(forDuration: 1.2)
-        }
-        XCTAssertFalse(app.buttons["item.menu.openLink"].firstMatch.label.isEmpty)
+        // A press taken as a tap (slow runner) opens the details; the helper closes them and retries.
+        let openLink = eva.openContextMenu("Kite", showing: "openLink")
+        XCTAssertFalse(openLink.firstMatch.label.isEmpty)
     }
 
     /// LD-15: the price field shows up later than the [Price] tap (a slow device, CI run
