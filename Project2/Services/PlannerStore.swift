@@ -62,6 +62,10 @@ protocol PlannerStoring: AnyObject {
     @discardableResult func duplicateItem(_ item: ItemModel) -> ItemModel?
     func deleteItem(_ item: ItemModel)
     @discardableResult func restoreItem(_ snapshot: ItemSnapshot, in list: ListModel) -> ItemModel?
+
+    // Link preview cache (spec 06)
+    func applyLinkPreview(_ preview: LinkPreview, to item: ItemModel)
+    func clearLinkPreview(of item: ItemModel)
 }
 
 @MainActor
@@ -385,7 +389,7 @@ final class PlannerStore: PlannerStoring {
             name: name,
             quantity: Self.clampedQuantity(quantity),
             price: Self.validPrice(price) ?? nil, // a negative price becomes "no price"
-            urlString: urlString.trimmingCharacters(in: .whitespacesAndNewlines),
+            urlString: ItemLink.normalized(urlString), // "ikea.com" → "https://ikea.com" (LP-06)
             notes: notes,
             sortIndex: PlannerOrdering.indexAfter((group.items ?? []).map(\.sortIndex)),
             createdAt: now()
@@ -399,6 +403,7 @@ final class PlannerStore: PlannerStoring {
     /// Applies the item details' ✓ in one save (ID-01). A blank name keeps the old one,
     /// a negative price keeps the old price, the quantity is clamped (DM-12...DM-14).
     /// A different `draft.groupID` of the same list moves the item to the end of that group (ID-08).
+    /// The link is stored normalized (LP-06); a different link drops the old preview (LP-10).
     func updateItem(_ item: ItemModel, with draft: ItemDraft) {
         if let name = Self.normalizedName(draft.name) {
             item.name = name
@@ -407,7 +412,12 @@ final class PlannerStore: PlannerStoring {
             item.price = price
         }
         item.quantity = Self.clampedQuantity(draft.quantity)
-        item.urlString = draft.urlString.trimmingCharacters(in: .whitespacesAndNewlines)
+        let urlString = ItemLink.normalized(draft.urlString)
+        // Compared normalized on both sides: links saved before M5 are stored as typed.
+        if urlString != ItemLink.normalized(item.urlString) {
+            resetLinkPreview(of: item)
+        }
+        item.urlString = urlString
         item.notes = draft.notes
         if let groupID = draft.groupID, groupID != item.group?.uuid,
            let target = item.parentList?.groups?.first(where: { $0.uuid == groupID }) {
@@ -503,7 +513,47 @@ final class PlannerStore: PlannerStoring {
         return item
     }
 
+    // MARK: - Link preview cache (spec 06 A.1 p.4)
+
+    /// Stores a fetched preview. The host is the one of the user's link (as on the row's chip),
+    /// not of the page after redirects; `linkFetchedAt` is set only here, on success.
+    func applyLinkPreview(_ preview: LinkPreview, to item: ItemModel) {
+        item.linkTitle = LinkPreview.storedTitle(preview.title)
+        item.linkHost = ItemLink.displayHost(of: item.urlString)
+        item.linkImageData = preview.imageData
+        item.linkFetchedAt = now()
+        save()
+    }
+
+    /// Forgets the preview, so the next trigger fetches it again.
+    func clearLinkPreview(of item: ItemModel) {
+        guard item.linkFetchedAt != nil || item.linkTitle != nil || item.linkHost != nil
+                || item.linkImageData != nil else { return }
+        resetLinkPreview(of: item)
+        save()
+    }
+
+    /// The item with this `uuid`, or `nil` when it is gone (deleted in the meantime).
+    func item(withID id: UUID) -> ItemModel? {
+        var descriptor = FetchDescriptor<ItemModel>(predicate: #Predicate { $0.uuid == id })
+        descriptor.fetchLimit = 1
+        do {
+            return try context.fetch(descriptor).first
+        } catch {
+            Self.logger.error("Fetching an item failed: \(error.localizedDescription, privacy: .public)")
+            return nil
+        }
+    }
+
     // MARK: - Helpers
+
+    /// Clears the four `link*` fields. Doesn't save.
+    private func resetLinkPreview(of item: ItemModel) {
+        item.linkTitle = nil
+        item.linkHost = nil
+        item.linkImageData = nil
+        item.linkFetchedAt = nil
+    }
 
     /// Active lists of one Home section in display order; archived lists are in no section (AR-07).
     func lists(pinned: Bool) -> [ListModel] {

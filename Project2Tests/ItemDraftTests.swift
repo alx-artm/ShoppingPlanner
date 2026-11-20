@@ -118,7 +118,8 @@ struct ItemDraftTests {
         #expect(item.name == "Big sofa")
         #expect(item.price == dec("450.5"))
         #expect(item.quantity == 2)
-        #expect(item.urlString == "ikea.com")
+        // Stored with its scheme (spec 06 LP-06, D7).
+        #expect(item.urlString == "https://ikea.com")
         #expect(item.notes == "grey")
         #expect(item.lineTotal == dec("901"))
         #expect(!fixture.context.hasChanges, "saved")

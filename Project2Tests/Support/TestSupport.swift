@@ -33,6 +33,8 @@ extension Tag {
     @Tag static var navigation: Self
     /// List Archive: archive, restore, Home sections and the Archive screen (spec 10, AR-xx).
     @Tag static var archive: Self
+    /// Link preview: fetchers, thumbnail, cache, fetch triggers (spec 06 Part A, LP-xx).
+    @Tag static var linkPreview: Self
 }
 
 /// The app's own strings (`String(localized:)`) are resolved in the language the
