@@ -27,7 +27,9 @@ struct PurchaseBarView: View {
 
     @Environment(\.locale) private var locale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @ScaledMetric(relativeTo: .subheadline) private var minSegmentWidth: CGFloat = 6
+    /// Twice the bar height (UX_REVIEW 14D-5): a narrower rounded segment reads as a "0", and two
+    /// of them as "00". Narrower items merge into "other" or are widened (LD-23).
+    @ScaledMetric(relativeTo: .subheadline) private var minSegmentWidth: CGFloat = 20
     @ScaledMetric(relativeTo: .subheadline) private var barHeight: CGFloat = 10
 
     @State private var width: CGFloat = 0

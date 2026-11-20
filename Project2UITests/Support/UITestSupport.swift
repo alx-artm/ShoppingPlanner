@@ -38,6 +38,10 @@ enum Launch {
     /// deletion and the tap can take longer. When the toast leaves, the bottom inset shrinks
     /// and the rows move down ~50 pt, so a tap aimed a moment before lands on the row above.
     ///
+    /// `toastSeconds`: a toast that stays this long, for a test that must see it appear AND go.
+    /// The 4-second toast can come and go before a slow CI runner first looks for it
+    /// (CI run 44711126998: shown for 4.5 s on video, first query a moment after it left).
+    ///
     /// `longRowHighlight`: the row picked in the purchase bar stays highlighted a minute
     /// instead of ~1 s, so the test checks it without racing that timer.
     ///
@@ -48,18 +52,30 @@ enum Launch {
     ///
     /// `dropInlineNameFocus`: the inline name field loses the keyboard once, inside a view update,
     /// at the first typed character, to prove it takes the keyboard back.
+    ///
+    /// `contentSize`: a Dynamic Type size for this launch only (`UIContentSizeCategory` raw
+    /// value, e.g. `UIContentSizeCategory.accessibilityLarge.rawValue`), the simulator's
+    /// setting is left alone.
     @MainActor
     static func app(emptyStore: Bool = false, language: String = "en", region: String = "en_US",
-                    longUndoToast: Bool = false, longRowHighlight: Bool = false,
+                    longUndoToast: Bool = false, toastSeconds: Int? = nil,
+                    longRowHighlight: Bool = false,
                     slowInlineFields: Bool = false,
-                    dropInlineNameFocus: Bool = false) -> XCUIApplication {
+                    dropInlineNameFocus: Bool = false,
+                    contentSize: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = [uiTests] + (emptyStore ? [Launch.emptyStore] : [])
-            + (longUndoToast ? [undoToastSeconds, "60"] : [])
-            + (longRowHighlight ? [rowHighlightSeconds, "60"] : [])
-            + (slowInlineFields ? [inlineFieldDelaySeconds, String(slowInlineFieldSeconds)] : [])
-            + (dropInlineNameFocus ? [Launch.dropInlineNameFocus] : [])
-            + locale(language: language, region: region)
+        // Appended one by one: one long `+` chain of optional arrays takes the
+        // type checker too long on newer Xcode (CI failed with "unable to type-check").
+        var arguments: [String] = [uiTests]
+        if emptyStore { arguments.append(Launch.emptyStore) }
+        if longUndoToast { arguments += [undoToastSeconds, "60"] }
+        if let toastSeconds { arguments += [undoToastSeconds, String(toastSeconds)] }
+        if longRowHighlight { arguments += [rowHighlightSeconds, "60"] }
+        if slowInlineFields { arguments += [inlineFieldDelaySeconds, String(slowInlineFieldSeconds)] }
+        if dropInlineNameFocus { arguments.append(Launch.dropInlineNameFocus) }
+        if let contentSize { arguments += ["-UIPreferredContentSizeCategoryName", contentSize] }
+        arguments += locale(language: language, region: region)
+        app.launchArguments = arguments
         app.launch()
         return app
     }

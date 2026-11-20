@@ -60,6 +60,46 @@ struct ListDetailTextTests {
                                        locale: Self.enUS) == "—")
     }
 
+    @Test("LD-31 header VoiceOver label: name, plural item count, amount; no '(3)' brackets")
+    func groupAccessibilityLabel() throws {
+        let en = try ListStatusTextTests.languageBundle("en")
+        func label(_ lines: [String], locale: Locale = Self.enUS, bundle: Bundle) -> String {
+            GroupHeaderText.accessibilityLabel(name: "Vacation", itemCount: lines.count,
+                                               summary: ListStatusTextTests.summary(lines, currency: "USD"),
+                                               currencyCode: "USD", locale: locale, bundle: bundle)
+        }
+        #expect(label(["60", "55", "30✓"], bundle: en) == "Vacation, 3 items, $145.00")
+        #expect(label(["60"], bundle: en) == "Vacation, 1 item, $60.00")
+        #expect(label([], bundle: en) == "Vacation, 0 items, No price")
+        #expect(label(["-"], bundle: en) == "Vacation, 1 item, No price")
+
+        let ru = try ListStatusTextTests.languageBundle("ru")
+        #expect(label(["1"], locale: Self.ruRU, bundle: ru).plainSpaces == "Vacation, 1 товар, 1,00 $")
+        #expect(label(["1", "2", "3"], locale: Self.ruRU, bundle: ru).plainSpaces == "Vacation, 3 товара, 6,00 $")
+        #expect(label(Array(repeating: "1", count: 5), locale: Self.ruRU, bundle: ru).plainSpaces
+                == "Vacation, 5 товаров, 5,00 $")
+        #expect(label(["-"], locale: Self.ruRU, bundle: ru) == "Vacation, 1 товар, Без цены")
+    }
+
+    @Test("LD-30 header rhythm: 16 pt between collapsed headers, 24 pt after an expanded group")
+    func groupRhythm() {
+        let spacing = GroupRhythm.sectionSpacing
+        let collapsedGap = GroupRhythm.headerBottomInset + spacing
+            + GroupRhythm.headerTopInset(followsExpandedGroup: false)
+        #expect(collapsedGap == 16)
+        #expect(collapsedGap + 44 == 60)
+        // An expanded group ends with a row, not a header: no bottom inset above the gap.
+        #expect(spacing + GroupRhythm.headerTopInset(followsExpandedGroup: true) == 24)
+    }
+
+    @Test("LD-30 the extra air goes only above a header whose previous group is expanded")
+    func followsExpandedGroup() {
+        final class G { let expanded: Bool; init(_ expanded: Bool) { self.expanded = expanded } }
+        let groups = [G(true), G(false), G(true), G(true)]
+        let follows = groups.map { GroupRhythm.followsExpandedGroup($0, in: groups, isExpanded: \.expanded) }
+        #expect(follows == [false, true, false, true])
+    }
+
     // MARK: - Summary bar
 
     static func bar(_ lines: [String], budget: String? = nil, currency: String = "USD",
@@ -133,5 +173,25 @@ struct ListDetailTextTests {
         #expect(style.nameStrikethrough)
         #expect(!style.amountStrikethrough)
         #expect(style.isDimmed)
+    }
+}
+
+@Suite("Duplicate texts")
+struct DuplicateTextTests {
+    @Test("HM-40 the copy's name: 'Eva copy' / «Eva (копия)», the suffix again for a copy of a copy")
+    func copyName() throws {
+        let en = try ListStatusTextTests.languageBundle("en")
+        let ru = try ListStatusTextTests.languageBundle("ru")
+        #expect(DuplicateText.copyName(of: "Eva", bundle: en) == "Eva copy")
+        #expect(DuplicateText.copyName(of: "Eva", bundle: ru) == "Eva (копия)")
+        #expect(DuplicateText.copyName(of: "Eva (копия)", bundle: ru) == "Eva (копия) (копия)")
+    }
+
+    @Test("HM-41 the toast names the original")
+    func toast() throws {
+        let en = try ListStatusTextTests.languageBundle("en")
+        let ru = try ListStatusTextTests.languageBundle("ru")
+        #expect(DuplicateText.created(originalName: "Eva", bundle: en) == "Copy of “Eva” created")
+        #expect(DuplicateText.created(originalName: "Eva", bundle: ru) == "Создана копия «Eva»")
     }
 }

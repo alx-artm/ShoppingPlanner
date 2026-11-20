@@ -114,6 +114,21 @@ enum GroupHeaderText {
             ? MoneyFormat.string(summary.planned, currencyCode: currencyCode, locale: locale)
             : "—"
     }
+
+    /// VoiceOver label of the header button (LD-31): "Vacation, 3 items, $145.00", or
+    /// "Home, 0 items, No price" without prices. No "(3)" brackets, which VoiceOver reads aloud.
+    ///
+    /// - Parameter bundle: where the translation comes from. The app passes `.main`; tests pass
+    ///   a language bundle (`ru.lproj`) to check the exact text in another language.
+    static func accessibilityLabel(name: String, itemCount: Int, summary: BudgetSummary,
+                                   currencyCode: String, locale: Locale, bundle: Bundle = .main) -> String {
+        let count = String(localized: "\(itemCount) items", bundle: bundle, locale: locale)
+        let amount = ListStatusText.hasPrices(summary)
+            ? MoneyFormat.string(summary.planned, currencyCode: currencyCode, locale: locale)
+            : String(localized: "No price", bundle: bundle, locale: locale,
+                     comment: "VoiceOver: the total of an item without a price (shown as \"—\").")
+        return [name, count, amount].joined(separator: ", ")
+    }
 }
 
 
@@ -145,5 +160,25 @@ enum PurchaseBarText {
                      comment: "Purchase bar, VoiceOver: state of an item, after its name and amount.")
         return [name, MoneyFormat.string(lineTotal, currencyCode: currencyCode, locale: locale), state]
             .joined(separator: ", ")
+    }
+}
+
+/// Texts of a list's Duplicate (spec 02 HM-40, HM-41, HM-44).
+enum DuplicateText {
+    /// The copy's name: "Eva copy" / «Eva (копия)». Duplicating a copy adds the suffix again,
+    /// no numbering in v1.0 (HM-40).
+    ///
+    /// - Parameter bundle: where the translation comes from. The app passes `.main`; tests pass
+    ///   a language bundle (`ru.lproj`) to check the exact text in another language.
+    static func copyName(of name: String, bundle: Bundle = .main) -> String {
+        String(localized: "\(name) copy", bundle: bundle,
+               comment: "The name of the copy of a list. The argument is the name of the original list.")
+    }
+
+    /// The toast after Duplicate and its VoiceOver announcement: "Copy of “Eva” created" /
+    /// «Создана копия «Eva»», with the original's name (HM-41, HM-44).
+    static func created(originalName: String, bundle: Bundle = .main) -> String {
+        String(localized: "Copy of “\(originalName)” created", bundle: bundle,
+               comment: "Toast and VoiceOver announcement after Duplicate opened the copy of a list. The argument is the original list's name.")
     }
 }

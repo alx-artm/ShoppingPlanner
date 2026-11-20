@@ -6,7 +6,8 @@
 //  Eva and Victoria are rows in All Lists (Eva first). Pin with a swipe and
 //  unpin from the context menu (HM-08, HM-09), delete with a swipe and a
 //  confirmation (HM-10), search (HM-13), Settings behind the gear (spec 08),
-//  reordering from the ⋯ menu (HM-31…HM-35) and "List Info" naming (HM-36).
+//  reordering from the ⋯ menu (HM-31…HM-35), "List Info" naming (HM-36) and
+//  Duplicate opening the copy with an Undo toast (HM-39…HM-42).
 //
 
 import XCTest
@@ -208,5 +209,69 @@ final class HomeUITests: XCTestCase {
         home.pinWithSwipe(row: "Kitchen")
         home.card("Kitchen").waitToAppear()
         XCTAssertFalse(home.isReorderListsEnabled(), "one list in each section")
+    }
+
+    // MARK: - Duplicate (HM-39...HM-42)
+
+    @MainActor private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
+
+    /// HM-39, HM-41, HM-42: Duplicate on a Home row opens the copy (iPhone: pushed, iPad: in the
+    /// detail) with "Copy of “Eva” created · Undo"; Undo deletes the copy and goes back to Home
+    /// (iPad: "Select a List"), Eva stays where it was. The toast is kept long by a launch
+    /// argument, so the test doesn't race its 4 s timer.
+    @MainActor
+    func testDuplicateOpensCopyAndUndoGoesBack() {
+        let app = Launch.app(longUndoToast: true)
+        let home = HomeScreen(app: app).waitUntilShown()
+        let evaTop = home.top(of: home.row("Eva").waitToAppear())
+
+        let copy = home.duplicateFromContextMenu(row: "Eva")
+        app.navigationBars["Eva copy"].waitToAppear()
+        copy.duplicateToast.waitToAppear()
+        XCTAssertTrue(app.staticTexts["Copy of “Eva” created"].exists, "the toast names the original")
+
+        copy.duplicateUndoButton.waitAndTap()
+        if isPad {
+            app.descendants(matching: .any)["detail.placeholder"].firstMatch.waitToAppear()
+        } else {
+            home.newListButton.waitToBeHittable()
+        }
+        home.row("Eva copy").waitToDisappear()
+        XCTAssertEqual(home.top(of: home.row("Eva").waitToAppear()), evaTop, accuracy: 1,
+                       "the original keeps its place")
+    }
+
+    /// HM-39: from search results too; without Undo the copy stays (HM-43).
+    @MainActor
+    func testDuplicateFromSearchOpensCopy() {
+        // 12 s, not 4: long enough to be seen on a slow runner, short enough to watch it go.
+        let app = Launch.app(toastSeconds: 12)
+        let home = HomeScreen(app: app).waitUntilShown()
+        home.search("vic")
+
+        let copy = home.duplicateFromContextMenu(row: "Victoria")
+        app.navigationBars["Victoria copy"].waitToAppear()
+        copy.duplicateToast.waitToAppear()
+        copy.duplicateToast.waitToDisappear(timeout: 25)
+        if !isPad {
+            copy.backButton.waitAndTap()
+        }
+        home.row("Victoria copy").waitToAppear()
+    }
+
+    /// HM-39, HM-42 from the open list's ⋯: Undo shows the original again (iPad: in the
+    /// detail; iPhone: the list the user was on).
+    @MainActor
+    func testDuplicateFromOpenListUndoShowsOriginal() {
+        let app = Launch.app(longUndoToast: true)
+        let eva = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
+
+        eva.menuAction("duplicate")
+        app.navigationBars["Eva copy"].waitToAppear()
+        eva.duplicateUndoButton.waitAndTap()
+
+        app.navigationBars["Eva"].waitToAppear()
+        app.navigationBars["Eva copy"].waitToDisappear()
+        XCTAssertFalse(eva.duplicateToast.exists)
     }
 }

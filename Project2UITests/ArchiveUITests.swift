@@ -155,7 +155,8 @@ final class ArchiveUITests: XCTestCase {
     /// Restore moves it to the active results and the section goes.
     @MainActor
     func testSearchInArchiveDuplicatesAndRestores() {
-        let app = Launch.app()
+        // The 4-second toast can be gone before a slow runner looks (CI run 44711126998).
+        let app = Launch.app(longUndoToast: true)
         let home = HomeScreen(app: app).waitUntilShown()
         home.archiveWithSwipe(row: "Victoria")
         home.archiveRow.waitToAppear()
@@ -173,6 +174,7 @@ final class ArchiveUITests: XCTestCase {
         let copy = ListDetailScreen(app: app).waitUntilShown()
         app.navigationBars["Victoria copy"].waitToAppear()
         XCTAssertFalse(copy.archivedBanner.exists, "the copy is active")
+        copy.duplicateToast.waitToAppear() // HM-41: the same Duplicate as on Home
         if !isPad {
             copy.backButton.waitAndTap()
         }
