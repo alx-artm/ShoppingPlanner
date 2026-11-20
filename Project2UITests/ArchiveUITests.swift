@@ -150,8 +150,9 @@ final class ArchiveUITests: XCTestCase {
     }
 
     /// AR-04, AR-17, AR-18, AR-20: an "In Archive" search row has the Archive's menu, without
-    /// Pin or List Info. Duplicate makes an active copy among the results while the original
-    /// stays archived; Restore moves it to the active results and the section goes.
+    /// Pin or List Info. Duplicate opens the active copy (owner decision 6; iPhone: pushed,
+    /// iPad: in the detail) and puts it among the results while the original stays archived;
+    /// Restore moves it to the active results and the section goes.
     @MainActor
     func testSearchInArchiveDuplicatesAndRestores() {
         let app = Launch.app()
@@ -167,6 +168,15 @@ final class ArchiveUITests: XCTestCase {
         let homeOnly = app.buttons.matching(NSPredicate(format: "label IN %@", ["Pin", "Unpin", "List Info"]))
         XCTAssertEqual(homeOnly.count, 0, "an archived list can't be pinned or edited from its menu")
         duplicate.waitAndTap()
+
+        // The copy opens: an active list, so no Archived banner.
+        let copy = ListDetailScreen(app: app).waitUntilShown()
+        app.navigationBars["Victoria copy"].waitToAppear()
+        XCTAssertFalse(copy.archivedBanner.exists, "the copy is active")
+        if !isPad {
+            copy.backButton.waitAndTap()
+        }
+
         home.row("Victoria copy").waitToAppear()
         home.archivedRow("Victoria").waitToAppear()
 

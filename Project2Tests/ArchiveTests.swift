@@ -385,6 +385,24 @@ struct ArchiveTests {
         #expect(navigation.selectedListID == a.uuid)
     }
 
+    @Test("AR-04 Duplicate from the Archive opens the active copy; the Archive stays in Home's column")
+    func duplicateOpensCopy() throws {
+        let navigation = AppNavigation()
+        let list = makeFullList()
+        f.store.archiveList(list)
+        navigation.showArchive()
+
+        let copy = navigation.openDuplicate(of: list, using: f.store)
+
+        #expect(navigation.selectedListID == copy.uuid, "iPhone pushes the copy, iPad shows it in the detail")
+        #expect(copy.uuid != list.uuid)
+        #expect(copy.isArchived == false)
+        #expect(list.isArchived, "the original stays archived")
+        #expect(navigation.sidebarPath == [.archive], "back from the copy returns to the Archive")
+        #expect(navigation.pendingAction == nil)
+        #expect(try f.count(ListModel.self) == 2)
+    }
+
     @Test("AR-26 an archived list keeps its selection: the open screen stays (with the banner)")
     func archivedSelectionKept() throws {
         let navigation = AppNavigation()

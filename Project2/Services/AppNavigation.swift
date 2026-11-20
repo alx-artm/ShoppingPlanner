@@ -50,6 +50,16 @@ final class AppNavigation {
         selectedListID = list.uuid
     }
 
+    /// Duplicates an archived `list` and opens the active copy (spec 10, AR-04, owner
+    /// decision 6): iPhone pushes it, iPad shows it in the detail column. The user
+    /// duplicates an archived list to reuse it, so the copy opens for editing at once.
+    @discardableResult
+    func openDuplicate(of list: ListModel, using store: any PlannerStoring) -> ListModel {
+        let copy = store.duplicateList(list)
+        select(copy)
+        return copy
+    }
+
     func isSelected(_ list: ListModel) -> Bool {
         selectedListID == list.uuid
     }

@@ -15,6 +15,8 @@
 //  Context menu: Restore, Duplicate, Share as Text, Delete. No Pin and no
 //  List Info here. VoiceOver gets the swipes as actions by itself; Duplicate,
 //  which is only in the context menu, is added as a custom action (AR-23).
+//  Duplicate opens the active copy (iPhone: push; iPad: the detail column), so
+//  the user edits it at once; the original stays in the Archive (AR-04).
 //
 
 import SwiftUI
@@ -86,9 +88,9 @@ struct ArchivedListRow: View {
         ArchiveAnnouncement.restored(name)
     }
 
-    /// An active copy, first in All Lists; this list stays in the Archive (AR-04).
+    /// An active copy, first in All Lists, opened right away; this list stays in the Archive (AR-04).
     private func duplicate() {
-        withAnimation(reduceMotion ? nil : .default) { _ = store.duplicateList(list) }
+        withAnimation(reduceMotion ? nil : .default) { _ = navigation.openDuplicate(of: list, using: store) }
     }
 }
 
