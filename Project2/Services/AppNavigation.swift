@@ -20,7 +20,19 @@ import Observation
 final class AppNavigation {
     /// The list shown in the detail column. On a compact iPhone a non-`nil`
     /// value means the list is pushed; going back sets it to `nil`.
-    var selectedListID: UUID?
+    ///
+    /// Every change goes through here (Home's selection binding, `select`, back, Undo,
+    /// delete / archive, a list that went missing), so this is where the Duplicate toast
+    /// ends when the user leaves the copy (HM-41). State, not the copy screen's
+    /// `onDisappear`: on a slow device the pushed screen can be torn down and rebuilt
+    /// while it is still the selection, and that killed the toast before it was shown.
+    var selectedListID: UUID? {
+        didSet {
+            if let recent = recentDuplicate, selectedListID != recent.copyID {
+                recentDuplicate = nil
+            }
+        }
+    }
 
     /// Screens pushed in Home's column (the sidebar): only the Archive today (spec 10, AR-14).
     var sidebarPath: [SidebarRoute] = []
@@ -83,7 +95,8 @@ final class AppNavigation {
         }
     }
 
-    /// The toast went away (timer, or the user left the copy): the copy stays (HM-43).
+    /// The toast's time is up: the copy stays (HM-43). Leaving the copy ends the toast in
+    /// `selectedListID`'s `didSet`.
     func dismissDuplicateToast(_ id: RecentDuplicate.ID) {
         if recentDuplicate?.id == id { recentDuplicate = nil }
     }
