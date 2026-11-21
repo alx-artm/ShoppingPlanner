@@ -73,6 +73,8 @@
 		5FBAC0DE2F2500010000000C /* LinkOpener.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FBAC0DE2F2500010000000B /* LinkOpener.swift */; };
 		5FBAC0DE2F2500010000000E /* LinkPreviewCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FBAC0DE2F2500010000000D /* LinkPreviewCard.swift */; };
 		5FBAC0DE2F25000100000010 /* InAppBrowser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FBAC0DE2F2500010000000F /* InAppBrowser.swift */; };
+		5FBAC0DE2F25000100000012 /* LinkThumbnailTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FBAC0DE2F25000100000011 /* LinkThumbnailTile.swift */; };
+		5FBAC0DE2F25000100000014 /* LinkTileImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FBAC0DE2F25000100000013 /* LinkTileImageCache.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -162,6 +164,8 @@
 		5FBAC0DE2F2500010000000B /* LinkOpener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkOpener.swift; sourceTree = "<group>"; };
 		5FBAC0DE2F2500010000000D /* LinkPreviewCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkPreviewCard.swift; sourceTree = "<group>"; };
 		5FBAC0DE2F2500010000000F /* InAppBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InAppBrowser.swift; sourceTree = "<group>"; };
+		5FBAC0DE2F25000100000011 /* LinkThumbnailTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkThumbnailTile.swift; sourceTree = "<group>"; };
+		5FBAC0DE2F25000100000013 /* LinkTileImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkTileImageCache.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -234,6 +238,7 @@
 				5FBAC0DE2F25000100000007 /* LinkPreviewService.swift */,
 				5FB3C0DE2ED500010000000D /* AppNavigation.swift */,
 				5FBAC0DE2F2500010000000B /* LinkOpener.swift */,
+				5FBAC0DE2F25000100000013 /* LinkTileImageCache.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -302,6 +307,7 @@
 				5FB5C0DE2EF5000100000011 /* InlineNameField.swift */,
 				5FBAC0DE2F2500010000000D /* LinkPreviewCard.swift */,
 				5FBAC0DE2F2500010000000F /* InAppBrowser.swift */,
+				5FBAC0DE2F25000100000011 /* LinkThumbnailTile.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -523,6 +529,8 @@
 				5FBAC0DE2F25000100000008 /* LinkPreviewService.swift in Sources */,
 				5FBAC0DE2F2500010000000E /* LinkPreviewCard.swift in Sources */,
 				5FBAC0DE2F25000100000010 /* InAppBrowser.swift in Sources */,
+				5FBAC0DE2F25000100000012 /* LinkThumbnailTile.swift in Sources */,
+				5FBAC0DE2F25000100000014 /* LinkTileImageCache.swift in Sources */,
 				5FBAC0DE2F2500010000000C /* LinkOpener.swift in Sources */,
 				5FBAC0DE2F2500010000000A /* ItemLinkDisplay.swift in Sources */,
 				5FBAC0DE2F25000100000006 /* LinkMetadataFetching.swift in Sources */,
