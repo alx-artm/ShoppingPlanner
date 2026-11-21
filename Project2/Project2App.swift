@@ -36,6 +36,7 @@ struct Project2App: App {
                         .environment(environment.uiState)
                         .environment(environment.settings)
                         .environment(environment.linkPreviews)
+                        .environment(\.linkOpener, environment.linkOpener)
                 case .failure(let error):
                     StartupErrorView(error: error)
                 }
@@ -54,6 +55,7 @@ struct AppEnvironment {
     let uiState: LocalUIState
     let settings: AppSettings
     let linkPreviews: LinkPreviewService
+    let linkOpener: LinkOpener
 
     /// Normal launch: on-disk store. `-UITests`: in-memory store with `SeedData`.
     static func make() throws -> AppEnvironment {
@@ -77,8 +79,10 @@ struct AppEnvironment {
         )
         // `-UITests` and unit test hosts never fetch from the network (LP-13).
         let linkPreviews = LinkPreviewService(fetcher: LinkFetcherKind.current.makeFetcher(), store: store)
+        // `-UITests -UITestsRecordOpenedLinks` records links instead of opening Safari.
+        let linkOpener = LinkOpener.forLaunch(arguments: ProcessInfo.processInfo.arguments)
         return AppEnvironment(container: container, store: store, uiState: uiState, settings: settings,
-                              linkPreviews: linkPreviews)
+                              linkPreviews: linkPreviews, linkOpener: linkOpener)
     }
 }
 

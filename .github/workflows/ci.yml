@@ -62,6 +62,7 @@ jobs:
               -only-testing:Project2UITests/InlineAddUITests
               -only-testing:Project2UITests/ItemDetailsUITests
               -only-testing:Project2UITests/ListInfoUITests
+              -only-testing:Project2UITests/LinkPreviewUITests
             artifact: UITestResults-2
           - name: UI Tests (iPad)
             device: iPad Air 11-inch (M4)

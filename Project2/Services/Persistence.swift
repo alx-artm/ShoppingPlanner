@@ -77,6 +77,14 @@ enum LaunchConfiguration {
     static let uiTestsLinkPreviewArgument = "-UITestsLinkPreview"
     static let uiTestsLinkPreviewStubValue = "stub"
 
+    /// Together with `-UITests`: links are recorded in `debug.lastOpenedLink` instead of
+    /// opened, so a UI test never leaves the app for Safari (spec 06 A.5, `LinkOpener`).
+    static let uiTestsRecordOpenedLinksArgument = "-UITestsRecordOpenedLinks"
+
+    static func recordsOpenedLinks(arguments: [String]) -> Bool {
+        arguments.contains(uiTestsArgument) && arguments.contains(uiTestsRecordOpenedLinksArgument)
+    }
+
     private static func seconds(after argument: String) -> Duration? {
         let arguments = ProcessInfo.processInfo.arguments
         guard isUITesting,
