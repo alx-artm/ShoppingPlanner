@@ -10,7 +10,9 @@
 //  - one fetch per item at a time; a new link replaces (cancels) the old fetch;
 //  - at most 2 fetches at once, the rest wait in order (LP-01b);
 //  - a failed item + link is retried automatically once per launch (LP-01a);
-//  - an answer is dropped when the item was deleted or got another link meanwhile (LP-11).
+//  - an answer is dropped when the item was deleted or got another link meanwhile (LP-11);
+//  - "Refresh Preview" (`refresh(_:)`) fetches even with a cache or after failed attempts,
+//    ahead of the automatic fetches; a failure keeps the old preview (LP-07).
 //
 //  Main actor: it reads models and writes through `PlannerStore`. The fetch itself
 //  runs off the main actor inside the fetcher; only its `Sendable` result comes back.
@@ -32,6 +34,13 @@ final class LinkPreviewService {
         let url: URL
     }
 
+    /// A fetch waiting for a free slot. A forced one (Refresh Preview) is fetched even
+    /// when the item already has a preview.
+    private struct Pending {
+        let request: Request
+        let isForced: Bool
+    }
+
     private struct Running {
         let request: Request
         /// Tells this fetch's answer from that of a fetch it replaced.
@@ -41,7 +50,7 @@ final class LinkPreviewService {
 
     /// Fetches in progress by item. Observed, so a view can show "loading" (spec 06 A.2).
     private var running: [UUID: Running] = [:]
-    @ObservationIgnored private var waiting: [Request] = []
+    @ObservationIgnored private var waiting: [Pending] = []
     /// Failed automatic fetches per item + link, for this launch only (LP-01a).
     @ObservationIgnored private var failures: [Request: Int] = [:]
 
@@ -76,11 +85,29 @@ final class LinkPreviewService {
             current.task.cancel()
             running[request.itemID] = nil
         }
-        if let index = waiting.firstIndex(where: { $0.itemID == request.itemID }) {
-            if waiting[index] == request { return }
+        if let index = waiting.firstIndex(where: { $0.request.itemID == request.itemID }) {
+            if waiting[index].request == request { return }
             waiting.remove(at: index)
         }
-        waiting.append(request)
+        waiting.append(Pending(request: request, isForced: false))
+        startWaiting()
+    }
+
+    /// "Refresh Preview" (LP-07): fetches the saved link again, even with a cache and after
+    /// failed automatic attempts (LP-01a). It goes first in the queue: the user is waiting.
+    /// Success overwrites the preview; a failure keeps the old one.
+    /// Nothing happens without a valid saved link.
+    func refresh(_ item: ItemModel) {
+        guard let url = ItemLink.url(from: item.urlString) else { return }
+        let request = Request(itemID: item.uuid, url: url)
+
+        if let current = running[request.itemID] {
+            if current.request == request { return } // its answer is the fresh preview
+            current.task.cancel()
+            running[request.itemID] = nil
+        }
+        waiting.removeAll { $0.request.itemID == request.itemID }
+        waiting.insert(Pending(request: request, isForced: true), at: 0)
         startWaiting()
     }
 
@@ -94,11 +121,15 @@ final class LinkPreviewService {
 
     private func startWaiting() {
         while running.count < Self.maxConcurrentFetches, !waiting.isEmpty {
-            let request = waiting.removeFirst()
+            let pending = waiting.removeFirst()
+            let request = pending.request
             // It may have waited a while: skip it if the item is gone or no longer needs it.
             guard let item = store.item(withID: request.itemID),
-                  self.request(for: item) == request,
                   running[request.itemID] == nil else { continue }
+            let isStillWanted = pending.isForced
+                ? ItemLink.url(from: item.urlString) == request.url
+                : self.request(for: item) == request
+            guard isStillWanted else { continue }
             start(request)
         }
     }

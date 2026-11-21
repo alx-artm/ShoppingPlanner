@@ -226,6 +226,141 @@ struct LinkPreviewServiceTests {
         #expect(await fetcher.callCount == 0)
     }
 
+    // MARK: - Refresh Preview (PR 3)
+
+    @Test("LP-07 Refresh fetches a cached item again and overwrites the preview")
+    func refreshOverwritesCache() async throws {
+        let fixture = try StoreFixture()
+        let fetcher = FakeLinkFetcher()
+        let service = LinkPreviewService(fetcher: fetcher, store: fixture.store)
+        let item = try addItem(fixture, url: "https://ikea.com/sofa")
+        fixture.store.applyLinkPreview(LinkPreview(title: "Old", imageData: nil), to: item)
+        let oldDate = try #require(item.linkFetchedAt)
+        fixture.clock.advance(by: 60)
+
+        service.refresh(item)
+        #expect(service.isFetching(item.uuid))
+        try await waitUntilIdle(service)
+
+        #expect(await fetcher.callCount == 1)
+        #expect(item.linkTitle == "Title of ikea.com")
+        #expect(item.linkImageData == FakeLinkFetcher.imageData)
+        #expect(try #require(item.linkFetchedAt) > oldDate)
+    }
+
+    @Test("LP-07 a failed Refresh keeps the old preview")
+    func failedRefreshKeepsCache() async throws {
+        let fixture = try StoreFixture()
+        let fetcher = FakeLinkFetcher(failingHosts: ["fail.example.com"])
+        let service = LinkPreviewService(fetcher: fetcher, store: fixture.store)
+        let item = try addItem(fixture, url: "https://fail.example.com/x")
+        fixture.store.applyLinkPreview(LinkPreview(title: "Old", imageData: FakeLinkFetcher.imageData), to: item)
+        let oldDate = item.linkFetchedAt
+
+        service.refresh(item)
+        try await waitUntilIdle(service)
+
+        #expect(await fetcher.callCount == 1)
+        #expect(item.linkTitle == "Old")
+        #expect(item.linkImageData == FakeLinkFetcher.imageData)
+        #expect(item.linkFetchedAt == oldDate)
+    }
+
+    @Test("LP-01a Refresh still works after the automatic attempts ran out")
+    func refreshIgnoresRetryLimit() async throws {
+        let fixture = try StoreFixture()
+        let fetcher = FakeLinkFetcher(failingHosts: ["fail.example.com"])
+        let service = LinkPreviewService(fetcher: fetcher, store: fixture.store)
+        let item = try addItem(fixture, url: "https://fail.example.com/x")
+        for _ in 0..<LinkPreviewService.maxAutomaticAttempts {
+            service.fetchIfNeeded(for: item)
+            try await waitUntilIdle(service)
+        }
+        service.fetchIfNeeded(for: item)
+        #expect(!service.hasWork, "automatic attempts are used up")
+
+        for _ in 0..<2 {
+            service.refresh(item)
+            try await waitUntilIdle(service)
+        }
+        #expect(await fetcher.callCount == LinkPreviewService.maxAutomaticAttempts + 2)
+    }
+
+    @Test("LP-07 Refresh while the same link is being fetched adds no second fetch")
+    func refreshJoinsRunningFetch() async throws {
+        let fixture = try StoreFixture()
+        let fetcher = FakeLinkFetcher(holdsAnswers: true)
+        let service = LinkPreviewService(fetcher: fetcher, store: fixture.store)
+        let item = try addItem(fixture, url: "https://ikea.com")
+
+        service.fetchIfNeeded(for: item)
+        await wait(for: fetcher, .held(1))
+        service.refresh(item)
+        // Negative check: a slower machine only gives a wrong extra fetch more time to show up.
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(await fetcher.callCount == 1)
+
+        await fetcher.releaseAll()
+        try await waitUntilIdle(service)
+        #expect(item.linkFetchedAt != nil)
+    }
+
+    @Test("LP-07 Refresh goes ahead of waiting automatic fetches")
+    func refreshJumpsTheQueue() async throws {
+        let fixture = try StoreFixture()
+        let fetcher = FakeLinkFetcher(holdsAnswers: true)
+        let service = LinkPreviewService(fetcher: fetcher, store: fixture.store)
+        let items = try ["a", "b", "c"].map { try addItem(fixture, url: "https://\($0).example.com") }
+        let cached = try addItem(fixture, url: "https://cached.example.com")
+        fixture.store.applyLinkPreview(LinkPreview(title: "Cached", imageData: nil), to: cached)
+
+        for item in items {
+            service.fetchIfNeeded(for: item)
+        }
+        await wait(for: fetcher, .held(2))
+        service.refresh(cached)
+        await fetcher.releaseOne()
+        await wait(for: fetcher, .calls(3))
+
+        await fetcher.releaseAll()
+        try await waitUntilIdle(service)
+        #expect(await fetcher.requestedHosts
+                == ["a.example.com", "b.example.com", "cached.example.com", "c.example.com"])
+        #expect(cached.linkTitle == "Title of cached.example.com")
+    }
+
+    @Test("Refresh does nothing without a valid saved link")
+    func refreshWithoutLink() async throws {
+        let fixture = try StoreFixture()
+        let fetcher = FakeLinkFetcher()
+        let service = LinkPreviewService(fetcher: fetcher, store: fixture.store)
+        for text in ["", "shop", "mailto:a@b.com"] {
+            service.refresh(try addItem(fixture, url: text))
+        }
+        #expect(!service.hasWork)
+        #expect(await fetcher.callCount == 0)
+    }
+
+    @Test("LP-11 a Refresh answer for a link changed meanwhile is dropped")
+    func refreshDropsStaleAnswer() async throws {
+        let fixture = try StoreFixture()
+        let fetcher = FakeLinkFetcher(holdsAnswers: true)
+        let service = LinkPreviewService(fetcher: fetcher, store: fixture.store)
+        let item = try addItem(fixture, url: "https://old.example.com")
+        fixture.store.applyLinkPreview(LinkPreview(title: "Old", imageData: nil), to: item)
+
+        service.refresh(item)
+        await wait(for: fetcher, .held(1))
+        var draft = ItemDraft(item: item)
+        draft.urlString = "https://new.example.com"
+        fixture.store.updateItem(item, with: draft)
+
+        await fetcher.releaseAll()
+        try await waitUntilIdle(service)
+        #expect(item.linkTitle == nil)
+        #expect(item.linkFetchedAt == nil)
+    }
+
     // MARK: - Helpers
 
     private func addItem(_ fixture: StoreFixture, url: String) throws -> ItemModel {
