@@ -35,6 +35,7 @@ struct Project2App: App {
                         .environment(environment.store)
                         .environment(environment.uiState)
                         .environment(environment.settings)
+                        .environment(environment.linkPreviews)
                 case .failure(let error):
                     StartupErrorView(error: error)
                 }
@@ -52,6 +53,7 @@ struct AppEnvironment {
     let store: PlannerStore
     let uiState: LocalUIState
     let settings: AppSettings
+    let linkPreviews: LinkPreviewService
 
     /// Normal launch: on-disk store. `-UITests`: in-memory store with `SeedData`.
     static func make() throws -> AppEnvironment {
@@ -73,7 +75,10 @@ struct AppEnvironment {
             context: container.mainContext,
             mainCurrencyCode: { [settings] in settings.mainCurrencyCode }
         )
-        return AppEnvironment(container: container, store: store, uiState: uiState, settings: settings)
+        // `-UITests` and unit test hosts never fetch from the network (LP-13).
+        let linkPreviews = LinkPreviewService(fetcher: LinkFetcherKind.current.makeFetcher(), store: store)
+        return AppEnvironment(container: container, store: store, uiState: uiState, settings: settings,
+                              linkPreviews: linkPreviews)
     }
 }
 

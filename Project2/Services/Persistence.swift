@@ -72,6 +72,11 @@ enum LaunchConfiguration {
         isUITesting && ProcessInfo.processInfo.arguments.contains(uiTestsDropInlineNameFocusArgument)
     }
 
+    /// Together with `-UITests`: `-UITestsLinkPreview stub` answers link previews from
+    /// `StubLinkMetadataFetcher`. Without it a UI test gets no previews and no network (LP-13).
+    static let uiTestsLinkPreviewArgument = "-UITestsLinkPreview"
+    static let uiTestsLinkPreviewStubValue = "stub"
+
     private static func seconds(after argument: String) -> Duration? {
         let arguments = ProcessInfo.processInfo.arguments
         guard isUITesting,

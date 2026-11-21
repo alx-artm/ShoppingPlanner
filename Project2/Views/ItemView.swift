@@ -25,6 +25,7 @@ struct ItemView: View {
     let deleteRequests: Int
 
     @Environment(PlannerStore.self) private var store
+    @Environment(LinkPreviewService.self) private var linkPreviews
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -176,6 +177,8 @@ struct ItemView: View {
             // After the sheet is on screen; focusing during the presentation is ignored.
             if let initialFocus { focus = initialFocus }
         }
+        // A saved link without a preview yet: fetch it now (LP-01a, LP-01b).
+        .onAppear { linkPreviews.fetchIfNeeded(for: item) }
         .onChange(of: deleteRequests) {
             showsDeleteConfirmation = true
         }
@@ -277,6 +280,8 @@ struct ItemView: View {
 
     private func commit() {
         store.updateItem(item, with: draft)
+        // A new link has no preview: the store dropped the old one (LP-01, LP-10).
+        linkPreviews.fetchIfNeeded(for: item)
     }
 }
 

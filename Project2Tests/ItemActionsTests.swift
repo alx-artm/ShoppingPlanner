@@ -18,8 +18,8 @@ struct ItemActionsTests {
     func duplicate() throws {
         let fixture = try StoreFixture()
         let (_, group) = fixture.makeGroup()
-        let sofa = fixture.addItem("Sofa", to: group, quantity: 2, price: 450)
-        sofa.urlString = "ikea.com"
+        let sofa = try #require(fixture.store.addItem(name: "Sofa", to: group, quantity: 2, price: 450,
+                                                      urlString: "ikea.com"))
         fixture.addItem("Lamp", to: group)
 
         let copy = try #require(fixture.store.duplicateItem(sofa))
@@ -27,7 +27,8 @@ struct ItemActionsTests {
         #expect(copy.uuid != sofa.uuid)
         #expect(copy.quantity == 2)
         #expect(copy.price == 450)
-        #expect(copy.urlString == "ikea.com")
+        // Saved with its scheme (spec 06 LP-06, D7); the copy keeps it as stored.
+        #expect(copy.urlString == "https://ikea.com")
     }
 
     @Test("Duplicating a bought item gives a not-bought copy")

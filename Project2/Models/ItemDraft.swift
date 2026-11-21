@@ -80,7 +80,7 @@ struct ItemDraft: Equatable, Sendable {
     }
 }
 
-/// Rules for an item's link (spec 05 Link, 06 LP-08). The preview card is M5.
+/// Rules for an item's link (spec 05 Link, 06 LP-06, LP-08).
 enum ItemLink {
     /// "ikea.com/sofa" → "https://ikea.com/sofa". `nil` when blank or not a web address.
     static func url(from text: String) -> URL? {
@@ -97,6 +97,16 @@ enum ItemLink {
             return nil
         }
         return url
+    }
+
+    /// The text stored in `urlString` (spec 06 LP-06, D7): a web address with its scheme
+    /// ("ikea.com/sofa" → "https://ikea.com/sofa"); anything else only trimmed.
+    /// One stored form makes "did the link change?" (LP-10) a plain comparison.
+    static func normalized(_ text: String) -> String {
+        if let url = url(from: text) {
+            return url.absoluteString
+        }
+        return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// The host shown on the row's link chip: "www.ikea.com/…" → "ikea.com".
