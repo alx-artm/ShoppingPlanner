@@ -28,6 +28,7 @@ struct ItemView: View {
     @Environment(LinkPreviewService.self) private var linkPreviews
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
+    @Environment(\.linkOpener) private var linkOpener
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @State private var draft: ItemDraft
@@ -168,6 +169,10 @@ struct ItemView: View {
                 Button("Cancel", role: .cancel) {}
             }
         }
+        // A tap on the link card opens Safari inside the app, over this sheet (LP-05).
+        .inAppBrowser()
+        // `debug.lastOpenedLink` for UI tests (`-UITestsRecordOpenedLinks`); nothing otherwise.
+        .openedLinkProbe()
         .presentationDetents(Self.detents(for: presentingSizeClass))
         // A form sheet on iPad and the unfolded iPhone Duo, not a full-width cover (ID-10).
         .presentationSizing(.form)
@@ -244,35 +249,78 @@ struct ItemView: View {
         }
     }
 
-    /// The address with Open / Remove. The preview card comes in M5 (spec 06).
+    /// What the Link section shows for the text in the field (spec 06 A.2).
+    private var linkDisplay: ItemLinkDisplay {
+        ItemLinkDisplay.make(fieldText: draft.urlString, savedText: item.urlString,
+                             hasPreview: item.linkFetchedAt != nil)
+    }
+
+    /// The preview card of the saved link, the address, Open in Safari / Remove (spec 06 A.2).
     private var linkSection: some View {
         Section("Link") {
-            TextField("https://…", text: $draft.urlString)
-                .keyboardType(.URL)
-                .textContentType(.URL)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .focused($focus, equals: .link)
-                .accessibilityLabel(Text("Link"))
-                .accessibilityIdentifier("itemEdit.urlField")
+            if linkDisplay.showsPreview {
+                LinkPreviewCard(item: item) { draft.urlString = "" }
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                TextField("https://…", text: $draft.urlString)
+                    .keyboardType(.URL)
+                    .textContentType(.URL)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .focused($focus, equals: .link)
+                    .accessibilityLabel(Text("Link"))
+                    .accessibilityIdentifier("itemEdit.urlField")
+                if linkDisplay == .invalid {
+                    // Saving isn't blocked: the field is optional (LP-05).
+                    Text("Not a web link")
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                        .accessibilityIdentifier("itemEdit.linkError")
+                }
+            }
 
             if !draft.urlString.isEmpty {
-                HStack {
+                // Stacked at accessibility sizes, so "Open in Safari" is never cut (LP-14).
+                let buttonsLayout = dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+                    : AnyLayout(HStackLayout())
+                buttonsLayout {
                     if let url = draft.linkURL {
-                        Button("Open", systemImage: "safari") {
-                            openURL(url)
+                        // External: the shop's app for a universal link, else Safari (D4).
+                        Button {
+                            linkOpener.open(url, .external, using: openURL)
+                        } label: {
+                            linkButtonLabel("Open in Safari", systemImage: "safari")
                         }
                         .accessibilityIdentifier("itemEdit.openLinkButton")
                     }
-                    Spacer()
-                    Button("Remove", systemImage: "xmark.circle") {
+                    if !dynamicTypeSize.isAccessibilitySize { Spacer() }
+                    Button {
                         draft.urlString = ""
+                    } label: {
+                        linkButtonLabel("Remove", systemImage: "xmark.circle")
                     }
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("itemEdit.removeLinkButton")
                 }
                 .buttonStyle(.borderless)
             }
+        }
+    }
+
+    /// Icon + title of a link button. A system `Label` at accessibility sizes gave its title
+    /// half the row and cut it ("От-крыть в…" at AX3); here the title takes the rest and wraps (LP-14).
+    @ViewBuilder
+    private func linkButtonLabel(_ title: LocalizedStringKey, systemImage: String) -> some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Image(systemName: systemImage)
+                Text(title)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        } else {
+            Label(title, systemImage: systemImage)
         }
     }
 

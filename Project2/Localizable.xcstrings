@@ -783,6 +783,17 @@
         }
       }
     },
+    "Copy Link" : {
+      "comment" : "Item details: link card menu, copies the link.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скопировать ссылку"
+          }
+        }
+      }
+    },
     "Copy of “%@” created" : {
       "comment" : "Toast and VoiceOver announcement after Duplicate opened the copy of a list. The argument is the original list's name.",
       "localizations" : {
@@ -1332,6 +1343,28 @@
         }
       }
     },
+    "Link: %@" : {
+      "comment" : "VoiceOver label of the link card without a page title: site host.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ссылка: %@"
+          }
+        }
+      }
+    },
+    "Link: %@, %@" : {
+      "comment" : "VoiceOver label of the link card: page title, then site host.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ссылка: %1$@, %2$@"
+          }
+        }
+      }
+    },
     "List Info" : {
       "localizations" : {
         "ru" : {
@@ -1358,6 +1391,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Списки"
+          }
+        }
+      }
+    },
+    "Loading preview" : {
+      "comment" : "VoiceOver value of the link card while the page preview loads.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Загрузка превью"
           }
         }
       }
@@ -1573,6 +1617,17 @@
         }
       }
     },
+    "Not a web link" : {
+      "comment" : "Item details: caption under a link field whose text is not a web address.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Это не веб-ссылка"
+          }
+        }
+      }
+    },
     "Not bought" : {
       "comment" : "VoiceOver value of an item checkbox.",
       "localizations" : {
@@ -1627,13 +1682,13 @@
         }
       }
     },
-    "Open" : {
-      "comment" : "Item details: opens the item link in the browser.",
+    "Open in Safari" : {
+      "comment" : "Item details: opens the item link outside the app (the shop's app or Safari).",
       "localizations" : {
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Открыть"
+            "value" : "Открыть в Safari"
           }
         }
       }
@@ -1879,6 +1934,17 @@
         }
       }
     },
+    "Refresh Preview" : {
+      "comment" : "Item details: link card menu, loads the page title and picture again.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обновить превью"
+          }
+        }
+      }
+    },
     "Remove" : {
       "comment" : "Item details: removes the link from the item.",
       "localizations" : {
@@ -1886,6 +1952,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Убрать"
+          }
+        }
+      }
+    },
+    "Remove Link" : {
+      "comment" : "Item details: link card menu, removes the link from the item (saved with Done).",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалить ссылку"
           }
         }
       }
