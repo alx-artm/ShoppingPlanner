@@ -209,6 +209,42 @@ extension XCUIElement {
         return result
     }
 
+    /// Taps this element until `outcome` is met, at most `attempts` taps.
+    ///
+    /// For taps that navigate or run a swipe action. On a slow machine (CI) a tap can be
+    /// synthesized and still never reach the control: the app is responsive, nothing happens
+    /// (CI run 44785776879: a Home row and the swipe "Archive" button). XCTest does not resend
+    /// it, so we do.
+    ///
+    /// A second tap is sent only when BOTH hold after `resultTimeout`:
+    /// - the outcome is not met (checked first, so a tap that worked is never repeated), and
+    /// - this element is still on screen and hittable. A tap that worked but is slow moves the
+    ///   screen (push, sheet, row removed) and the element leaves or gets covered: then we only
+    ///   wait longer for the outcome. On iPad a list row stays hittable beside the opened list;
+    ///   tapping it again just selects the same list.
+    @MainActor
+    @discardableResult
+    func tap(until outcome: TapOutcome,
+             attempts: Int = 3,
+             resultTimeout: TimeInterval = 5,
+             file: StaticString = #filePath, line: UInt = #line) -> Bool {
+        // The first tap needs only existence, as `waitAndTap` did: some controls (rows under
+        // a toolbar, swipe buttons mid-animation) report not hittable yet take the tap.
+        waitToAppear(file: file, line: line)
+        for attempt in 1...max(attempts, 1) {
+            if attempt > 1 {
+                if outcome.isMet { return true }
+                guard exists && isHittable else { break }
+            }
+            tap()
+            if outcome.wait(timeout: resultTimeout) { return true }
+        }
+        if outcome.wait(timeout: uiTimeout) { return true }
+        XCTFail("Tap on \(self) did not lead to \(outcome.summary) (up to \(attempts) taps, "
+                + "\(resultTimeout)s each, then \(uiTimeout)s)", file: file, line: line)
+        return false
+    }
+
     /// Waits until `label` equals `expected` (labels update asynchronously after a tap).
     @MainActor
     func waitForLabel(_ expected: String, timeout: TimeInterval = uiTimeout,
@@ -405,5 +441,38 @@ enum ScreenshotContrast {
             best = max(best, ratio)
         }
         return best
+    }
+}
+
+/// What a tap is expected to cause, for `XCUIElement.tap(until:)`.
+enum TapOutcome {
+    /// `element` exists (a screen's anchor: its navigation bar, a sheet's field, a dialog button).
+    case appears(XCUIElement)
+    /// `element` is gone (an archived / restored row, the list detail after Back).
+    case disappears(XCUIElement)
+
+    @MainActor
+    var isMet: Bool {
+        switch self {
+        case .appears(let element): element.exists
+        case .disappears(let element): !element.exists
+        }
+    }
+
+    /// Waits up to `timeout` for the outcome; ends as soon as it is met.
+    @MainActor
+    func wait(timeout: TimeInterval) -> Bool {
+        switch self {
+        case .appears(let element): element.waitForExistence(timeout: timeout)
+        case .disappears(let element): element.waitForNonExistence(timeout: timeout)
+        }
+    }
+
+    @MainActor
+    var summary: String {
+        switch self {
+        case .appears(let element): "\(element) appearing"
+        case .disappears(let element): "\(element) disappearing"
+        }
     }
 }
