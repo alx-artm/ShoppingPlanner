@@ -30,13 +30,15 @@ struct HomeScreen {
         return self
     }
 
+    /// Taps a tile; a tap the slow runner lost is sent again (see `tap(until:)`).
     func open(card name: String) -> ListDetailScreen {
-        card(name).waitAndTap()
+        card(name).tap(until: .appears(ListDetailScreen.navigationBar(name, in: app)))
         return ListDetailScreen(app: app).waitUntilShown()
     }
 
+    /// Taps a row; a tap the slow runner lost is sent again (CI run 44785776879, iPad).
     func open(row name: String) -> ListDetailScreen {
-        row(name).waitAndTap()
+        row(name).tap(until: .appears(ListDetailScreen.navigationBar(name, in: app)))
         return ListDetailScreen(app: app).waitUntilShown()
     }
 
@@ -114,6 +116,22 @@ struct ListDetailScreen {
     func waitUntilShown(file: StaticString = #filePath, line: UInt = #line) -> ListDetailScreen {
         menuButton.waitToAppear(file: file, line: line)
         return self
+    }
+
+    /// The navigation bar titled with the list's name. Unlike `menuButton` it tells which list
+    /// is open: on iPad another list can already be showing in the detail column.
+    static func navigationBar(_ listName: String, in app: XCUIApplication) -> XCUIElement {
+        app.navigationBars[listName]
+    }
+
+    /// Undoes a gesture that arrived as a tap and opened this list on top of `element`'s
+    /// screen (Home, its search results, the Archive): Back, then wait for `element` again.
+    /// The retry decides on the list itself (its ⋯ gone), not on the screen below, so a slow
+    /// Back is never tapped twice into the screen before (the Archive has a Back button too).
+    func backFromMisfiredGesture(on element: XCUIElement) {
+        guard !element.isHittable, menuButton.exists, backButton.exists else { return }
+        backButton.tap(until: .disappears(menuButton))
+        element.waitToAppear()
     }
 
     /// ⋯ → Add Group → alert: type the name → Add. The group goes last (LD-01).
@@ -228,7 +246,7 @@ struct ListDetailScreen {
 
     /// Tap the row → item details sheet (LD-06).
     func openItem(_ name: String) -> ItemEditScreen {
-        reveal(itemRow(name)).tap()
+        reveal(itemRow(name)).tap(until: .appears(ItemEditScreen(app: app).nameField))
         return ItemEditScreen(app: app).waitUntilShown()
     }
 
@@ -305,7 +323,7 @@ struct ListDetailScreen {
     }
 
     func goBack() -> HomeScreen {
-        backButton.waitAndTap()
+        backButton.tap(until: .appears(HomeScreen(app: app).newListButton))
         return HomeScreen(app: app).waitUntilShown()
     }
 }
@@ -513,7 +531,7 @@ extension HomeScreen {
                                                        recover: { backFromMisfiredGesture(on: row(name)) }) {
             $0.swipeRight()
         }
-        if pinButton.exists { pinButton.tap() }
+        if pinButton.exists { pinButton.tap(until: .appears(card(name))) }
     }
 
     /// Long press a tile → "Unpin" (HM-09).
@@ -540,10 +558,11 @@ extension HomeScreen {
     /// list (a tile's Menu primary action, a row's link) and Home's tile or row is no longer
     /// on screen. Go back so the gesture can be retried. On iPad the list opens beside
     /// Home and `element` stays hittable: nothing to undo.
+    ///
+    /// Back returns to wherever `element` was: plain Home or Home's search results, where
+    /// "+" is hidden (CI run 44802851831). So it waits for `element`, not for Home's "+".
     func backFromMisfiredGesture(on element: XCUIElement) {
-        let detail = ListDetailScreen(app: app)
-        guard !element.isHittable, detail.menuButton.exists, detail.backButton.exists else { return }
-        _ = detail.goBack()
+        ListDetailScreen(app: app).backFromMisfiredGesture(on: element)
     }
 
     /// Swipe left on a row → "Delete" → confirmation dialog (HM-10).
@@ -557,7 +576,7 @@ extension HomeScreen {
                                                        recover: { backFromMisfiredGesture(on: row(name)) }) {
             $0.swipeLeft()
         }
-        if deleteButton.exists && !confirm.exists { deleteButton.tap() }
+        if deleteButton.exists && !confirm.exists { deleteButton.tap(until: .appears(confirm)) }
         return confirm.waitToAppear()
     }
 
@@ -569,7 +588,7 @@ extension HomeScreen {
             let start = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5))
             let end = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.5))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
-        }.waitAndTap()
+        }.tap(until: .appears(ListInfoScreen(app: app).nameField))
         return ListInfoScreen(app: app).waitUntilShown()
     }
 
@@ -711,7 +730,7 @@ extension HomeScreen {
             let start = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.5))
             let end = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.5))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
-        }.waitAndTap()
+        }.tap(until: .disappears(row(name))) // CI run 44785776879: tap lost, actions stayed open
     }
 
     /// Long press a tile → "Archive" (AR-10).
@@ -751,7 +770,7 @@ extension HomeScreen {
 
     /// The Archive row → the Archive screen (AR-14).
     func openArchive() -> ArchiveScreen {
-        archiveRow.scrollIntoView(within: list).waitAndTap()
+        archiveRow.scrollIntoView(within: list).tap(until: .appears(app.navigationBars["Archive"]))
         return ArchiveScreen(app: app).waitUntilShown()
     }
 }
@@ -780,7 +799,7 @@ struct ArchiveScreen {
 
     /// Tap a row → the archived list (iPhone: push; iPad: the detail column).
     func open(_ name: String) -> ListDetailScreen {
-        row(name).waitAndTap()
+        row(name).tap(until: .appears(ListDetailScreen.navigationBar(name, in: app)))
         return ListDetailScreen(app: app).waitUntilShown()
     }
 
@@ -793,7 +812,7 @@ struct ArchiveScreen {
         target.waitToAppear().perform("Swipe right", until: result, recover: { backFromMisfiredGesture(on: target) }) {
             $0.swipeRight()
         }
-        if restoreButton.exists { restoreButton.tap() }
+        if restoreButton.exists { restoreButton.tap(until: .disappears(target)) }
     }
 
     /// Long press a row → `action` of its context menu (restore, duplicate, share, delete).
@@ -807,16 +826,14 @@ struct ArchiveScreen {
 
     /// A gesture received as a tap opened the list: go back to the Archive (iPhone).
     func backFromMisfiredGesture(on element: XCUIElement) {
-        let detail = ListDetailScreen(app: app)
-        guard !element.isHittable, detail.menuButton.exists, detail.backButton.exists else { return }
-        detail.backButton.tap()
-        waitUntilShown()
+        ListDetailScreen(app: app).backFromMisfiredGesture(on: element)
     }
 
     /// Back to Home (the Archive's back button).
     @discardableResult
     func goBack() -> HomeScreen {
-        app.navigationBars["Archive"].buttons["BackButton"].waitAndTap()
+        let bar = app.navigationBars["Archive"]
+        bar.buttons["BackButton"].tap(until: .disappears(bar))
         return HomeScreen(app: app).waitUntilShown()
     }
 }
