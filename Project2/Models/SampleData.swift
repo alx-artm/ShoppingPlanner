@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 import SwiftUI
+import UIKit
 
 /// Deterministic demo content used by SwiftUI previews and by UI tests
 /// (launch argument `-UITests`). QA relies on these exact values; change them
@@ -102,6 +103,75 @@ enum SeedData {
 
         try context.save()
         return Lists(alex: alex, eva: eva, victoria: victoria)
+    }
+}
+
+// MARK: - Link rows (UI tests, spec 06 LP-15...LP-19)
+
+extension SeedData {
+    /// `-UITests -UITestsLinkRows 200`: one more list, "Links", last on Home, with `count` items
+    /// in the group "Shop", in a repeating pattern of four:
+    /// 1. a link with a stored 800 px preview picture (decoded by the row tile);
+    /// 2. a link without a preview yet (`stub.example.com`, answered by the stub fetcher);
+    /// 3. a link whose page has no picture (the tile shows the link symbol);
+    /// 4. no link (no tile).
+    /// For the long-list check of the row tiles (LP-19) and its screenshots.
+    @MainActor
+    static func populateLinkRows(_ context: ModelContext, count: Int) throws {
+        let createdAt = baseDate.addingTimeInterval(86_400)
+        let list = ListModel(name: "Links", iconName: "link", iconKind: .symbol, color: .orange,
+                             isPinned: false, sortIndex: 2, budget: nil, currencyCode: "USD",
+                             createdAt: createdAt)
+        context.insert(list)
+        let group = GroupModel(name: "Shop", sortIndex: 0, createdAt: createdAt)
+        context.insert(group)
+        group.list = list
+
+        let pictures = (0..<6).compactMap { samplePicture(hue: Double($0) / 6) }
+        for index in 0..<count {
+            let item = ItemModel(name: "Item \(index + 1)", quantity: 1 + index % 3,
+                                 price: Decimal(10 + index % 50), sortIndex: Double(index),
+                                 createdAt: createdAt.addingTimeInterval(Double(index)))
+            context.insert(item)
+            item.group = group
+            switch index % 4 {
+            case 0:
+                item.urlString = "https://shop\(index).example.com/product"
+                item.linkTitle = "Product \(index + 1)"
+                item.linkHost = "shop\(index).example.com"
+                item.linkImageData = pictures.isEmpty ? nil : pictures[index % pictures.count]
+                item.linkFetchedAt = baseDate
+            case 1:
+                item.urlString = "https://stub.example.com/\(index)"
+            case 2:
+                item.urlString = "https://noimage.example.com/\(index)"
+                item.linkTitle = "Page \(index + 1)"
+                item.linkHost = "noimage.example.com"
+                item.linkFetchedAt = baseDate
+            default:
+                break
+            }
+        }
+        try context.save()
+    }
+
+    /// An 800×600 JPEG, as big as a stored preview gets (`LinkThumbnail.maxPixelSize`).
+    private static func samplePicture(hue: Double) -> Data? {
+        let width = LinkThumbnail.maxPixelSize
+        let height = width * 3 / 4
+        guard let context = CGContext(
+            data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+        ) else { return nil }
+        let start = UIColor(hue: hue, saturation: 0.6, brightness: 0.95, alpha: 1).cgColor
+        let end = UIColor(hue: hue, saturation: 0.9, brightness: 0.5, alpha: 1).cgColor
+        guard let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                                        colors: [start, end] as CFArray, locations: [0, 1]) else { return nil }
+        context.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: width, y: height), options: [])
+        context.setFillColor(UIColor.white.cgColor)
+        context.fillEllipse(in: CGRect(x: width / 4, y: height / 4, width: width / 2, height: height / 2))
+        guard let image = context.makeImage() else { return nil }
+        return UIImage(cgImage: image).jpegData(compressionQuality: 0.7)
     }
 }
 

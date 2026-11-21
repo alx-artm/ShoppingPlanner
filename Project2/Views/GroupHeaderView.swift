@@ -171,4 +171,17 @@ enum ListRowGrid {
     static let iconColumnWidth: CGFloat = 44
     /// Between the icon column and the text.
     static let spacing: CGFloat = 4
+
+    // The link tile of an item row (spec 06 D1 variant A, LP-15...LP-18).
+
+    /// Side of the tile at the default text size; scaled like the checkbox.
+    static let linkTileSide: CGFloat = 44
+    /// Side of the tile at accessibility sizes, where it moves into the details line.
+    /// Fixed: the scaled 44 pt would be about 100 pt there.
+    static let linkTileAccessibilitySide: CGFloat = 56
+    static let linkTileCornerRadius: CGFloat = 10
+    /// From the checkbox to the tile (LP-16: at least 8 pt), and from the tile to the text.
+    static let linkTileGap: CGFloat = 8
+    /// Added before the tile so it starts `linkTileGap` after the checkbox, not `spacing`.
+    static var linkTileLeadingInset: CGFloat { linkTileGap - spacing }
 }

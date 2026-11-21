@@ -63,6 +63,9 @@ struct AppEnvironment {
             let container = try Persistence.makeContainer(inMemory: true)
             if !LaunchConfiguration.wantsEmptyStore {
                 try SeedData.populate(container.mainContext)
+                if let count = LaunchConfiguration.linkRowCount {
+                    try SeedData.populateLinkRows(container.mainContext, count: count)
+                }
             }
             // Volatile settings: the main currency comes from the test's -AppleLocale.
             return make(container: container, uiState: .inMemory(), settings: .inMemory())

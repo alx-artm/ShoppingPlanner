@@ -46,6 +46,24 @@ enum LinkThumbnail {
         return nil
     }
 
+    /// A decoded image of at most `maxPixelSize` px on its long side, for the row tile
+    /// (spec 06 A.1 p.7, LP-19): ImageIO decodes straight to that size, never the stored
+    /// 800 px picture. `nil` for data that isn't an image. Synchronous: call it off the main actor.
+    static func displayImage(from data: Data, maxPixelSize: Int) -> CGImage? {
+        guard !data.isEmpty, maxPixelSize > 0 else { return nil }
+        let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
+        guard let source = CGImageSourceCreateWithData(data as CFData, sourceOptions),
+              CGImageSourceGetCount(source) > 0 else { return nil }
+        let options = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            // Decoded here, in the background, not when the row first draws it.
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+        ] as CFDictionary
+        return CGImageSourceCreateThumbnailAtIndex(source, 0, options)
+    }
+
     /// The image scaled down to `maxPixelSize` on its long side (never up), EXIF rotation applied,
     /// on a white background: JPEG has no transparency, and a see-through favicon would turn black.
     private static func thumbnail(of source: CGImageSource, maxPixelSize: Int) -> CGImage? {
