@@ -54,6 +54,8 @@ struct LinkPreviewServiceTests {
             service.fetchIfNeeded(for: item)
         }
         #expect(!service.hasWork)
+        // Negative check: a slower machine only gives a wrong extra fetch more time to show
+        // up, so it can't make a correct service fail; it can only miss a bug, never invent one.
         try await Task.sleep(for: .milliseconds(50))
         #expect(await fetcher.callCount == 0)
     }
@@ -67,8 +69,10 @@ struct LinkPreviewServiceTests {
 
         service.fetchIfNeeded(for: item)
         service.fetchIfNeeded(for: item)
-        try await waitUntil { await fetcher.heldCount == 1 }
+        await wait(for: fetcher, .held(1))
         service.fetchIfNeeded(for: item)
+        // Negative check: a slower machine only gives a wrong extra fetch more time to show
+        // up, so it can't make a correct service fail; it can only miss a bug, never invent one.
         try await Task.sleep(for: .milliseconds(50))
         #expect(await fetcher.callCount == 1)
 
@@ -88,13 +92,15 @@ struct LinkPreviewServiceTests {
         for item in items {
             service.fetchIfNeeded(for: item)
         }
-        try await waitUntil { await fetcher.heldCount == 2 }
+        await wait(for: fetcher, .held(2))
+        // Negative check: a slower machine only gives a wrong extra fetch more time to show
+        // up, so it can't make a correct service fail; it can only miss a bug, never invent one.
         try await Task.sleep(for: .milliseconds(50))
         #expect(await fetcher.callCount == 2)
         #expect(await fetcher.maxHeldAtOnce == 2)
 
         await fetcher.releaseOne()
-        try await waitUntil { await fetcher.callCount == 3 }
+        await wait(for: fetcher, .calls(3))
         #expect(await fetcher.heldCount == 2)
 
         await fetcher.releaseAll()
@@ -137,7 +143,7 @@ struct LinkPreviewServiceTests {
         let item = try addItem(fixture, url: "https://old.example.com")
 
         service.fetchIfNeeded(for: item)
-        try await waitUntil { await fetcher.heldCount == 1 }
+        await wait(for: fetcher, .held(1))
         var draft = ItemDraft(item: item)
         draft.urlString = "https://new.example.com"
         fixture.store.updateItem(item, with: draft)
@@ -157,12 +163,12 @@ struct LinkPreviewServiceTests {
         let item = try addItem(fixture, url: "https://old.example.com")
 
         service.fetchIfNeeded(for: item)
-        try await waitUntil { await fetcher.heldCount == 1 }
+        await wait(for: fetcher, .held(1))
         var draft = ItemDraft(item: item)
         draft.urlString = "https://new.example.com"
         fixture.store.updateItem(item, with: draft)
         service.fetchIfNeeded(for: item) // ✓ in item details
-        try await waitUntil { await fetcher.callCount == 2 }
+        await wait(for: fetcher, .calls(2))
 
         await fetcher.releaseAll()
         try await waitUntilIdle(service)
@@ -179,7 +185,7 @@ struct LinkPreviewServiceTests {
         let other = try addItem(fixture, url: "https://other.example.com")
 
         service.fetchIfNeeded(for: item)
-        try await waitUntil { await fetcher.heldCount == 1 }
+        await wait(for: fetcher, .held(1))
         fixture.store.deleteItem(item)
 
         await fetcher.releaseAll()
@@ -198,7 +204,7 @@ struct LinkPreviewServiceTests {
         for item in items {
             service.fetchIfNeeded(for: item)
         }
-        try await waitUntil { await fetcher.heldCount == 2 }
+        await wait(for: fetcher, .held(2))
         fixture.store.deleteItem(items[2])
 
         await fetcher.releaseAll()
@@ -228,12 +234,37 @@ struct LinkPreviewServiceTests {
         return try #require(fixture.store.addItem(name: "Item", to: group, urlString: url))
     }
 
-    private func waitUntilIdle(_ service: LinkPreviewService) async throws {
-        try await waitUntil { !service.hasWork }
+    /// A failure guard only, never a pacing tool: a passing wait returns the moment its
+    /// condition holds, so a long guard costs nothing. It is long because CI runs ~400
+    /// tests in parallel on a slow runner and this main-actor suite can stall for seconds
+    /// while the service itself is fine (a 5 s deadline used to flake there).
+    private static let waitGuard: Duration = .seconds(60)
+
+    /// Suspends until the fetcher reaches `condition` (no polling); fails the test only
+    /// if that doesn't happen within `waitGuard`.
+    private func wait(for fetcher: FakeLinkFetcher, _ condition: FakeLinkFetcher.Condition,
+                      sourceLocation: SourceLocation = #_sourceLocation) async {
+        let timeout = Task {
+            try await Task.sleep(for: Self.waitGuard)
+            await fetcher.expireWaiters()
+        }
+        let met = await fetcher.waitFor(condition)
+        timeout.cancel()
+        if !met {
+            Issue.record("Timed out waiting for the fetcher to reach \(condition)",
+                         sourceLocation: sourceLocation)
+        }
+    }
+
+    /// `LinkPreviewService` has no completion signal (and app code stays as is), so this
+    /// one polls; the guard is generous for the same reason as `waitGuard`.
+    private func waitUntilIdle(_ service: LinkPreviewService,
+                               sourceLocation: SourceLocation = #_sourceLocation) async throws {
+        try await waitUntil(sourceLocation: sourceLocation) { !service.hasWork }
     }
 
     /// Polls `condition` every 10 ms; fails the test after `timeout`.
-    private func waitUntil(timeout: Duration = .seconds(5),
+    private func waitUntil(timeout: Duration = LinkPreviewServiceTests.waitGuard,
                            sourceLocation: SourceLocation = #_sourceLocation,
                            _ condition: () async -> Bool) async throws {
         let clock = ContinuousClock()
@@ -269,10 +300,12 @@ private actor FakeLinkFetcher: LinkMetadataFetching {
     func fetch(_ url: URL) async throws -> LinkPreview {
         let host = url.host() ?? ""
         requestedHosts.append(host)
+        resumeMetWaiters()
         if holdsAnswers {
             await withCheckedContinuation { continuation in
                 held.append(continuation)
                 maxHeldAtOnce = max(maxHeldAtOnce, held.count)
+                resumeMetWaiters()
             }
         }
         if failingHosts.contains(host) {
@@ -280,6 +313,60 @@ private actor FakeLinkFetcher: LinkMetadataFetching {
         }
         return LinkPreview(title: "Title of \(host)", imageData: Self.imageData)
     }
+
+    // MARK: Waiting for the fake's state (event-driven, see `wait(for:_:)` in the suite)
+
+    enum Condition: Sendable, CustomStringConvertible {
+        /// At least this many answers are held back right now.
+        case held(Int)
+        /// At least this many fetches were requested in total.
+        case calls(Int)
+
+        var description: String {
+            switch self {
+            case .held(let count): "\(count) held answer(s)"
+            case .calls(let count): "\(count) fetch call(s)"
+            }
+        }
+    }
+
+    private var waiters: [(condition: Condition, continuation: CheckedContinuation<Bool, Never>)] = []
+
+    private func isMet(_ condition: Condition) -> Bool {
+        switch condition {
+        case .held(let count): held.count >= count
+        case .calls(let count): callCount >= count
+        }
+    }
+
+    /// Returns `true` as soon as `condition` holds, or `false` when `expireWaiters()`
+    /// gives up on it first.
+    func waitFor(_ condition: Condition) async -> Bool {
+        if isMet(condition) { return true }
+        return await withCheckedContinuation { continuation in
+            waiters.append((condition, continuation))
+        }
+    }
+
+    /// The test's timeout guard: wakes every waiter with "not met".
+    func expireWaiters() {
+        let expired = waiters
+        waiters = []
+        for waiter in expired {
+            waiter.continuation.resume(returning: false)
+        }
+    }
+
+    /// Called after every change of `requestedHosts` or `held`.
+    private func resumeMetWaiters() {
+        let met = waiters.filter { isMet($0.condition) }
+        waiters.removeAll { isMet($0.condition) }
+        for waiter in met {
+            waiter.continuation.resume(returning: true)
+        }
+    }
+
+    // MARK: Releasing held answers
 
     func releaseOne() {
         guard !held.isEmpty else { return }
