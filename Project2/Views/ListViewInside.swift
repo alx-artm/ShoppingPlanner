@@ -155,10 +155,8 @@ struct ListViewInside: View {
             try? await Task.sleep(for: UndoToast.duration)
             if !Task.isCancelled { navigation.dismissDuplicateToast(duplicate.id) }
         }
-        // HM-41: the toast goes with the copy's screen; the copy stays.
-        .onDisappear {
-            if let duplicate = duplicateShownHere { navigation.dismissDuplicateToast(duplicate.id) }
-        }
+        // HM-41: leaving the copy ends the toast in `AppNavigation` (selection changes),
+        // not on `onDisappear`: a slow push can rebuild this screen and fire it early.
         .task(id: deletedItem?.id) {
             guard deletedItem != nil else { return }
             try? await Task.sleep(for: DeletedItem.duration)

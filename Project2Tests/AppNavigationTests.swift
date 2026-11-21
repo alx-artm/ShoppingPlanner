@@ -218,4 +218,76 @@ struct AppNavigationTests {
         #expect(navigation.recentDuplicate == nil, "the copy stays without Undo")
         #expect(try f.context.fetch(FetchDescriptor<ListModel>()).count == 3)
     }
+
+    // MARK: - Duplicate toast lifetime (HM-41: state, not the copy screen's onDisappear)
+
+    @Test("HM-41 leaving the copy (back, or another list on iPad) ends the toast; the copy stays",
+          arguments: [false, true])
+    func leavingCopyEndsToast(selectsAnotherList: Bool) throws {
+        let alex = f.store.createList(name: "Alex")
+        let eva = f.store.createList(name: "Eva")
+        let copy = navigation.openDuplicate(of: eva, using: f.store)
+        #expect(navigation.recentDuplicate != nil)
+
+        if selectsAnotherList {
+            navigation.selectedListID = alex.uuid // iPad sidebar: Home's selection binding
+        } else {
+            navigation.selectedListID = nil // iPhone back button
+        }
+
+        #expect(navigation.recentDuplicate == nil)
+        #expect(navigation.pendingAction == nil)
+        #expect(try names().contains(copy.name), "HM-43: the copy stays")
+    }
+
+    @Test("HM-41 the toast stays while the copy is still selected, whatever the views do")
+    func toastStaysWhileCopySelected() throws {
+        let eva = f.store.createList(name: "Eva")
+        let copy = navigation.openDuplicate(of: eva, using: f.store)
+        let id = try #require(navigation.recentDuplicate?.id)
+
+        // The selection binding writes the same value again; the copy's screen being
+        // rebuilt (onDisappear + onAppear) touches nothing here.
+        navigation.selectedListID = copy.uuid
+        navigation.select(copy)
+        navigation.detailDidClose(using: f.store)
+
+        #expect(navigation.recentDuplicate?.id == id)
+        #expect(navigation.recentDuplicate?.copyID == copy.uuid)
+    }
+
+    @Test("HM-41 the toast also ends when the copy is archived or deleted from its screen")
+    func archivingCopyEndsToast() throws {
+        let eva = f.store.createList(name: "Eva")
+        let copy = navigation.openDuplicate(of: eva, using: f.store)
+
+        navigation.requestArchive(of: copy, using: f.store)
+
+        #expect(navigation.recentDuplicate == nil)
+        #expect(navigation.pendingAction == .archive)
+    }
+
+    @Test("HM-42 Undo still works after the toast survived a rebuild of the copy's screen")
+    func undoAfterRebuild() throws {
+        let eva = f.store.createList(name: "Eva")
+        let copy = navigation.openDuplicate(of: eva, using: f.store)
+        navigation.select(copy)
+        navigation.detailDidClose(using: f.store)
+
+        navigation.undoDuplicate(copy, using: f.store)
+        #expect(navigation.selectedListID == nil)
+        navigation.detailDidClose(using: f.store)
+        #expect(try names() == ["Eva"])
+    }
+
+    @Test("HM-43 Duplicate from the open copy's ⋯ keeps the new toast")
+    func duplicateOfCopyKeepsNewToast() throws {
+        let eva = f.store.createList(name: "Eva")
+        let first = navigation.openDuplicate(of: eva, using: f.store)
+        let second = navigation.openDuplicate(of: first, using: f.store)
+
+        #expect(navigation.isSelected(second))
+        #expect(navigation.recentDuplicate?.copyID == second.uuid)
+        #expect(navigation.recentDuplicate?.previousSelection == first.uuid)
+    }
 }

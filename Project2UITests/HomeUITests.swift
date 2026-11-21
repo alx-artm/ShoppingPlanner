@@ -274,4 +274,18 @@ final class HomeUITests: XCTestCase {
         app.navigationBars["Eva copy"].waitToDisappear()
         XCTAssertFalse(eva.duplicateToast.exists)
     }
+
+    /// HM-41 regression (CI run 44802851831): after Eva was opened and closed, the copy's
+    /// screen was rebuilt during the push and its onDisappear killed the toast before it showed.
+    @MainActor
+    func testDuplicateAfterOpeningOriginalShowsToast() {
+        let app = Launch.app(longUndoToast: true)
+        let home = HomeScreen(app: app).waitUntilShown()
+        let eva = home.open(row: "Eva")
+        if !isPad { eva.backButton.waitAndTap() }
+        home.row("Eva").waitToAppear()
+        let copy = home.duplicateFromContextMenu(row: "Eva")
+        app.navigationBars["Eva copy"].waitToAppear()
+        copy.duplicateToast.waitToAppear()
+    }
 }
