@@ -18,9 +18,10 @@ final class LinkTileUITests: XCTestCase {
         continueAfterFailure = false
     }
 
-    /// LP-15 / LP-16: a saved link gets a 44 pt tile with the picture, 8 pt after the checkbox;
-    /// the amounts of rows with and without a tile end at the same x. A tap on the tile opens
-    /// the page in the app and not the details; a tap on the name still opens the details.
+    /// LP-15 / LP-16 (D1-v2 F): a saved link gets a 44 pt tile with the picture under the name,
+    /// at the start of the details line; names start and amounts end at the same x in rows
+    /// with and without a tile. A tap on the tile opens the page in the app and not the
+    /// details; a tap on the details next to it still opens the details.
     @MainActor
     func testTileShowsPictureAndOpensPageInApp() {
         let (app, eva) = openEva()
@@ -31,10 +32,7 @@ final class LinkTileUITests: XCTestCase {
         tile.waitForValue("Picture")
         XCTAssertEqual(tile.frame.width, 44, accuracy: 0.5)
         XCTAssertEqual(tile.frame.height, 44, accuracy: 0.5)
-        XCTAssertGreaterThanOrEqual(tile.frame.minX - eva.checkbox("Scooter").frame.maxX, 8 - 0.5,
-                                    "at least 8 pt between the checkbox and the tile")
-        XCTAssertEqual(eva.itemTotal("Scooter").frame.maxX, eva.itemTotal("Puss in Boots").frame.maxX,
-                       accuracy: 0.5, "the tile doesn't move the amount column")
+        assertTileUnderName(of: "Scooter", alignedWith: "Puss in Boots", in: eva)
         XCTAssertGreaterThan(eva.itemRow("Scooter").label.count, 0)
         attachScreenshot(of: app, named: "tile-light")
 
@@ -45,8 +43,10 @@ final class LinkTileUITests: XCTestCase {
         XCTAssertFalse(ItemEditScreen(app: app).cancelButton.waitForExistence(timeout: 2),
                        "a tap on the tile doesn't open the details")
 
-        let editor = eva.openItem("Scooter")
-        editor.cancel()
+        // The host chip next to the tile is part of the row's button: it opens the details.
+        app.descendants(matching: .any)["item.link.Scooter"].firstMatch
+            .tap(until: .appears(ItemEditScreen(app: app).nameField))
+        ItemEditScreen(app: app).waitUntilShown().cancel()
     }
 
     /// LP-15 / LP-17: without a picture (page has none, fetch failed) the tile shows the link
@@ -69,9 +69,12 @@ final class LinkTileUITests: XCTestCase {
         XCTAssertEqual(noImage.frame.height, failed.frame.height, accuracy: 0.5)
         XCTAssertEqual(eva.itemTotal("Scooter").frame.maxX, eva.itemTotal("Teddy Bear").frame.maxX,
                        accuracy: 0.5)
+        XCTAssertEqual(eva.itemRow("Scooter").frame.minX, eva.itemRow("Teddy Bear").frame.minX,
+                       accuracy: 0.5, "names start at one x")
     }
 
-    /// LP-17: the row is as high before the picture arrives as after.
+    /// LP-17: the row is as high before the picture arrives as after (a row with a link may be
+    /// taller than one without).
     @MainActor
     func testRowHeightDoesNotJumpWhenPictureArrives() {
         let (app, eva) = openEva()
@@ -107,7 +110,8 @@ final class LinkTileUITests: XCTestCase {
     }
 
     /// LP-18: at AX3, in Russian and in dark mode the tile (56 pt) is in the details line under
-    /// the name, at the text's leading edge, and the row fits the screen.
+    /// the name, at the text's leading edge, and the row fits the screen — the same layout as
+    /// at the default size, only the tile is bigger.
     @MainActor
     func testTileAtAccessibilitySizeInRussianDarkMode() {
         let app = Self.launch(language: "ru", region: "ru_RU",
@@ -126,6 +130,8 @@ final class LinkTileUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(tile.frame.minY, total.maxY - 0.5, "the tile is under the name line")
         XCTAssertLessThanOrEqual(tile.frame.maxY, row.maxY + 0.5)
         XCTAssertLessThanOrEqual(row.maxX, app.windows.firstMatch.frame.maxX)
+        XCTAssertEqual(row.minX, eva.itemRow("Puss in Boots").frame.minX, accuracy: 0.5,
+                       "names start at one x")
         attachScreenshot(of: app, named: "tile-ax3-ru-dark")
     }
 
@@ -153,6 +159,27 @@ final class LinkTileUITests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    /// D1-v2 F: the tile is under the name line at the text's leading edge, clear of the
+    /// checkbox; `item`'s name starts and its amount ends where `plain`'s (no link) do.
+    @MainActor
+    private func assertTileUnderName(of item: String, alignedWith plain: String, in list: ListDetailScreen,
+                                     file: StaticString = #filePath, line: UInt = #line) {
+        let tile = tile(item, in: list.app).frame
+        let row = list.itemRow(item).frame
+        let total = list.itemTotal(item).frame
+        let checkbox = list.checkbox(item).frame
+        XCTAssertEqual(tile.minX, row.minX, accuracy: 0.5, "the tile starts the details line",
+                       file: file, line: line)
+        XCTAssertGreaterThanOrEqual(tile.minY, total.maxY - 0.5, "the tile is under the name line",
+                                    file: file, line: line)
+        XCTAssertLessThanOrEqual(tile.maxY, row.maxY + 0.5, file: file, line: line)
+        XCTAssertFalse(tile.intersects(checkbox), "the tile is clear of the checkbox", file: file, line: line)
+        XCTAssertEqual(row.minX, list.itemRow(plain).frame.minX, accuracy: 0.5, "names start at one x",
+                       file: file, line: line)
+        XCTAssertEqual(total.maxX, list.itemTotal(plain).frame.maxX, accuracy: 0.5,
+                       "the tile doesn't move the amount column", file: file, line: line)
+    }
 
     /// `-UITests` with the stub fetcher and recorded links; English unless asked otherwise.
     @MainActor

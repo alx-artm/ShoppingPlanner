@@ -170,6 +170,34 @@ final class ListDetailLayoutUITests: XCTestCase {
         }
     }
 
+    /// Spec 06 D1-v2 F (M5.1): a link tile doesn't break the grid. The tile sits under the
+    /// name, so names start at one x (no "staircase"), amounts end at one x, and the tile
+    /// starts at the names' leading edge.
+    @MainActor
+    func testLinkTileKeepsNamesAndAmountsAligned() {
+        let app = Launch.app()
+        let alex = HomeScreen(app: app).waitUntilShown().open(card: "Alex")
+        let editor = alex.openItem("Swimsuit")
+        editor.urlField.scrollIntoViewLazily(within: editor.form)
+        editor.replaceText(of: editor.urlField, with: "https://shop.example.com/swimsuit")
+        editor.done()
+
+        let tile = app.buttons["item.linkThumb.Swimsuit"].waitToAppear().frame
+        let groupName = app.descendants(matching: .any)["group.name.Vacation"].firstMatch.waitToAppear()
+        let withLink = alex.itemRow("Swimsuit").frame
+        for plain in ["Sunglasses", "Appetizers"] {
+            XCTAssertEqual(alex.itemRow(plain).frame.minX, withLink.minX, accuracy: 0.5, "name of \(plain)")
+            XCTAssertEqual(alex.itemTotal(plain).frame.maxX, alex.itemTotal("Swimsuit").frame.maxX,
+                           accuracy: 0.5, "amount of \(plain)")
+        }
+        XCTAssertEqual(withLink.minX, groupName.frame.minX, accuracy: 1, "item names vs group name")
+        XCTAssertEqual(tile.minX, withLink.minX, accuracy: 0.5, "the tile starts at the names' edge")
+        XCTAssertGreaterThanOrEqual(tile.minY, alex.itemTotal("Swimsuit").frame.maxY - 0.5,
+                                    "the tile is under the name line")
+        XCTAssertGreaterThan(withLink.height, alex.itemRow("Sunglasses").frame.height,
+                             "a row with a link is taller")
+    }
+
     // MARK: - Accessibility sizes (LD-32, LD-33)
 
     /// LD-32: at AX-L the group name has its own line: never cut, ⋯ still a 44 pt target.

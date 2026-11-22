@@ -7,11 +7,13 @@
 //  The checkbox toggles "bought"; the rest of the row opens item details.
 //  Texts come from `ItemRowText`.
 //
-//  An item with a link also gets the link tile (spec 06 D1 variant A): after the checkbox,
-//  or at the start of the details line at accessibility sizes. The row's button keeps an
-//  empty slot of the tile's size and the tile is laid over that slot, outside the button:
-//  a tap on the tile opens the page, not the details, and the row is as high with or
-//  without the picture (LP-17). The amounts stay in one column (LP-15).
+//  An item with a link also gets the link tile (spec 06 D1 variant A, D1-v2 addendum F):
+//  under the name, at the start of the details line, with "qty × price" and the host chip
+//  in two lines next to it, at every text size. So every name starts right after the
+//  checkbox, and names, amounts and separators line up with rows without a link (LP-15).
+//  The row's button keeps an empty slot of the tile's size and the tile is laid over that
+//  slot, outside the button: a tap on the tile opens the page, not the details, and the
+//  row is as high with or without the picture (LP-17).
 //
 
 import SwiftUI
@@ -34,7 +36,7 @@ struct ItemRowView: View {
     /// The item's link when it is a web link: only then the row has a tile (LP-15).
     private var linkURL: URL? { ItemLink.url(from: item.urlString) }
 
-    /// At accessibility sizes the tile moves into the details line, so the name gets the width.
+    /// The scaled 44 pt would be about 100 pt at accessibility sizes: fixed 56 pt there.
     private var tileSide: CGFloat {
         dynamicTypeSize.isAccessibilitySize ? ListRowGrid.linkTileAccessibilitySide : scaledTileSide
     }
@@ -107,21 +109,7 @@ struct ItemRowView: View {
 
     private var content: some View {
         let style = ItemRowStyle(isComplete: item.isComplete)
-        return HStack(alignment: .firstTextBaseline, spacing: ListRowGrid.linkTileGap) {
-            if linkURL != nil, !dynamicTypeSize.isAccessibilitySize {
-                tileSlot
-                    // Centered with the checkbox, so it spans the name and the details line.
-                    .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 8 }
-                    .padding(.leading, ListRowGrid.linkTileLeadingInset)
-            }
-            texts(style)
-        }
-        .foregroundStyle(style.isDimmed ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
-        .padding(.vertical, 4)
-    }
-
-    private func texts(_ style: ItemRowStyle) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        return VStack(alignment: .leading, spacing: ListRowGrid.detailsSpacing) {
             HStack(alignment: .firstTextBaseline) {
                 Text(item.name)
                     .strikethrough(style.nameStrikethrough)
@@ -136,17 +124,19 @@ struct ItemRowView: View {
                         item.lineTotal, currencyCode: item.listCurrencyCode, locale: locale)))
                     .accessibilityIdentifier("item.total.\(item.name)")
             }
-            if linkURL != nil, dynamicTypeSize.isAccessibilitySize {
-                // AX: the tile, and the details and the host under each other next to it.
+            if linkURL != nil {
+                // D1-v2 F: the tile, and the details and the host under each other next to it.
                 HStack(alignment: .top, spacing: ListRowGrid.linkTileGap) {
                     tileSlot
-                    secondLine(stacked: true)
+                    secondLine
                 }
-                .padding(.top, 4)
+                .padding(.top, ListRowGrid.linkTileTopInset)
             } else {
-                secondLine(stacked: false)
+                secondLine
             }
         }
+        .foregroundStyle(style.isDimmed ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
+        .padding(.vertical, ListRowGrid.rowVerticalPadding)
     }
 
     /// The empty place of the tile in the row's button; the tile is drawn over it.
@@ -157,17 +147,15 @@ struct ItemRowView: View {
             .accessibilityHidden(true)
     }
 
-    /// `stacked`: the details above the host chip, for the narrow column next to the AX tile.
+    /// "qty × unit price · note", and under it the host chip when the item has a link: two
+    /// lines next to the tile, so neither is truncated by the other.
     @ViewBuilder
-    private func secondLine(stacked: Bool) -> some View {
+    private var secondLine: some View {
         let detail = ItemRowText.detail(quantity: item.quantity, price: item.price,
                                         currencyCode: item.listCurrencyCode, notes: item.notes, locale: locale)
         let host = ItemLink.displayHost(of: item.urlString)
-        let layout = stacked
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
-            : AnyLayout(HStackLayout(spacing: 6))
         if detail != nil || host != nil {
-            layout {
+            VStack(alignment: .leading, spacing: ListRowGrid.linkDetailsLineSpacing) {
                 if let detail {
                     Text(verbatim: detail)
                         .lineLimit(1)
@@ -181,7 +169,6 @@ struct ItemRowView: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 1)
                         .background(.quaternary, in: .capsule)
-                        .layoutPriority(-1)
                         .accessibilityIdentifier("item.link.\(item.name)")
                 }
             }
