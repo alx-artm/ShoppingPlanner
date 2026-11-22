@@ -34,6 +34,8 @@ struct ListViewInside: View {
     @State private var sheet: ListSheet?
     /// ⌘⌫ presses while item details are open (AD-12); the sheet asks before deleting.
     @State private var itemDeleteRequests = 0
+    /// ⇧⌘M presses while item details are open (MH-15); the sheet toggles its draft.
+    @State private var itemMustHaveRequests = 0
     @State private var showsDeleteListConfirmation = false
     /// The New Group / Rename alert (owner decision: an alert with a text field).
     @State private var nameAlert: GroupNameAlert?
@@ -215,7 +217,8 @@ struct ListViewInside: View {
         // ⌘⌫ only while item details are open. Published here, not by the sheet: a value
         // published inside the sheet doesn't reach the scene's commands.
         .focusedSceneValue(\.itemShortcutActions, isEditingItem
-                           ? ItemShortcutActions { itemDeleteRequests += 1 }
+                           ? ItemShortcutActions(requestDelete: { itemDeleteRequests += 1 },
+                                                 toggleMustHave: { itemMustHaveRequests += 1 })
                            : nil)
 
         .sheet(item: $sheet) { sheet in
@@ -223,7 +226,8 @@ struct ListViewInside: View {
             case .editItem(let item, let focusFirstEmpty):
                 ItemView(item: item, focusFirstEmpty: focusFirstEmpty,
                          presentingSizeClass: horizontalSizeClass,
-                         deleteRequests: itemDeleteRequests)
+                         deleteRequests: itemDeleteRequests,
+                         mustHaveRequests: itemMustHaveRequests)
             case .listInfo: ListInfoView(mode: .edit(list))
             case .reorderGroups: ReorderGroupsView(list: list)
             }
@@ -435,6 +439,16 @@ struct ListViewInside: View {
                 }
                 .tint(item.isComplete ? .gray : .green)
                 .accessibilityIdentifier("item.swipe.toggle")
+                // Spec 11: second, so a full swipe still toggles Bought. No reordering (MH-06).
+                Button {
+                    animated { store.toggleMustHave(item) }
+                } label: {
+                    item.isMustHave
+                        ? Label("Unmark", systemImage: "star.slash")
+                        : Label("Must-Have", systemImage: "star.fill")
+                }
+                .tint(item.isMustHave ? .gray : .orange)
+                .accessibilityIdentifier("item.swipe.mustHave")
             }
             .swipeActions(edge: .trailing) {
                 Button(role: .destructive) {
@@ -454,6 +468,12 @@ struct ListViewInside: View {
     private func itemMenu(_ item: ItemModel) -> some View {
         Button("Edit", systemImage: "pencil") { sheet = .editItem(item, focusFirstEmpty: false) }
             .accessibilityIdentifier("item.menu.edit")
+        // The menu shows a checkmark while the item is marked (MH-04).
+        Toggle("Must-Have", systemImage: "star", isOn: Binding(
+            get: { item.isMustHave },
+            set: { _ in animated { store.toggleMustHave(item) } }
+        ))
+        .accessibilityIdentifier("item.menu.mustHave")
         Button("Duplicate", systemImage: "plus.square.on.square") {
             animated { store.duplicateItem(item) }
         }

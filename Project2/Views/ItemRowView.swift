@@ -15,6 +15,9 @@
 //  slot, outside the button: a tap on the tile opens the page, not the details, and the
 //  row is as high with or without the picture (LP-17).
 //
+//  A must-have (spec 11) gets an orange ★ as the first glyph of the name, inside the same
+//  `Text`: it wraps with the name and never moves the checkbox, the tile or the amounts.
+//
 
 import SwiftUI
 
@@ -49,9 +52,10 @@ struct ItemRowView: View {
                     .contentShape(.rect)
             }
             .buttonStyle(.plain)
-            // LD-07e: "Bought" is read on the row too, not only on the checkbox; the strike
-            // isn't read by VoiceOver. Nothing extra for a row still to buy.
-            .accessibilityValue(item.isComplete ? Text("Bought") : Text(verbatim: ""))
+            // LD-07e / MH-14: "Must-have" and "Bought" are read on the row; the star and the
+            // strike aren't. Nothing extra for a plain row still to buy.
+            .accessibilityValue(Text(verbatim: ItemRowText.accessibilityValue(
+                isComplete: item.isComplete, isMustHave: item.isMustHave, locale: locale)))
             // LP-18: the tile is no VoiceOver stop; its action lives on the row.
             .accessibilityActions {
                 if linkURL != nil {
@@ -111,8 +115,7 @@ struct ItemRowView: View {
         let style = ItemRowStyle(isComplete: item.isComplete)
         return VStack(alignment: .leading, spacing: ListRowGrid.detailsSpacing) {
             HStack(alignment: .firstTextBaseline) {
-                Text(item.name)
-                    .strikethrough(style.nameStrikethrough)
+                name(style)
                     .lineLimit(3)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text(verbatim: ItemRowText.total(item.lineTotal, currencyCode: item.listCurrencyCode, locale: locale))
@@ -137,6 +140,24 @@ struct ItemRowView: View {
         }
         .foregroundStyle(style.isDimmed ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
         .padding(.vertical, ListRowGrid.rowVerticalPadding)
+    }
+
+    /// The name, with "★ " in front for a must-have (MH-07). The star is orange, or secondary
+    /// with the rest of a bought row, and never struck through (MH-08).
+    @ViewBuilder
+    private func name(_ style: ItemRowStyle) -> some View {
+        let name = Text(item.name).strikethrough(style.nameStrikethrough)
+        if item.isMustHave {
+            let star = Text(Image(systemName: "star.fill"))
+                .font(.footnote)
+                .foregroundStyle(style.isDimmed ? AnyShapeStyle(.secondary) : AnyShapeStyle(.orange))
+            Text("\(star) \(name)")
+                .accessibilityLabel(Text(item.name))
+                // The marker is inside the name, so the name carries its id (MH-03).
+                .accessibilityIdentifier("item.mustHave.\(item.name)")
+        } else {
+            name
+        }
     }
 
     /// The empty place of the tile in the row's button; the tile is drawn over it.

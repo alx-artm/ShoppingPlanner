@@ -57,6 +57,7 @@ protocol PlannerStoring: AnyObject {
     func setQuantity(_ quantity: Int, for item: ItemModel)
     @discardableResult func setPrice(_ price: Decimal?, for item: ItemModel) -> Bool
     func toggleComplete(_ item: ItemModel)
+    func toggleMustHave(_ item: ItemModel)
     func moveItem(_ item: ItemModel, to group: GroupModel)
     func moveItems(in group: GroupModel, fromOffsets source: IndexSet, toOffset destination: Int)
     @discardableResult func duplicateItem(_ item: ItemModel) -> ItemModel?
@@ -298,6 +299,8 @@ final class PlannerStore: PlannerStoring {
                     notes: item.notes,
                     isComplete: false,
                     completedAt: nil,
+                    // Kept: a must-have stays one in the copy; only "bought" is reset (spec 11).
+                    isMustHave: item.isMustHave,
                     sortIndex: item.sortIndex,
                     createdAt: item.createdAt
                 )
@@ -419,6 +422,7 @@ final class PlannerStore: PlannerStoring {
         }
         item.urlString = urlString
         item.notes = draft.notes
+        item.isMustHave = draft.isMustHave
         if let groupID = draft.groupID, groupID != item.group?.uuid,
            let target = item.parentList?.groups?.first(where: { $0.uuid == groupID }) {
             item.sortIndex = PlannerOrdering.indexAfter((target.items ?? []).map(\.sortIndex))
@@ -430,8 +434,13 @@ final class PlannerStore: PlannerStoring {
     /// Adds a new item from the details sheet's draft to `group`. `nil` for a blank name.
     @discardableResult
     func addItem(from draft: ItemDraft, to group: GroupModel) -> ItemModel? {
-        addItem(name: draft.name, to: group, quantity: draft.quantity, price: draft.price,
-                urlString: draft.urlString, notes: draft.notes)
+        let item = addItem(name: draft.name, to: group, quantity: draft.quantity, price: draft.price,
+                           urlString: draft.urlString, notes: draft.notes)
+        if let item, draft.isMustHave {
+            item.isMustHave = true
+            save()
+        }
+        return item
     }
 
     func renameItem(_ item: ItemModel, to name: String) {
@@ -461,6 +470,12 @@ final class PlannerStore: PlannerStoring {
     func toggleComplete(_ item: ItemModel) {
         item.isComplete.toggle()
         item.completedAt = item.isComplete ? now() : nil
+        save()
+    }
+
+    /// Marks or unmarks a must-have (spec 11). The order stays as it is (MH-06).
+    func toggleMustHave(_ item: ItemModel) {
+        item.isMustHave.toggle()
         save()
     }
 

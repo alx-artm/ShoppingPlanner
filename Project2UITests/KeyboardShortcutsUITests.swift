@@ -4,7 +4,8 @@
 //
 //  iPad keyboard shortcuts (spec 08 AD-12, M4 plan step 6, Q5 → A): ⌘N new item
 //  (inline, in the group an item was added to last), ⇧⌘N new group; both are off
-//  while item details are open. ⌘⌫ can't be sent by XCUITest (see the last test).
+//  while item details are open; ⇧⌘M toggles Must-Have in item details (spec 11, MH-15).
+//  ⌘⌫ can't be sent by XCUITest (see testCommandNIsOffWhileItemDetailsAreOpen).
 //  iPad only: the commands live in the iPad menu bar; on iPhone the tests are skipped.
 //  Seed data: in Eva the newest item is Jacket in Clothes (the last group).
 //
@@ -107,6 +108,20 @@ final class KeyboardShortcutsUITests: XCTestCase {
         XCTAssertFalse(app.alerts.firstMatch.waitForExistence(timeout: 2), "no New Group alert")
         editor.cancel()
         XCTAssertFalse(app.textFields["inline.nameField"].exists, "no inline add behind the sheet")
+    }
+
+    /// MH-15: ⇧⌘M toggles Must-Have in the open item details (a draft change: ✓ saves it).
+    @MainActor
+    func testShiftCommandMTogglesMustHaveInItemDetails() {
+        let app = Launch.app()
+        let eva = HomeScreen(app: app).waitUntilShown().open(row: "Eva")
+        let editor = eva.openItem("Scooter")
+        editor.mustHaveToggle.waitForValue("0")
+
+        press("m", [.command, .shift], in: app)
+        editor.mustHaveToggle.waitForValue("1")
+        editor.done()
+        eva.mustHaveMarker("Scooter").waitToAppear()
     }
 
     // MARK: - Helpers

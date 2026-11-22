@@ -34,6 +34,22 @@ enum ItemRowText {
             .first { !$0.isEmpty }
     }
 
+    /// VoiceOver value of the row (LD-07e, MH-14): "Must-have", "Must-have, Bought", "Bought",
+    /// or empty for a plain row still to buy. The star itself isn't read.
+    static func accessibilityValue(isComplete: Bool, isMustHave: Bool, locale: Locale = .autoupdatingCurrent,
+                                   bundle: Bundle = .main) -> String {
+        var parts: [String] = []
+        if isMustHave {
+            parts.append(String(localized: "Must-have", bundle: bundle, locale: locale,
+                                comment: "VoiceOver value of an item row marked as a must-have."))
+        }
+        if isComplete {
+            parts.append(String(localized: "Bought", bundle: bundle, locale: locale,
+                                comment: "VoiceOver value of an item checkbox."))
+        }
+        return parts.joined(separator: ", ")
+    }
+
     /// The row's amount: the line total, or "—" without a price, never "0" (LD-08).
     static func total(_ lineTotal: Decimal?, currencyCode: String, locale: Locale) -> String {
         lineTotal.map { MoneyFormat.string($0, currencyCode: currencyCode, locale: locale) } ?? "—"
@@ -80,6 +96,9 @@ struct ListSummaryText: Equatable, Sendable {
 
     /// Hidden when the list has no items (LD-11).
     let isVisible: Bool
+    /// "Must-haves $1,090.00" under the budget line of the full form; `nil` without
+    /// must-haves (MH-09).
+    let mustHaves: MustHaveText?
 
     init(_ summary: BudgetSummary, currencyCode: String, locale: Locale = .autoupdatingCurrent) {
         let status = ListStatusText(summary, currencyCode: currencyCode, locale: locale)
@@ -104,6 +123,36 @@ struct ListSummaryText: Equatable, Sendable {
                             comment: "List summary bar while the keyboard is open (\"To buy €788.79\").")
         compact = status.percentText.map { "\(amount) · \($0)" } ?? amount
         isVisible = summary.itemCount > 0
+        mustHaves = MustHaveText(summary, currencyCode: currencyCode, locale: locale)
+    }
+}
+
+/// The must-have line of the summary bar (spec 11, MH-09, MH-10): the planned total of the
+/// marked items, bought or not, and how far it alone is over the budget.
+struct MustHaveText: Equatable, Sendable {
+    /// "Must-haves $1,090.00".
+    let amount: String
+    /// "$90.00 over budget"; `nil` without a budget or when the must-haves fit in it.
+    let overBudget: String?
+    /// VoiceOver reads the line as one element: "Must-haves $1,090.00, $90.00 over budget".
+    var accessibilityLabel: String {
+        [amount, overBudget].compactMap(\.self).joined(separator: ", ")
+    }
+    /// Red with ⚠, like the budget line over budget (decision M3).
+    var isOverBudget: Bool { overBudget != nil }
+
+    /// `nil` when no item is marked.
+    init?(_ summary: BudgetSummary, currencyCode: String, locale: Locale = .autoupdatingCurrent,
+          bundle: Bundle = .main) {
+        guard summary.mustHaveCount > 0 else { return nil }
+        let planned = MoneyFormat.string(summary.mustHavePlanned, currencyCode: currencyCode, locale: locale)
+        amount = String(localized: "Must-haves \(planned)", bundle: bundle, locale: locale,
+                        comment: "List summary bar: the planned total of the must-have items (\"Must-haves €1,090.00\").")
+        overBudget = summary.mustHaveExcess.map { excess in
+            let money = MoneyFormat.string(excess, currencyCode: currencyCode, locale: locale)
+            return String(localized: "\(money) over budget", bundle: bundle, locale: locale,
+                          comment: "List summary bar: the must-haves alone are over the budget by this amount.")
+        }
     }
 }
 
