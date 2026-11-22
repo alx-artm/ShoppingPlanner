@@ -1694,7 +1694,7 @@
       }
     },
     "Open Link" : {
-      "comment" : "Item context menu.",
+      "comment" : "Item context menu; the link tile in a list row and its VoiceOver action.",
       "localizations" : {
         "ru" : {
           "stringUnit" : {
@@ -1740,6 +1740,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Упаковка"
+          }
+        }
+      }
+    },
+    "Picture" : {
+      "comment" : "Accessibility value of the link tile in a list row while it shows the page picture.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Картинка"
           }
         }
       }

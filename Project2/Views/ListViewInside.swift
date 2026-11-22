@@ -23,6 +23,7 @@ struct ListViewInside: View {
     @Environment(LocalUIState.self) private var uiState
     @Environment(AppNavigation.self) private var navigation
     @Environment(\.openURL) private var openURL
+    @Environment(\.linkOpener) private var linkOpener
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -201,6 +202,10 @@ struct ListViewInside: View {
                 if !isTypingInline, inline != nil { finishInline() }
             }
         }
+        // A tap on a row's link tile opens Safari inside the app, over this screen (LP-16).
+        .inAppBrowser()
+        // `debug.lastOpenedLink` for UI tests (`-UITestsRecordOpenedLinks`); nothing otherwise.
+        .openedLinkProbe()
         .navigationTitle(list.name)
         .navigationBarTitleDisplayMode(.inline)
         // ⌘N / ⇧⌘N on iPad (AD-12); off while a sheet, an alert or Reorder Items is up.
@@ -468,7 +473,8 @@ struct ListViewInside: View {
             .accessibilityIdentifier("item.menu.move")
         }
         if let url = ItemLink.url(from: item.urlString) {
-            Button("Open Link", systemImage: "safari") { openURL(url) }
+            // D4: the menu opens the shop's app or Safari; the tile opens the page in the app.
+            Button("Open Link", systemImage: "safari") { linkOpener.open(url, .external, using: openURL) }
                 .accessibilityIdentifier("item.menu.openLink")
         }
         Divider()

@@ -85,6 +85,20 @@ enum LaunchConfiguration {
         arguments.contains(uiTestsArgument) && arguments.contains(uiTestsRecordOpenedLinksArgument)
     }
 
+    /// Together with `-UITests`: `-UITestsLinkRows 200` adds the list "Links" with that many
+    /// items, most of them with links and pictures (`SeedData.populateLinkRows`, LP-19).
+    static let uiTestsLinkRowsArgument = "-UITestsLinkRows"
+
+    /// The number of link rows asked for by a UI test, `nil` in a normal launch.
+    static var linkRowCount: Int? {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard isUITesting,
+              let index = arguments.firstIndex(of: uiTestsLinkRowsArgument),
+              arguments.indices.contains(index + 1),
+              let count = Int(arguments[index + 1]), count > 0 else { return nil }
+        return count
+    }
+
     private static func seconds(after argument: String) -> Duration? {
         let arguments = ProcessInfo.processInfo.arguments
         guard isUITesting,
