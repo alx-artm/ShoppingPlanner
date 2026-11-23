@@ -219,6 +219,33 @@ final class ListDetailLayoutUITests: XCTestCase {
         XCTAssertFalse(name.frame.insetBy(dx: 1, dy: 1).intersects(menu.frame), "⋯ covers the name")
     }
 
+    /// M7.5: at AX-L an item's amount goes under its name, at the name's leading edge, so the
+    /// name has the row's whole width ("Sunglasses" was hyphenated "Sun-/glasses" at AX3).
+    @MainActor
+    func testItemAmountUnderNameAtAccessibilitySize() {
+        let app = Launch.app(contentSize: Self.accessibilityLarge)
+        let alex = alexWithFourGroups(app)
+        scrollToTop(app)
+
+        for item in ["Sunglasses", "Swimsuit"] {
+            let row = alex.reveal(alex.itemRow(item)).frame
+            let total = alex.itemTotal(item).waitToAppear().frame
+            XCTAssertEqual(total.minX, row.minX, accuracy: 1, "\(item): amount starts under the name")
+            XCTAssertGreaterThan(total.minY, row.minY + total.height / 2, "\(item): amount on its own line")
+        }
+    }
+
+    /// M7.5 + LD-35: at the default size the amount stays on the name's line, at the trailing edge.
+    @MainActor
+    func testItemAmountBesideNameAtDefaultSize() {
+        let app = Launch.app()
+        let alex = HomeScreen(app: app).waitUntilShown().open(card: "Alex")
+        let row = alex.itemRow("Sunglasses").waitToAppear().frame
+        let total = alex.itemTotal("Sunglasses").waitToAppear().frame
+        XCTAssertEqual(total.maxX, row.maxX, accuracy: 1, "amount at the trailing edge")
+        XCTAssertLessThan(total.minY, row.minY + row.height / 2, "amount on the name's line")
+    }
+
     /// LD-33: at AX-L the summary bar starts as one line and a tap shows the full form; with
     /// all 4 groups collapsed, "＋ Add Group" scrolls fully above it.
     @MainActor

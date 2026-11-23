@@ -34,6 +34,8 @@ struct ListInfoView: View {
     @FocusState private var isNameFocused: Bool
 
     @ScaledMetric(relativeTo: .title3) private var cellSize: CGFloat = 44
+    /// A color of the one-row palette: ~32 pt circles, so all 9 fit an iPhone form row.
+    @ScaledMetric(relativeTo: .title3) private var paletteCell: CGFloat = 34
     @ScaledMetric(relativeTo: .largeTitle) private var previewDiameter: CGFloat = 72
 
     init(mode: Mode) {
@@ -159,34 +161,57 @@ struct ListInfoView: View {
         }
     }
 
-    /// A row of circles; wraps at large text sizes (LI-04, LI-14).
+    /// The 9 colors in one row; 5 + 4 centered when one row doesn't fit; the wrapping grid
+    /// at large text sizes (LI-04, LI-14, M7.5: no more 7 + 2).
     private var colorSection: some View {
-        Section("Color") {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: cellSize), spacing: 4)], spacing: 4) {
-                ForEach(FavoriteColor.allCases, id: \.self) { color in
-                    let isSelected = draft.color == color
-                    Button {
-                        draft.color = color
-                    } label: {
-                        Circle()
-                            .fill(color.color.gradient)
-                            .padding(isSelected ? 8 : 6)
-                            .overlay {
-                                if isSelected {
-                                    Circle().strokeBorder(color.color, lineWidth: 3)
-                                }
-                            }
-                            .frame(width: cellSize, height: cellSize)
-                            .contentShape(.circle)
+        let colors = FavoriteColor.allCases
+        return Section("Color") {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: Self.paletteSpacing) {
+                    ForEach(colors, id: \.self) { colorCell($0, side: paletteCell) }
+                }
+                VStack(spacing: Self.paletteSpacing) {
+                    HStack(spacing: Self.paletteSpacing) {
+                        ForEach(colors.prefix(5), id: \.self) { colorCell($0, side: cellSize) }
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text(color.title))
-                    .accessibilityAddTraits(isSelected ? .isSelected : [])
-                    .accessibilityIdentifier("listEdit.color.\(color.rawValue)")
+                    HStack(spacing: Self.paletteSpacing) {
+                        ForEach(colors.dropFirst(5), id: \.self) { colorCell($0, side: cellSize) }
+                    }
+                }
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: cellSize), spacing: 4)], spacing: 4) {
+                    ForEach(colors, id: \.self) { colorCell($0, side: cellSize) }
                 }
             }
+            .frame(maxWidth: .infinity)
             .padding(.vertical, 4)
         }
+    }
+
+    /// Between the circles of the one-row and 5 + 4 palettes.
+    private static let paletteSpacing: CGFloat = 2
+
+    private func colorCell(_ color: FavoriteColor, side: CGFloat) -> some View {
+        let isSelected = draft.color == color
+        // The ring and the gap scale with the cell, so a small one-row cell keeps its circle.
+        let inset = side * (isSelected ? 0.18 : 0.12)
+        return Button {
+            draft.color = color
+        } label: {
+            Circle()
+                .fill(color.color.gradient)
+                .padding(inset)
+                .overlay {
+                    if isSelected {
+                        Circle().strokeBorder(color.color, lineWidth: 3)
+                    }
+                }
+                .frame(width: side, height: side)
+                .contentShape(.circle)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(color.title))
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .accessibilityIdentifier("listEdit.color.\(color.rawValue)")
     }
 
     /// "Symbols | Emoji" (LI-05, LI-06). Emoji come from the grid or from a

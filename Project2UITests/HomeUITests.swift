@@ -192,6 +192,22 @@ final class HomeUITests: XCTestCase {
         XCTAssertLessThan(home.top(of: home.row("Victoria")), home.top(of: home.row("Eva")))
     }
 
+    /// M7.5: no search field on an empty Home; it comes with the first list.
+    @MainActor
+    func testSearchHiddenWithoutLists() {
+        let app = Launch.app(emptyStore: true)
+        let home = HomeScreen(app: app).waitUntilShown()
+        home.emptyState.waitToAppear()
+        // The iPad sidebar keeps the field above the first row until the list is pulled down.
+        home.list.swipeDown(velocity: .slow)
+        XCTAssertFalse(home.searchField.exists, "nothing to search yet")
+
+        home.createList(named: "Garden")
+        home.row("Garden").waitToAppear()
+        if !home.searchField.waitForExistence(timeout: 2) { home.list.swipeDown(velocity: .slow) }
+        home.searchField.waitToAppear()
+    }
+
     /// HM-32: "Reorder Lists" is shown but disabled unless one section has two lists.
     /// 0 lists → disabled, 2 in All Lists → enabled, 1 pinned + 1 other → disabled.
     @MainActor

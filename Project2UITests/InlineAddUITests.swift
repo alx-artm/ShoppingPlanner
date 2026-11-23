@@ -5,7 +5,7 @@
 //  Spec 04 inline add (LD-12...LD-17, LD-05a, 05 ID-09): "＋ New Item"
 //  becomes a text field, Return saves and keeps the keyboard, the accessory
 //  bar adds price / quantity / link, Done and ⓘ save, an empty draft is
-//  dropped, and the summary bar is one line while typing.
+//  dropped, and the summary bar steps aside while typing (M7.5).
 //
 
 import XCTest
@@ -225,16 +225,27 @@ final class InlineAddUITests: XCTestCase {
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'item.row.'")).count, before)
     }
 
-    /// Owner decision: while typing, the summary bar is one line "To buy $X · N%".
+    /// M7.5 (owner review 2026-11-23): while inline add is open the summary bar is hidden, so
+    /// nothing floats over the rows; the row being typed sits fully above the accessory bar.
+    /// The bar comes back when inline add closes, also after moving to the price field.
     @MainActor
-    func testCompactSummaryWhileTyping() {
+    func testSummaryBarHiddenWhileTyping() {
         let alex = HomeScreen(app: Launch.app()).waitUntilShown().open(card: "Alex")
+        alex.summary.waitToAppear()
 
-        alex.startInline(in: "Vacation")
-        alex.app.staticTexts["listDetail.summary.compact"].waitForLabel("To buy $340.00 · 8%")
-        XCTAssertFalse(alex.budget.exists)
+        let field = alex.startInline(in: "Vacation")
+        alex.summary.waitToDisappear()
+        field.typeText("Hat")
+        let accessory = alex.app.buttons["inline.accessory.done"].waitToAppear()
+        XCTAssertLessThanOrEqual(field.frame.maxY, accessory.frame.minY,
+                                 "the accessory bar doesn't cover the row being typed")
+
+        alex.tapAccessory("price")
+        _ = alex.focusedInlineField("inline.priceField")
+        XCTAssertFalse(alex.summary.exists, "still hidden while the keyboard moves between fields")
 
         alex.inlineDone()
+        alex.summary.waitToAppear()
         alex.budget.waitToAppear()
     }
 
