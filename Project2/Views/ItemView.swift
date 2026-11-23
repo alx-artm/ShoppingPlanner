@@ -91,6 +91,8 @@ struct ItemView: View {
                 Section {
                     // Spec 11 (MH-05): a draft change like the other fields; ✕ drops it.
                     Toggle("Must-Have", isOn: $draft.isMustHave)
+                        // Orange like the ★ of the row (M7.5), not the list's ink.
+                        .tint(.orange)
                         .accessibilityIdentifier("itemEdit.mustHaveToggle")
                     adaptiveRow("Price per unit") {
                         MoneyField("Price", value: $draft.price, currencyCode: currencyCode,
@@ -150,6 +152,8 @@ struct ItemView: View {
                     Button("Cancel", systemImage: "xmark", role: .cancel) {
                         dismiss()
                     }
+                    // ✕ stays neutral when the list screen tints the sheet (M7.5).
+                    .tint(.primary)
                     .accessibilityIdentifier("itemEdit.cancelButton")
                 }
                 ToolbarItem(placement: .confirmationAction) {

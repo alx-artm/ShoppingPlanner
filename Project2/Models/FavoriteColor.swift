@@ -34,6 +34,26 @@ enum FavoriteColor: String, CaseIterable, Codable, Sendable {
         }
     }
 
+    /// The list color for text and controls on the list screen (M7.5): a darker (light mode) /
+    /// lighter (dark mode) shade of `color` with ≥ 4.5:1 against the backgrounds, so tinted
+    /// text and the bought checkbox stay readable. Icons and the purchase bar keep `color`.
+    var ink: Color { Color(inkResource) }
+
+    /// The asset of `ink`: light, dark and Increase Contrast variants (`Assets/ListInk`).
+    var inkResource: ColorResource {
+        switch self {
+        case .gray: .inkGray
+        case .red: .inkRed
+        case .orange: .inkOrange
+        case .yellow: .inkYellow
+        case .green: .inkGreen
+        case .mint: .inkMint
+        case .blue: .inkBlue
+        case .purple: .inkPurple
+        case .magenta: .inkMagenta
+        }
+    }
+
     /// Name read by VoiceOver for the color circles of List Info (LI-04).
     var title: LocalizedStringResource {
         switch self {

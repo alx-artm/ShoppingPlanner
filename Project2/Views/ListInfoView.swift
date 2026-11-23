@@ -92,6 +92,8 @@ struct ListInfoView: View {
                     Button("Cancel", systemImage: "xmark", role: .cancel) {
                         dismiss()
                     }
+                    // ✕ stays neutral when the list screen tints the sheet (M7.5).
+                    .tint(.primary)
                     .accessibilityIdentifier("listEdit.cancelButton")
                 }
                 ToolbarItem(placement: .confirmationAction) {

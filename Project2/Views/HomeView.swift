@@ -212,7 +212,13 @@ struct HomeView: View {
     private func row(_ list: ListModel) -> some View {
         NavigationLink(value: list.uuid) {
             ListRowView(list: list)
+                // Keeps the texts dark on the outlined selected row; the system would turn
+                // them white for its own accent fill.
+                .foregroundStyle(Color(.label))
         }
+        // M7.5: the open list is outlined in its own color, like its tile (iPad sidebar),
+        // instead of the system's accent fill.
+        .listRowBackground(navigation.isSelected(list) ? SelectedListRowBackground(list: list) : nil)
         .accessibilityLabel(Text(verbatim: accessibilityLabel(of: list)))
         .accessibilityIdentifier("home.listRow.\(list.name)")
         .swipeActions(edge: .leading) {
@@ -481,4 +487,19 @@ private enum HomeSheet: Identifiable {
         HomeView()
     }
     .sampleDataEnvironment()
+}
+
+/// The row of the list open next to the sidebar: the normal cell, outlined in the list's ink.
+private struct SelectedListRowBackground: View {
+    let list: ListModel
+
+    var body: some View {
+        Rectangle()
+            .fill(Color(.secondarySystemGroupedBackground))
+            .overlay {
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(list.color.ink, lineWidth: 2)
+                    .padding(2)
+            }
+    }
 }
