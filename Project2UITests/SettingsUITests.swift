@@ -67,6 +67,8 @@ final class SettingsUITests: XCTestCase {
         settings.appearancePicker.waitToAppear()
         settings.icloudStatus.waitToAppear()
         settings.version.waitToAppear()
+        // Spec 12 TJ-01 / TJ-28: without -UITestsTipJar the Tip Jar row doesn't exist.
+        XCTAssertFalse(settings.tipJarRow.exists, "the Tip Jar is hidden behind its flag")
 
         // SC-03: "€" finds EUR, and a query without results hides every row.
         let picker = settings.openCurrencyPicker()

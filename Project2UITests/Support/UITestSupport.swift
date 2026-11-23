@@ -29,6 +29,10 @@ enum Launch {
     static let slowInlineFieldSeconds = 3
     /// The inline name field loses the keyboard once, inside a view update, at the first character.
     static let dropInlineNameFocus = "-UITestsDropInlineNameFocus"
+    /// Turns the hidden Tip Jar on (spec 12, TJ-03).
+    static let tipJar = "-UITestsTipJar"
+    /// With `tipJar`: a scripted store instead of StoreKit (`ScriptedTipJarStore.Scenario`).
+    static let tipJarScenario = "-UITestsTipJarScenario"
 
     /// In-memory store with `SeedData` (or empty with `emptyStore: true`), in English / en_US
     /// unless another language and region are given.
@@ -56,13 +60,17 @@ enum Launch {
     /// `contentSize`: a Dynamic Type size for this launch only (`UIContentSizeCategory` raw
     /// value, e.g. `UIContentSizeCategory.accessibilityLarge.rawValue`), the simulator's
     /// setting is left alone.
+    ///
+    /// `tipJar`: the hidden Tip Jar is on. `tipJarScenario` (e.g. "success", "cancel") swaps
+    /// StoreKit for a scripted store; without it the app uses StoreKit and `TipJar.storekit`.
     @MainActor
     static func app(emptyStore: Bool = false, language: String = "en", region: String = "en_US",
                     longUndoToast: Bool = false, toastSeconds: Int? = nil,
                     longRowHighlight: Bool = false,
                     slowInlineFields: Bool = false,
                     dropInlineNameFocus: Bool = false,
-                    contentSize: String? = nil) -> XCUIApplication {
+                    contentSize: String? = nil,
+                    tipJar: Bool = false, tipJarScenario: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         // Appended one by one: one long `+` chain of optional arrays takes the
         // type checker too long on newer Xcode (CI failed with "unable to type-check").
@@ -74,6 +82,8 @@ enum Launch {
         if slowInlineFields { arguments += [inlineFieldDelaySeconds, String(slowInlineFieldSeconds)] }
         if dropInlineNameFocus { arguments.append(Launch.dropInlineNameFocus) }
         if let contentSize { arguments += ["-UIPreferredContentSizeCategoryName", contentSize] }
+        if tipJar { arguments.append(Launch.tipJar) }
+        if let tipJarScenario { arguments += [Launch.tipJarScenario, tipJarScenario] }
         arguments += locale(language: language, region: region)
         app.launchArguments = arguments
         app.launch()

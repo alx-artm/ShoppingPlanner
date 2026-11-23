@@ -434,6 +434,8 @@ struct SettingsScreen {
     var icloudStatus: XCUIElement { app.descendants(matching: .any)["settings.icloudStatus"].firstMatch }
     var version: XCUIElement { app.descendants(matching: .any)["settings.version"].firstMatch }
     var doneButton: XCUIElement { app.buttons["settings.doneButton"] }
+    /// "Support the Developer" row; exists only with the Tip Jar on (spec 12, TJ-01).
+    var tipJarRow: XCUIElement { app.buttons["settings.tipJar"] }
 
     @discardableResult
     func waitUntilShown(file: StaticString = #filePath, line: UInt = #line) -> SettingsScreen {
@@ -451,6 +453,46 @@ struct SettingsScreen {
     func openCurrencyPicker() -> CurrencyPickerScreen {
         mainCurrency.waitAndTap()
         return CurrencyPickerScreen(app: app).waitUntilShown()
+    }
+}
+
+@MainActor
+struct TipJarScreen {
+    let app: XCUIApplication
+
+    var list: XCUIElement { app.collectionViews["tipJar.list"] }
+    var loading: XCUIElement { app.descendants(matching: .any)["tipJar.loading"].firstMatch }
+    var error: XCUIElement { app.descendants(matching: .any)["tipJar.error"].firstMatch }
+    var retryButton: XCUIElement { app.buttons["tipJar.retryButton"] }
+    var thankYou: XCUIElement { app.descendants(matching: .any)["tipJar.thankYou"].firstMatch }
+    var pending: XCUIElement { app.descendants(matching: .any)["tipJar.pending"].firstMatch }
+
+    /// "coffee", "lunch" or "bigthanks".
+    func product(_ name: String) -> XCUIElement { app.buttons["tipJar.product.\(name)"] }
+
+    @discardableResult
+    func waitUntilShown(file: StaticString = #filePath, line: UInt = #line) -> TipJarScreen {
+        list.waitToAppear(file: file, line: line)
+        return self
+    }
+
+    /// Back to Settings. The back button of the Tip Jar's own bar: on iPad the split view
+    /// under the Settings sheet has navigation bars (and buttons) of its own.
+    func goBack(title: String = "Support the Developer") -> SettingsScreen {
+        app.navigationBars[title].buttons.element(boundBy: 0).waitAndTap()
+        list.waitToDisappear()
+        return SettingsScreen(app: app).waitUntilShown()
+    }
+}
+
+extension SettingsScreen {
+    /// Settings → Support the Developer.
+    func openTipJar() -> TipJarScreen {
+        // Scroll to About, the last row, first: on iPad the Settings sheet is short and the
+        // row can be "hittable" while half under the sheet's edge, where a tap dismisses it.
+        version.scrollIntoViewLazily(within: app.collectionViews.firstMatch)
+        tipJarRow.waitToBeHittable().tap()
+        return TipJarScreen(app: app).waitUntilShown()
     }
 }
 
