@@ -15,6 +15,9 @@
 //      To buy: $340.00
 //      Planned: $370.00
 //
+//  A must-have item gets "★ " before its name, and "Must-haves: …" follows
+//  "Planned:" when at least one item is marked (spec 11, MH-12).
+//
 
 import Foundation
 
@@ -38,6 +41,10 @@ enum ListShareText {
         lines.append("")
         lines.append(String(localized: "To buy: \(money(summary.toBuy))"))
         lines.append(String(localized: "Planned: \(money(summary.planned))"))
+        if summary.mustHaveCount > 0 {
+            lines.append(String(localized: "Must-haves: \(money(summary.mustHavePlanned))",
+                                comment: "Share as Text: the planned total of the must-have items."))
+        }
         if let budget = summary.budget {
             lines.append(String(localized: "Budget: \(money(budget))"))
         }
@@ -47,7 +54,8 @@ enum ListShareText {
     /// "☐ BBQ food — 2 × $55.00 = $110.00"; without a price: "☐ Jacket — 1".
     private static func itemLine(_ item: ItemModel, money: (Decimal, String) -> String) -> String {
         let box = item.isComplete ? "☑" : "☐"
-        var line = "\(box) \(item.name) — \(item.quantity)"
+        let star = item.isMustHave ? "★ " : ""
+        var line = "\(box) \(star)\(item.name) — \(item.quantity)"
         if let price = item.price {
             let priceCode = item.currencyCode ?? item.listCurrencyCode
             line += " × \(money(price, priceCode))"

@@ -107,7 +107,31 @@ struct ListSummaryBar: View {
             BudgetText(status: text.status, form: .full)
                 .font(.subheadline)
                 .accessibilityIdentifier("listDetail.budget")
+
+            if let mustHaves = text.mustHaves {
+                mustHaveLine(mustHaves)
+            }
         }
+    }
+
+    /// "★ Must-haves $1,090.00", and "· ⚠ $90.00 over budget" in red when the must-haves
+    /// alone are over the budget (MH-09, MH-10). Only in the full form (MH-11).
+    private func mustHaveLine(_ mustHaves: MustHaveText) -> some View {
+        let star = Text(Image(systemName: "star.fill")).foregroundStyle(.orange)
+        let line: Text = if let over = mustHaves.overBudget {
+            Text("\(star) \(mustHaves.amount) · \(Image(systemName: "exclamationmark.triangle.fill")) \(over)")
+                .foregroundStyle(.red)
+        } else {
+            Text("\(star) \(mustHaves.amount)")
+                .foregroundStyle(.secondary)
+        }
+        return line
+            .font(.subheadline)
+            .monospacedDigit()
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: mustHaves.accessibilityLabel))
+            .accessibilityIdentifier("listDetail.mustHaves")
     }
 
     /// `content` as a button that switches the form when `onToggleForm` is set, else as is.

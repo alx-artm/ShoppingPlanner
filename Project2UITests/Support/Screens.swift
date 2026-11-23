@@ -111,6 +111,12 @@ struct ListDetailScreen {
     var purchaseBar: XCUIElement { app.descendants(matching: .any)["listDetail.purchaseBar"].firstMatch }
     func checkbox(_ item: String) -> XCUIElement { app.buttons["item.checkbox.\(item)"] }
     func itemTotal(_ item: String) -> XCUIElement { app.staticTexts["item.total.\(item)"] }
+    /// The name of a must-have row, with its ★ (spec 11, MH-03); missing for an unmarked row.
+    func mustHaveMarker(_ item: String) -> XCUIElement {
+        app.descendants(matching: .any)["item.mustHave.\(item)"].firstMatch
+    }
+    /// "★ Must-haves $60.00" under the budget line (MH-09).
+    var mustHaves: XCUIElement { app.descendants(matching: .any)["listDetail.mustHaves"].firstMatch }
 
     @discardableResult
     func waitUntilShown(file: StaticString = #filePath, line: UInt = #line) -> ListDetailScreen {
@@ -177,9 +183,10 @@ struct ListDetailScreen {
         if details.cancelButton.waitForExistence(timeout: 2) { details.cancel() }
     }
 
-    /// Swipe right on a row → Bought / Not Bought (LD-09).
-    func swipeToToggle(_ item: String) {
-        let button = app.buttons["item.swipe.toggle"]
+    /// Swipe right on a row → Bought / Not Bought (LD-09), or with `action: "mustHave"`
+    /// Must-Have / Unmark (spec 11, MH-03).
+    func swipeToToggle(_ item: String, action: String = "toggle") {
+        let button = app.buttons["item.swipe.\(action)"]
         reveal(itemRow(item)).perform("Swipe right", until: button, recover: closeMisfiredItemDetails) {
             let start = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5))
             let end = $0.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.5))
@@ -343,6 +350,15 @@ struct ItemEditScreen {
     var groupPicker: XCUIElement { app.buttons["itemEdit.groupPicker"] }
     var doneButton: XCUIElement { app.buttons["itemEdit.doneButton"] }
     var cancelButton: XCUIElement { app.buttons["itemEdit.cancelButton"] }
+    var mustHaveToggle: XCUIElement { app.switches["itemEdit.mustHaveToggle"].firstMatch }
+
+    /// Flips the Must-Have switch: a tap on its trailing edge, where the switch is (the
+    /// middle of the row is the label).
+    func flipMustHave() {
+        let before = mustHaveToggle.waitToAppear().value as? String
+        mustHaveToggle.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+        mustHaveToggle.waitForValue(before == "1" ? "0" : "1")
+    }
     var deleteButton: XCUIElement { app.buttons["itemEdit.deleteButton"] }
 
     @discardableResult

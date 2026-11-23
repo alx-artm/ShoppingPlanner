@@ -17,6 +17,8 @@ struct ItemDraft: Equatable, Sendable {
     var quantity: Int = 1
     var urlString: String = ""
     var notes: String = ""
+    /// Spec 11 (MH-05): toggled in the details, saved with ✓ like the other fields.
+    var isMustHave = false
     /// The group the item is in, or moves to on ✓ (ID-08).
     var groupID: UUID?
 
@@ -36,6 +38,7 @@ struct ItemDraft: Equatable, Sendable {
         quantity = item.quantity
         urlString = item.urlString
         notes = item.notes
+        isMustHave = item.isMustHave
         groupID = item.group?.uuid
         currencyCode = item.currencyCode
         exchangeRate = item.exchangeRate
@@ -134,6 +137,7 @@ struct ItemSnapshot: Equatable, Sendable {
     var notes: String
     var isComplete: Bool
     var completedAt: Date?
+    var isMustHave: Bool
     var sortIndex: Double
     var createdAt: Date
     var groupID: UUID?
@@ -154,6 +158,7 @@ struct ItemSnapshot: Equatable, Sendable {
         notes = item.notes
         isComplete = item.isComplete
         completedAt = item.completedAt
+        isMustHave = item.isMustHave
         sortIndex = item.sortIndex
         createdAt = item.createdAt
         groupID = item.group?.uuid
@@ -164,7 +169,7 @@ struct ItemSnapshot: Equatable, Sendable {
         let item = ItemModel(uuid: uuid, name: name, quantity: quantity, price: price,
                              currencyCode: currencyCode, exchangeRate: exchangeRate, urlString: urlString,
                              notes: notes, isComplete: isComplete, completedAt: completedAt,
-                             sortIndex: sortIndex, createdAt: createdAt)
+                             isMustHave: isMustHave, sortIndex: sortIndex, createdAt: createdAt)
         item.actualPrice = actualPrice
         item.linkTitle = linkTitle
         item.linkHost = linkHost

@@ -4,7 +4,8 @@
 //
 //  iPad keyboard shortcuts (spec 08 AD-12, M4 plan step 6, Q5 → A):
 //  ⌘N new item, ⇧⌘N new group, ⌘⌫ delete the item in an open item sheet
-//  (it asks first). There is deliberately no shortcut for deleting a list.
+//  (it asks first), ⇧⌘M toggle Must-Have in an open item sheet (spec 11, MH-15).
+//  There is deliberately no shortcut for deleting a list.
 //
 //  Commands live on the scene, so they show in the iPadOS menu bar and in
 //  the overlay that appears while ⌘ is held. The list screen publishes what
@@ -25,6 +26,8 @@ struct ListShortcutActions {
 struct ItemShortcutActions {
     /// Asks "Delete …?" first, like the Delete Item button (ID-11).
     let requestDelete: @MainActor () -> Void
+    /// Toggles the sheet's Must-Have switch (a draft change, saved with ✓).
+    let toggleMustHave: @MainActor () -> Void
 }
 
 extension FocusedValues {
@@ -48,6 +51,9 @@ struct PlannerCommands: Commands {
         CommandGroup(after: .pasteboard) {
             Button("Delete Item") { itemActions?.requestDelete() }
                 .keyboardShortcut(.delete, modifiers: .command)
+                .disabled(itemActions == nil)
+            Button("Toggle Must-Have") { itemActions?.toggleMustHave() }
+                .keyboardShortcut("m", modifiers: [.command, .shift])
                 .disabled(itemActions == nil)
         }
     }

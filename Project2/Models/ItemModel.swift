@@ -32,6 +32,8 @@ extension SchemaV1 {
         var notes: String = ""
         var isComplete: Bool = false
         var completedAt: Date? = nil
+        /// Marked as a must-have (spec 11): independent of `isComplete`, never changes the order.
+        var isMustHave: Bool = false
         /// Manual order inside the group.
         var sortIndex: Double = 0
         var createdAt: Date = Date.now
@@ -49,6 +51,7 @@ extension SchemaV1 {
             notes: String = "",
             isComplete: Bool = false,
             completedAt: Date? = nil,
+            isMustHave: Bool = false,
             sortIndex: Double = 0,
             createdAt: Date = .now
         ) {
@@ -62,6 +65,7 @@ extension SchemaV1 {
             self.notes = notes
             self.isComplete = isComplete
             self.completedAt = completedAt
+            self.isMustHave = isMustHave
             self.sortIndex = sortIndex
             self.createdAt = createdAt
         }
@@ -84,6 +88,7 @@ extension ItemModel {
             price: price,
             quantity: quantity,
             isComplete: isComplete,
+            isMustHave: isMustHave,
             currencyCode: currencyCode,
             exchangeRate: exchangeRate
         )

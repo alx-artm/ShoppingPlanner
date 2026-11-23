@@ -494,4 +494,66 @@ final class ListDetailUITests: XCTestCase {
         party.groupHeader("Food").waitToAppear()
         party.emptyState.waitToDisappear()
     }
+
+    // MARK: - Must-have (spec 11)
+
+    /// MH-03 / MH-06 / MH-09: the leading swipe's second action marks a must-have: the ★ shows,
+    /// the order stays, the summary bar gets "Must-haves $60.00". "Unmark" takes it all back.
+    @MainActor
+    func testSwipeMarksMustHaveAndShowsSummaryLine() {
+        let alex = HomeScreen(app: Launch.app()).waitUntilShown().open(card: "Alex")
+        let names = ["Sunglasses", "Swimsuit"]
+        func order() -> [String] { names.sorted { alex.itemRow($0).frame.minY < alex.itemRow($1).frame.minY } }
+        let before = order()
+        XCTAssertFalse(alex.mustHaves.exists, "no must-haves, no line")
+
+        alex.swipeToToggle("Swimsuit", action: "mustHave")
+        alex.mustHaveMarker("Swimsuit").waitToAppear()
+        alex.mustHaves.waitForLabel("Must-haves $55.00")
+        XCTAssertEqual(order(), before, "no auto-sort")
+        XCTAssertFalse(alex.checkbox("Swimsuit").isSelected, "a full swipe would be Bought; this isn't")
+        XCTAssertEqual(alex.itemRow("Swimsuit").value as? String, "Must-have")
+
+        alex.swipeToToggle("Swimsuit", action: "mustHave")
+        alex.mustHaveMarker("Swimsuit").waitToDisappear()
+        alex.mustHaves.waitToDisappear()
+        XCTAssertEqual(order(), before)
+    }
+
+    /// MH-04: the context menu's Must-Have toggles the mark and shows it switched on.
+    @MainActor
+    func testContextMenuTogglesMustHave() {
+        let alex = HomeScreen(app: Launch.app()).waitUntilShown().open(card: "Alex")
+
+        alex.contextMenu("Sunglasses", "mustHave")
+        alex.mustHaveMarker("Sunglasses").waitToAppear()
+        alex.mustHaves.waitForLabel("Must-haves $60.00")
+
+        let toggle = alex.openContextMenu("Sunglasses", showing: "mustHave")
+        XCTAssertTrue(toggle.isSelected || (toggle.value as? String) == "1", "shown switched on")
+        toggle.tap()
+        alex.mustHaveMarker("Sunglasses").waitToDisappear()
+    }
+
+    /// MH-05: the details switch shows the mark; ✕ drops a change, ✓ saves it.
+    @MainActor
+    func testItemDetailsMustHaveToggleSavesAndCancels() {
+        let alex = HomeScreen(app: Launch.app()).waitUntilShown().open(card: "Alex")
+
+        var editor = alex.openItem("Appetizers")
+        XCTAssertEqual(editor.mustHaveToggle.waitToAppear().value as? String, "0")
+        // The flip alone is an unsaved change (MH-05, unit-tested on `ItemDraft`).
+        editor.flipMustHave()
+        editor.cancel()
+        XCTAssertFalse(alex.mustHaveMarker("Appetizers").exists, "✕ doesn't save")
+
+        editor = alex.openItem("Appetizers")
+        editor.flipMustHave()
+        editor.done()
+        alex.mustHaveMarker("Appetizers").waitToAppear()
+
+        editor = alex.openItem("Appetizers")
+        XCTAssertEqual(editor.mustHaveToggle.waitToAppear().value as? String, "1")
+        editor.cancel()
+    }
 }

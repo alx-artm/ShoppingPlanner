@@ -23,6 +23,8 @@ struct ItemView: View {
     /// Goes up by one for each ⌘⌫ (iPad): asks "Delete …?" like the Delete Item button
     /// (AD-12, ID-11). The command reaches the presenter, not this sheet, so it is passed in.
     let deleteRequests: Int
+    /// Goes up by one for each ⇧⌘M (iPad): toggles Must-Have in the draft (MH-15).
+    let mustHaveRequests: Int
 
     @Environment(PlannerStore.self) private var store
     @Environment(LinkPreviewService.self) private var linkPreviews
@@ -45,10 +47,11 @@ struct ItemView: View {
     ///   field of Price, Link, Note (ID-09).
     /// - Parameter presentingSizeClass: the presenter's `horizontalSizeClass` (detents, ID-10).
     init(item: ItemModel, focusFirstEmpty: Bool = false, presentingSizeClass: UserInterfaceSizeClass? = nil,
-         deleteRequests: Int = 0) {
+         deleteRequests: Int = 0, mustHaveRequests: Int = 0) {
         self.item = item
         self.presentingSizeClass = presentingSizeClass
         self.deleteRequests = deleteRequests
+        self.mustHaveRequests = mustHaveRequests
         let draft = ItemDraft(item: item)
         initialDraft = draft
         _draft = State(initialValue: draft)
@@ -86,6 +89,9 @@ struct ItemView: View {
                 }
 
                 Section {
+                    // Spec 11 (MH-05): a draft change like the other fields; ✕ drops it.
+                    Toggle("Must-Have", isOn: $draft.isMustHave)
+                        .accessibilityIdentifier("itemEdit.mustHaveToggle")
                     adaptiveRow("Price per unit") {
                         MoneyField("Price", value: $draft.price, currencyCode: currencyCode,
                                    focus: $focus, field: .price, identifier: "itemEdit.priceField",
@@ -186,6 +192,9 @@ struct ItemView: View {
         .onAppear { linkPreviews.fetchIfNeeded(for: item) }
         .onChange(of: deleteRequests) {
             showsDeleteConfirmation = true
+        }
+        .onChange(of: mustHaveRequests) {
+            draft.isMustHave.toggle()
         }
         .onChange(of: focus) { old, _ in
             if old == .quantity { quantityText = "\(draft.quantity)" }

@@ -4,6 +4,9 @@
     "%@ %@" : {
       "shouldTranslate" : false
     },
+    "%@ %@ · %@ %@" : {
+      "shouldTranslate" : false
+    },
     "%@ bought" : {
       "localizations" : {
         "ru" : {
@@ -32,6 +35,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ сверх"
+          }
+        }
+      }
+    },
+    "%@ over budget" : {
+      "comment" : "List summary bar: the must-haves alone are over the budget by this amount.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "на %@ больше бюджета"
           }
         }
       }
@@ -1478,6 +1492,50 @@
         }
       }
     },
+    "Must-have" : {
+      "comment" : "VoiceOver value of an item row marked as a must-have.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "обязательное"
+          }
+        }
+      }
+    },
+    "Must-Have" : {
+      "comment" : "Spec 11: the must-have switch in item details, the row's context menu and its swipe action.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обязательное"
+          }
+        }
+      }
+    },
+    "Must-haves %@" : {
+      "comment" : "List summary bar: the planned total of the must-have items (\"Must-haves €1,090.00\").",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обязательные %@"
+          }
+        }
+      }
+    },
+    "Must-haves: %@" : {
+      "comment" : "Share as Text: the planned total of the must-have items.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обязательные: %@"
+          }
+        }
+      }
+    },
     "Name" : {
       "comment" : "Item details: section title of the name field.",
       "localizations" : {
@@ -2380,6 +2438,17 @@
         }
       }
     },
+    "Toggle Must-Have" : {
+      "comment" : "iPad keyboard command (⇧⌘M) in item details: toggles the Must-Have switch.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обязательное: вкл/выкл"
+          }
+        }
+      }
+    },
     "Total" : {
       "comment" : "Item details: price × quantity.",
       "localizations" : {
@@ -2408,6 +2477,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Отменить"
+          }
+        }
+      }
+    },
+    "Unmark" : {
+      "comment" : "Swipe action on a must-have item row: removes the must-have mark.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Снять"
           }
         }
       }

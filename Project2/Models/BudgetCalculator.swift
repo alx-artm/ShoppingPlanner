@@ -18,6 +18,8 @@ struct BudgetLine: Hashable, Sendable {
     var price: Decimal?
     var quantity: Int
     var isComplete: Bool
+    /// A must-have (spec 11): counted in `mustHavePlanned` too.
+    var isMustHave: Bool
     /// `nil` = same as the list currency.
     var currencyCode: String?
     /// 1 unit of `currencyCode` = `exchangeRate` units of the list currency.
@@ -27,12 +29,14 @@ struct BudgetLine: Hashable, Sendable {
         price: Decimal?,
         quantity: Int = 1,
         isComplete: Bool = false,
+        isMustHave: Bool = false,
         currencyCode: String? = nil,
         exchangeRate: Decimal? = nil
     ) {
         self.price = price
         self.quantity = quantity
         self.isComplete = isComplete
+        self.isMustHave = isMustHave
         self.currencyCode = currencyCode
         self.exchangeRate = exchangeRate
     }
@@ -58,6 +62,15 @@ struct BudgetSummary: Equatable, Sendable {
     var missingRateCount: Int
     var itemCount: Int
     var completedCount: Int
+    /// Σ line totals of must-have items, bought or not (MH-02); same rules as `planned`.
+    var mustHavePlanned: Decimal
+    /// Must-have items, priced or not.
+    var mustHaveCount: Int
+    /// `mustHavePlanned − budget` when the must-haves alone are over the budget, else `nil` (MH-10).
+    var mustHaveExcess: Decimal? {
+        guard let budget, mustHavePlanned > budget else { return nil }
+        return mustHavePlanned - budget
+    }
 
     static let empty = BudgetCalculator.summary(of: [], listCurrencyCode: ListModel.fallbackCurrencyCode)
 }
@@ -90,9 +103,12 @@ enum BudgetCalculator {
         var unpriced = 0
         var missingRate = 0
         var completed = 0
+        var mustHavePlanned: Decimal = 0
+        var mustHaveCount = 0
 
         for line in lines {
             if line.isComplete { completed += 1 }
+            if line.isMustHave { mustHaveCount += 1 }
 
             if line.price == nil {
                 unpriced += 1
@@ -104,6 +120,7 @@ enum BudgetCalculator {
             }
             planned += total
             if line.isComplete { bought += total }
+            if line.isMustHave { mustHavePlanned += total }
         }
 
         let fraction: Decimal = planned == 0 ? 0 : bought / planned
@@ -120,7 +137,9 @@ enum BudgetCalculator {
             unpricedCount: unpriced,
             missingRateCount: missingRate,
             itemCount: lines.count,
-            completedCount: completed
+            completedCount: completed,
+            mustHavePlanned: mustHavePlanned,
+            mustHaveCount: mustHaveCount
         )
     }
 
