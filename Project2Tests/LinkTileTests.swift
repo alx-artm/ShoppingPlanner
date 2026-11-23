@@ -86,10 +86,10 @@ struct LinkTileTests {
         #expect(cache.image(for: key) == nil)
     }
 
-    @Test("The tile starts 8 pt after the checkbox (LP-16) and is 44 pt, 56 pt at AX sizes")
+    @Test("The tile sits under the name, 8 pt before its texts (D1-v2 F), and is 44 pt, 56 pt at AX sizes")
     func gridConstants() {
-        #expect(ListRowGrid.spacing + ListRowGrid.linkTileLeadingInset == ListRowGrid.linkTileGap)
         #expect(ListRowGrid.linkTileGap >= 8)
+        #expect(ListRowGrid.linkTileTopInset > 0)
         #expect(ListRowGrid.linkTileSide == ListRowGrid.iconColumnWidth)
         #expect(ListRowGrid.linkTileAccessibilitySide == 56)
     }

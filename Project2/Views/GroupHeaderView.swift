@@ -172,16 +172,21 @@ enum ListRowGrid {
     /// Between the icon column and the text.
     static let spacing: CGFloat = 4
 
-    // The link tile of an item row (spec 06 D1 variant A, LP-15...LP-18).
+    // An item row (spec 04 "Row") and its link tile (spec 06 D1-v2 F, LP-15...LP-18).
 
+    /// Above and below the texts of an item row.
+    static let rowVerticalPadding: CGFloat = 4
+    /// Between the name line and the details line.
+    static let detailsSpacing: CGFloat = 2
     /// Side of the tile at the default text size; scaled like the checkbox.
     static let linkTileSide: CGFloat = 44
-    /// Side of the tile at accessibility sizes, where it moves into the details line.
-    /// Fixed: the scaled 44 pt would be about 100 pt there.
+    /// Side of the tile at accessibility sizes. Fixed: the scaled 44 pt would be about 100 pt.
     static let linkTileAccessibilitySide: CGFloat = 56
     static let linkTileCornerRadius: CGFloat = 10
-    /// From the checkbox to the tile (LP-16: at least 8 pt), and from the tile to the text.
+    /// From the tile to the details and host next to it.
     static let linkTileGap: CGFloat = 8
-    /// Added before the tile so it starts `linkTileGap` after the checkbox, not `spacing`.
-    static var linkTileLeadingInset: CGFloat { linkTileGap - spacing }
+    /// Added above the tile, so it sits clear of the name line and the checkbox (LP-16).
+    static let linkTileTopInset: CGFloat = 4
+    /// Between "qty × price" and the host chip next to the tile.
+    static let linkDetailsLineSpacing: CGFloat = 4
 }
