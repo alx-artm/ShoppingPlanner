@@ -92,6 +92,8 @@ struct ListViewInside: View {
                     startNewGroup()
                 } label: {
                     gridRow(systemImage: "folder.badge.plus", identifier: "listDetail.addGroupRow") { Text("Add Group") }
+                        // Icon and title in the list's ink, the same as "＋ New Item" (M7.5).
+                        .foregroundStyle(.tint)
                 }
                 // Only the title: the icon (kept visible to UI tests for LD-35) isn't read.
                 .accessibilityLabel(Text("Add Group"))
@@ -210,6 +212,10 @@ struct ListViewInside: View {
         .openedLinkProbe()
         .navigationTitle(list.name)
         .navigationBarTitleDisplayMode(.inline)
+        // M7.5: the screen speaks in the list's color: the bought checkbox, "＋ New Item",
+        // "＋ Add Group", Restore / Undo and the toolbar. A readable shade (`ink`), not the
+        // raw color; status colors (red, orange ★, green) are set explicitly and stay.
+        .tint(list.color.ink)
         // ⌘N / ⇧⌘N on iPad (AD-12); off while a sheet, an alert or Reorder Items is up.
         .focusedSceneValue(\.listShortcutActions, acceptsShortcuts
                            ? ListShortcutActions(newItem: newItemFromShortcut, newGroup: startNewGroup)
@@ -228,8 +234,9 @@ struct ListViewInside: View {
                          presentingSizeClass: horizontalSizeClass,
                          deleteRequests: itemDeleteRequests,
                          mustHaveRequests: itemMustHaveRequests)
-            case .listInfo: ListInfoView(mode: .edit(list))
-            case .reorderGroups: ReorderGroupsView(list: list)
+                    .tint(list.color.ink)
+            case .listInfo: ListInfoView(mode: .edit(list)).tint(list.color.ink)
+            case .reorderGroups: ReorderGroupsView(list: list).tint(list.color.ink)
             }
         }
 

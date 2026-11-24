@@ -64,7 +64,8 @@ struct ListTileView: View {
         .overlay {
             if isSelected {
                 RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(Color.accentColor, lineWidth: 2)
+                    // The open list's own color (M7.5), as on its screen.
+                    .strokeBorder(list.color.ink, lineWidth: 2)
             }
         }
         .contentShape(.rect(cornerRadius: 16))

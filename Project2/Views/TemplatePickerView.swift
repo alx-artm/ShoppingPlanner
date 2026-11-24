@@ -25,12 +25,14 @@ struct TemplatePickerView: View {
                                 ListIconBadge(iconName: template.iconName, iconKind: .symbol,
                                               color: template.color, diameter: 40)
                                 VStack(alignment: .leading, spacing: 2) {
+                                    // Concrete colors: inside a list button `.primary` /
+                                    // `.secondary` are levels of the tint (M7.5).
                                     Text(template.name)
                                         .font(.headline)
-                                        .foregroundStyle(.primary)
+                                        .foregroundStyle(Color(.label))
                                     Text(template.groupNames.formatted(.list(type: .and, width: .narrow)))
                                         .font(.subheadline)
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(Color(.secondaryLabel))
                                 }
                             }
                             .padding(.vertical, 2)

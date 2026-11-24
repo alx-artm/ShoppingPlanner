@@ -60,7 +60,9 @@ struct LinkThumbnailTile: View {
     private func tile(_ image: UIImage?) -> some View {
         let shape = RoundedRectangle(cornerRadius: ListRowGrid.linkTileCornerRadius, style: .continuous)
         return shape
-            .fill(.quaternary)
+            // Neutral gray, not the hierarchical `.quaternary` / `.secondary`: inside the
+            // borderless button those are levels of the tint (M7.5).
+            .fill(Color(.quaternaryLabel))
             .overlay {
                 if let image {
                     Image(uiImage: image)
@@ -69,7 +71,7 @@ struct LinkThumbnailTile: View {
                 } else {
                     Image(systemName: "link")
                         .font(.system(size: side * 0.4, weight: .medium))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color(.secondaryLabel))
                 }
             }
             .clipShape(shape)
