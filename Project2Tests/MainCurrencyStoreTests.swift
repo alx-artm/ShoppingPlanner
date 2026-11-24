@@ -24,7 +24,7 @@ final class MainCurrencyStoreTests {
     let store: PlannerStore
 
     init() throws {
-        container = try Persistence.makeContainer(inMemory: true)
+        container = try Persistence.makeInMemoryContainer()
         let defaults = try #require(UserDefaults(suiteName: suiteName))
         // First launch in Germany → main currency EUR.
         let settings = AppSettings(defaults: defaults, locale: Locale(identifier: "de_DE"))

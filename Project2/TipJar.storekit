@@ -18,7 +18,7 @@
           "locale" : "ru"
         }
       ],
-      "productID" : "com.aliakseiartsimuk.Project2.tip.coffee",
+      "productID" : "com.aliakseiartsimuk.shoppingplanner.tip.coffee",
       "referenceName" : "Tip Coffee",
       "type" : "Consumable"
     },
@@ -38,7 +38,7 @@
           "locale" : "ru"
         }
       ],
-      "productID" : "com.aliakseiartsimuk.Project2.tip.lunch",
+      "productID" : "com.aliakseiartsimuk.shoppingplanner.tip.lunch",
       "referenceName" : "Tip Lunch",
       "type" : "Consumable"
     },
@@ -58,7 +58,7 @@
           "locale" : "ru"
         }
       ],
-      "productID" : "com.aliakseiartsimuk.Project2.tip.bigthanks",
+      "productID" : "com.aliakseiartsimuk.shoppingplanner.tip.bigthanks",
       "referenceName" : "Tip Big Thanks",
       "type" : "Consumable"
     }

@@ -38,6 +38,7 @@ struct Project2App: App {
                         .environment(environment.linkPreviews)
                         .environment(\.linkOpener, environment.linkOpener)
                         .environment(environment.tipJar)
+                        .environment(environment.iCloudSync)
                 case .failure(let error):
                     StartupErrorView(error: error)
                 }
@@ -59,11 +60,15 @@ struct AppEnvironment {
     let linkOpener: LinkOpener
     /// `nil` unless the Tip Jar is on (spec 12, `TipJarConfig`).
     let tipJar: TipJar?
+    /// iCloud account status and the first import (SC-10, DM-27, DM-28).
+    let iCloudSync: ICloudSyncMonitor
 
-    /// Normal launch: on-disk store. `-UITests`: in-memory store with `SeedData`.
+    /// Normal launch: on-disk store in the App Group folder, synced with iCloud (M6).
+    /// `-UITests`: in-memory store with `SeedData`. Unit test host: empty in-memory store.
+    /// Tests never touch CloudKit.
     static func make() throws -> AppEnvironment {
         if LaunchConfiguration.isUITesting {
-            let container = try Persistence.makeContainer(inMemory: true)
+            let container = try Persistence.makeInMemoryContainer()
             if !LaunchConfiguration.wantsEmptyStore {
                 try SeedData.populate(container.mainContext)
                 if let count = LaunchConfiguration.linkRowCount {
@@ -71,14 +76,40 @@ struct AppEnvironment {
                 }
             }
             // Volatile settings: the main currency comes from the test's -AppleLocale.
-            return make(container: container, uiState: .inMemory(), settings: .inMemory())
+            return make(container: container, uiState: .inMemory(), settings: .inMemory(), location: nil)
+        }
+        if LaunchConfiguration.isUnitTestHost {
+            // The unit tests build their own containers; the host app only needs to start.
+            return make(container: try Persistence.makeInMemoryContainer(), uiState: .inMemory(),
+                        settings: .inMemory(), location: nil)
         }
 
-        let container = try Persistence.makeContainer(inMemory: false)
-        return make(container: container, uiState: LocalUIState(), settings: AppSettings())
+        let location = storeLocationAfterMigration()
+        let container = try Persistence.makeContainer(at: location)
+        return make(container: container, uiState: LocalUIState(), settings: AppSettings(), location: location)
     }
 
-    private static func make(container: ModelContainer, uiState: LocalUIState, settings: AppSettings) -> AppEnvironment {
+    /// The store location for this launch, after moving a store left in the app's own
+    /// folder by a build without the App Group (`StoreMigrator`). If the move fails, this
+    /// launch keeps the old folder so no data is left behind; the next launch tries again.
+    private static func storeLocationAfterMigration() -> StoreLocation {
+        let location = StoreLocation.current()
+        let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Project2", category: "Persistence")
+        do {
+            let outcome = try StoreMigrator.moveStoreIfNeeded(
+                named: Persistence.storeName, from: URL.applicationSupportDirectory, to: location.directory)
+            if case .moved(let names) = outcome {
+                logger.notice("Moved the store to the App Group folder: \(names, privacy: .public)")
+            }
+            return location
+        } catch {
+            logger.error("Could not move the store to the App Group folder: \(error.localizedDescription, privacy: .public)")
+            return StoreLocation(directory: URL.applicationSupportDirectory, usesCloudKit: location.usesCloudKit)
+        }
+    }
+
+    private static func make(container: ModelContainer, uiState: LocalUIState, settings: AppSettings,
+                             location: StoreLocation?) -> AppEnvironment {
         let store = PlannerStore(
             context: container.mainContext,
             mainCurrencyCode: { [settings] in settings.mainCurrencyCode }
@@ -94,8 +125,11 @@ struct AppEnvironment {
             defaults: LaunchConfiguration.isUITesting ? TipJar.volatileDefaults() : .standard,
             makeStore: { TipJarConfig.makeStore() }
         )
+        let iCloudSync = ICloudSyncMonitor.forLaunch(location: location)
+        iCloudSync.start()
         return AppEnvironment(container: container, store: store, uiState: uiState, settings: settings,
-                              linkPreviews: linkPreviews, linkOpener: linkOpener, tipJar: tipJar)
+                              linkPreviews: linkPreviews, linkOpener: linkOpener, tipJar: tipJar,
+                              iCloudSync: iCloudSync)
     }
 }
 

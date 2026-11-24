@@ -31,6 +31,7 @@ import SwiftUI
 struct HomeView: View {
     @Environment(PlannerStore.self) private var store
     @Environment(AppNavigation.self) private var navigation
+    @Environment(ICloudSyncMonitor.self) private var iCloudSync
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.locale) private var locale
@@ -115,7 +116,11 @@ struct HomeView: View {
         .environment(\.editMode, $editMode)
         .overlay {
             if lists.isEmpty {
-                emptyState
+                if iCloudSync.isLookingForFirstImport {
+                    lookingForICloudListsState
+                } else {
+                    emptyState
+                }
             } else if sections.showsNoSearchResults {
                 ContentUnavailableView.search(text: query)
             }
@@ -430,6 +435,20 @@ struct HomeView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("home.emptyActiveState")
+    }
+
+    /// DM-28: a first launch on a new device waits for the lists already in iCloud
+    /// instead of offering templates (at most `FirstImportWait.limit`). Never creates demo data.
+    private var lookingForICloudListsState: some View {
+        ContentUnavailableView {
+            Label("Looking for your lists in iCloud…", systemImage: "icloud.and.arrow.down")
+        } description: {
+            Text("On a new device this can take a few seconds.")
+        } actions: {
+            ProgressView()
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("home.icloudLookingState")
     }
 
     /// No lists at all (HM-14). Centered by `ContentUnavailableView` in an overlay (AD-07).

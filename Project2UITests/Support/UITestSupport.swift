@@ -33,6 +33,10 @@ enum Launch {
     static let tipJar = "-UITestsTipJar"
     /// With `tipJar`: a scripted store instead of StoreKit (`ScriptedTipJarStore.Scenario`).
     static let tipJarScenario = "-UITestsTipJarScenario"
+    /// A fixed iCloud account status (`CKAccountStatus` case name), no CloudKit (SC-10).
+    static let iCloudStatus = "-UITestsICloudStatus"
+    /// With `iCloudStatus`: an empty Home waits this many seconds for the first iCloud import (DM-28).
+    static let iCloudFirstImportSeconds = "-UITestsICloudFirstImportSeconds"
 
     /// In-memory store with `SeedData` (or empty with `emptyStore: true`), in English / en_US
     /// unless another language and region are given.
@@ -63,6 +67,11 @@ enum Launch {
     ///
     /// `tipJar`: the hidden Tip Jar is on. `tipJarScenario` (e.g. "success", "cancel") swaps
     /// StoreKit for a scripted store; without it the app uses StoreKit and `TipJar.storekit`.
+    ///
+    /// `iCloudStatus`: the iCloud account status Settings shows ("available", "noAccount",
+    /// "restricted", ...). Without it the app behaves as a build without iCloud ("Off").
+    /// `iCloudFirstImportSeconds`: with it, an empty Home shows "Looking for your lists in
+    /// iCloud…" that long, as if the first import hadn't arrived yet.
     @MainActor
     static func app(emptyStore: Bool = false, language: String = "en", region: String = "en_US",
                     longUndoToast: Bool = false, toastSeconds: Int? = nil,
@@ -70,7 +79,8 @@ enum Launch {
                     slowInlineFields: Bool = false,
                     dropInlineNameFocus: Bool = false,
                     contentSize: String? = nil,
-                    tipJar: Bool = false, tipJarScenario: String? = nil) -> XCUIApplication {
+                    tipJar: Bool = false, tipJarScenario: String? = nil,
+                    iCloudStatus: String? = nil, iCloudFirstImportSeconds: Int? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         // Appended one by one: one long `+` chain of optional arrays takes the
         // type checker too long on newer Xcode (CI failed with "unable to type-check").
@@ -84,6 +94,8 @@ enum Launch {
         if let contentSize { arguments += ["-UIPreferredContentSizeCategoryName", contentSize] }
         if tipJar { arguments.append(Launch.tipJar) }
         if let tipJarScenario { arguments += [Launch.tipJarScenario, tipJarScenario] }
+        if let iCloudStatus { arguments += [Launch.iCloudStatus, iCloudStatus] }
+        if let iCloudFirstImportSeconds { arguments += [Launch.iCloudFirstImportSeconds, String(iCloudFirstImportSeconds)] }
         arguments += locale(language: language, region: region)
         app.launchArguments = arguments
         app.launch()

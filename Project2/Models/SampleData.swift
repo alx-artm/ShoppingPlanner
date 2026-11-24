@@ -187,6 +187,8 @@ final class SampleData {
     let navigation = AppNavigation()
     /// Previews never fetch from the network.
     let linkPreviews: LinkPreviewService
+    /// Previews never touch iCloud.
+    let iCloudSync = ICloudSyncMonitor(accountStatus: nil)
 
     let evaList: ListModel
     let victoriaList: ListModel
@@ -198,7 +200,7 @@ final class SampleData {
 
     private init() {
         do {
-            modelContainer = try Persistence.makeContainer(inMemory: true)
+            modelContainer = try Persistence.makeInMemoryContainer()
             let lists = try SeedData.populate(modelContainer.mainContext)
             evaList = lists.eva
             victoriaList = lists.victoria
@@ -228,5 +230,6 @@ extension View {
             .environment(SampleData.shared.settings)
             .environment(SampleData.shared.navigation)
             .environment(SampleData.shared.linkPreviews)
+            .environment(SampleData.shared.iCloudSync)
     }
 }

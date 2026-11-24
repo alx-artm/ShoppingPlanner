@@ -3,20 +3,28 @@
 //  Project2
 //
 //  One place that builds the SwiftData `ModelContainer` for the app,
-//  previews, UI tests and unit tests.
+//  previews, UI tests and unit tests, and decides where the store lives (M6:
+//  the App Group folder, synced with iCloud).
 //
 
 import Foundation
 import SwiftData
 
-/// iCloud sync feature flag (spec 01 "Sync", ROADMAP prerequisites).
+/// iCloud sync settings (spec 01 "Sync", M6).
 ///
-/// This is THE switch for CloudKit. It stays `false` until the project moves
-/// from the free Personal Team to the paid Apple Developer Program: without it
-/// the iCloud capability can't be signed. Turning it on (M6) also needs the
-/// iCloud + Background Modes capabilities and an App Group container.
+/// The identifiers come from the permanent bundle id (DECISIONS Р-31) and can never
+/// change: users' data lives in this iCloud container. They must match
+/// `Project2.entitlements`.
 enum SyncConfig {
-    static let isCloudKitEnabled = false
+    /// THE switch for CloudKit. On since M6 (paid Apple Developer Program).
+    /// A build without the entitlements (CI's `CODE_SIGNING_ALLOWED=NO`) stays local anyway,
+    /// see `StoreLocation.resolve`.
+    static let isCloudKitEnabled = true
+
+    static let cloudKitContainerIdentifier = "iCloud.com.aliakseiartsimuk.shoppingplanner"
+
+    /// Shared with the Share Extension (spec 06, M7).
+    static let appGroupIdentifier = "group.com.aliakseiartsimuk.shoppingplanner"
 }
 
 /// How the current process should set up its data.
@@ -28,6 +36,30 @@ enum LaunchConfiguration {
 
     static var isUITesting: Bool {
         ProcessInfo.processInfo.arguments.contains(uiTestsArgument)
+    }
+
+    /// The app is the host of the unit tests: in-memory store, never CloudKit.
+    static var isUnitTestHost: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+    }
+
+    /// Together with `-UITests`: `-UITestsICloudStatus available` (or `noAccount`, `restricted`,
+    /// `temporarilyUnavailable`, `couldNotDetermine`) shows that iCloud account status in Settings
+    /// (SC-10). No CloudKit is touched: the store stays in memory.
+    static let uiTestsICloudStatusArgument = "-UITestsICloudStatus"
+
+    /// The account status asked for by a UI test, `nil` in a normal launch.
+    static var iCloudStatusOverride: String? {
+        value(after: uiTestsICloudStatusArgument)
+    }
+
+    /// Together with `-UITests -UITestsICloudStatus available`: `-UITestsICloudFirstImportSeconds 60`
+    /// shows "Looking for your lists in iCloud…" on an empty Home that long, as on a first launch
+    /// whose iCloud import hasn't finished yet (DM-28).
+    static let uiTestsICloudFirstImportSecondsArgument = "-UITestsICloudFirstImportSeconds"
+
+    static var iCloudFirstImportWaitOverride: Duration? {
+        seconds(after: uiTestsICloudFirstImportSecondsArgument)
     }
 
     static var wantsEmptyStore: Bool {
@@ -100,12 +132,53 @@ enum LaunchConfiguration {
     }
 
     private static func seconds(after argument: String) -> Duration? {
+        guard let value = value(after: argument), let seconds = Int(value), seconds > 0 else { return nil }
+        return .seconds(seconds)
+    }
+
+    /// The argument that follows `argument` in a UI test launch, `nil` otherwise.
+    private static func value(after argument: String) -> String? {
         let arguments = ProcessInfo.processInfo.arguments
         guard isUITesting,
               let index = arguments.firstIndex(of: argument),
-              arguments.indices.contains(index + 1),
-              let seconds = Int(arguments[index + 1]), seconds > 0 else { return nil }
-        return .seconds(seconds)
+              arguments.indices.contains(index + 1) else { return nil }
+        return arguments[index + 1]
+    }
+}
+
+/// Where the on-disk store lives in this launch and whether it syncs (spec 01 "Sync").
+struct StoreLocation: Equatable, Sendable {
+    /// The folder with `Planner.store` and its companion files (`StoreMigrator.fileNames`).
+    let directory: URL
+    /// `cloudKitDatabase: .automatic` (the private database of the entitled container) or `.none`.
+    let usesCloudKit: Bool
+
+    var storeURL: URL {
+        directory.appending(path: "\(Persistence.storeName).store", directoryHint: .notDirectory)
+    }
+
+    /// - Parameters:
+    ///   - appGroupContainer: the App Group folder, `nil` when the build has no App Group
+    ///     entitlement. That is CI's unsigned build (`CODE_SIGNING_ALLOWED=NO`): it has no
+    ///     iCloud entitlement either, so it keeps the store in the app's own folder, without
+    ///     CloudKit. Both entitlements come from the same `Project2.entitlements`.
+    ///   - applicationSupport: the app's own Application Support folder (the pre-M6 location).
+    static func resolve(appGroupContainer: URL?, applicationSupport: URL, isCloudKitEnabled: Bool) -> StoreLocation {
+        guard let appGroupContainer else {
+            return StoreLocation(directory: applicationSupport, usesCloudKit: false)
+        }
+        // The same layout as SwiftData's own `groupContainer:` option.
+        let directory = appGroupContainer.appending(path: "Library/Application Support", directoryHint: .isDirectory)
+        return StoreLocation(directory: directory, usesCloudKit: isCloudKitEnabled)
+    }
+
+    /// The location for a normal launch of this build.
+    static func current(fileManager: FileManager = .default) -> StoreLocation {
+        resolve(
+            appGroupContainer: fileManager.containerURL(forSecurityApplicationGroupIdentifier: SyncConfig.appGroupIdentifier),
+            applicationSupport: URL.applicationSupportDirectory,
+            isCloudKitEnabled: SyncConfig.isCloudKitEnabled
+        )
     }
 }
 
@@ -119,17 +192,32 @@ enum Persistence {
         Schema(versionedSchema: SchemaV1.self)
     }
 
-    /// Builds the container. `inMemory` is used by previews, UI tests and unit tests.
-    static func makeContainer(inMemory: Bool) throws -> ModelContainer {
-        // In-memory stores get a unique name so two containers in one test
-        // process never share data.
+    /// In-memory container for previews, UI tests and unit tests: never CloudKit.
+    /// Each one gets a unique name so two containers in one test process never share data.
+    static func makeInMemoryContainer() throws -> ModelContainer {
         let configuration = ModelConfiguration(
-            inMemory ? "InMemory-\(UUID().uuidString)" : storeName,
+            "InMemory-\(UUID().uuidString)",
             schema: schema,
-            isStoredInMemoryOnly: inMemory,
-            cloudKitDatabase: (SyncConfig.isCloudKitEnabled && !inMemory) ? .automatic : .none
+            isStoredInMemoryOnly: true,
+            cloudKitDatabase: .none
         )
-        return try ModelContainer(
+        return try makeContainer(configuration)
+    }
+
+    /// The on-disk store of a normal launch, synced with iCloud when `location.usesCloudKit`.
+    static func makeContainer(at location: StoreLocation, fileManager: FileManager = .default) throws -> ModelContainer {
+        try fileManager.createDirectory(at: location.directory, withIntermediateDirectories: true)
+        let configuration = ModelConfiguration(
+            storeName,
+            schema: schema,
+            url: location.storeURL,
+            cloudKitDatabase: location.usesCloudKit ? .automatic : .none
+        )
+        return try makeContainer(configuration)
+    }
+
+    private static func makeContainer(_ configuration: ModelConfiguration) throws -> ModelContainer {
+        try ModelContainer(
             for: schema,
             migrationPlan: PlannerMigrationPlan.self,
             configurations: [configuration]

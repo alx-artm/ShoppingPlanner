@@ -15,6 +15,7 @@ struct SettingsView: View {
     @Environment(AppSettings.self) private var settings
     /// `nil` while the Tip Jar flag is off: no section at all (TJ-01).
     @Environment(TipJar.self) private var tipJar: TipJar?
+    @Environment(ICloudSyncMonitor.self) private var iCloudSync
     @Environment(\.dismiss) private var dismiss
     @Environment(\.locale) private var locale
     @AppStorage("selectedTheme") private var selectedTheme: AppTheme = .system
@@ -51,15 +52,7 @@ struct SettingsView: View {
                     .accessibilityIdentifier("settings.appearancePicker")
                 }
 
-                Section {
-                    // Sync arrives in M6 (SC-10); until then data is local only.
-                    LabeledContent("iCloud Sync", value: String(localized: "Off"))
-                        .accessibilityIdentifier("settings.icloudStatus")
-                } header: {
-                    Text(verbatim: "iCloud")
-                } footer: {
-                    Text("Data stays on this device.")
-                }
+                ICloudSection(status: iCloudSync.status)
 
                 if let tipJar {
                     TipJarSection(tipJar: tipJar)
@@ -81,6 +74,41 @@ struct SettingsView: View {
                     .accessibilityIdentifier("settings.doneButton")
                 }
             }
+        }
+    }
+}
+
+/// SC-10 / DM-27: "On" or "Off" with the reason; an account problem offers the system Settings.
+/// The status follows `CKAccountChanged` through `ICloudSyncMonitor`.
+private struct ICloudSection: View {
+    let status: ICloudSyncStatus
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        Section {
+            LabeledContent {
+                Text(status.valueText)
+            } label: {
+                Label("iCloud Sync", systemImage: status.isOn ? "checkmark.icloud" : "icloud.slash")
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("settings.icloudStatus")
+
+            if status.offersSystemSettings {
+                // There is no public link to the iCloud pane: this opens the app's page in Settings,
+                // one level below the Apple Account at the top.
+                Button("Open Settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        openURL(url)
+                    }
+                }
+                .accessibilityIdentifier("settings.icloudOpenSettings")
+            }
+        } header: {
+            Text(verbatim: "iCloud")
+        } footer: {
+            Text(status.footerText)
+                .accessibilityIdentifier("settings.icloudFooter")
         }
     }
 }

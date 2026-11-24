@@ -32,6 +32,9 @@ jobs:
   # must close it first ("Select a List", spec 10 AR-12).
   # HomeUITests runs on iPad too: Home lives in the sidebar there (tile width,
   # split-view selection, search revealed by pulling down).
+  # ICloudSyncUITests runs on iPad too: the DM-28 "Looking for your lists in iCloud…"
+  # state replaces the empty Home in the sidebar there. It never touches CloudKit
+  # (the account status comes from -UITestsICloudStatus), so the unsigned CI build is fine.
   # TipJarStoreKitUITests is deliberately in no shard: with Xcode 27.2 the pinned
   # iOS 26.5 runtime ignored local StoreKit configurations (checked locally), so
   # it would only skip. Run it locally on an iOS 27 simulator.
@@ -59,6 +62,7 @@ jobs:
               -only-testing:Project2UITests/ListDetailUITests
               -only-testing:Project2UITests/HomeUITests
               -only-testing:Project2UITests/SettingsUITests
+              -only-testing:Project2UITests/ICloudSyncUITests
               -only-testing:Project2UITests/TipJarUITests
               -only-testing:Project2UITests/ArchiveUITests
               -only-testing:Project2UITests/ListDetailLayoutUITests
@@ -82,6 +86,7 @@ jobs:
               -only-testing:Project2UITests/ArchiveUITests
               -only-testing:Project2UITests/HomeUITests
               -only-testing:Project2UITests/ListDetailLayoutUITests
+              -only-testing:Project2UITests/ICloudSyncUITests
             artifact: UITestResults-iPad
     steps:
       - uses: actions/checkout@v7
