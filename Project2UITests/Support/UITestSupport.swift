@@ -111,13 +111,37 @@ extension XCUIElement {
         waitToAppear(timeout: timeout, file: file, line: line).tap()
     }
 
+    /// `isHittable` that answers `false`, instead of failing the test, while the element exists
+    /// but has no measurable frame.
+    ///
+    /// XCTest doesn't answer `isHittable` for such an element: it fails the test on the spot
+    /// ("Failed to determine hittability … Activation point invalid and no suggested hit points
+    /// based on element frame"), and a wait never gets to ask again. On a slow runner the
+    /// accessibility snapshot can come back like that for a moment: CI run 45367661367 (iPad,
+    /// AX-L), right after Add Group, `group.header.Groceries` and every ancestor up to the window
+    /// had the frame {{inf, inf}, {0, 0}}, while the screen recording shows the header settled
+    /// on screen. Asking for the frame first turns that moment into "not yet".
+    @MainActor
+    var isOnScreenAndHittable: Bool {
+        guard exists else { return false }
+        let frame = frame
+        guard frame.minX.isFinite, frame.minY.isFinite, frame.width > 0, frame.height > 0 else {
+            return false
+        }
+        return isHittable
+    }
+
     /// Waits until the element exists *and* is hittable (on screen, not covered,
     /// not mid-animation). Gestures sent before that can be silently lost.
+    /// Not the `"exists == true AND hittable == true"` predicate: see `isOnScreenAndHittable`.
     @MainActor
     @discardableResult
     func waitToBeHittable(timeout: TimeInterval = uiTimeout,
                           file: StaticString = #filePath, line: UInt = #line) -> XCUIElement {
-        let predicate = NSPredicate(format: "exists == true AND hittable == true")
+        let element = self
+        let predicate = NSPredicate { _, _ in
+            MainActor.assumeIsolated { element.isOnScreenAndHittable }
+        }
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: self)
         XCTAssertEqual(XCTWaiter().wait(for: [expectation], timeout: timeout), .completed,
                        "\(self) is not hittable after \(timeout)s", file: file, line: line)
@@ -133,7 +157,7 @@ extension XCUIElement {
         let deadline = Date().addingTimeInterval(timeout)
         repeat {
             if other.exists { return true }
-            if exists && isHittable { return false }
+            if isOnScreenAndHittable { return false }
             // The wait for `other` paces the loop (no sleep) and ends early if it appears.
         } while !other.waitForExistence(timeout: 0.5) && Date() < deadline
         if other.exists { return true }
@@ -153,7 +177,7 @@ extension XCUIElement {
                         file: StaticString = #filePath, line: UInt = #line) -> XCUIElement {
         waitToAppear(file: file, line: line)
         var swipes = 0
-        while !isHittable && swipes < maxSwipes {
+        while !isOnScreenAndHittable && swipes < maxSwipes {
             container.swipeUp(velocity: .slow)
             swipes += 1
         }
@@ -167,7 +191,7 @@ extension XCUIElement {
     func scrollIntoViewLazily(within container: XCUIElement, maxSwipes: Int = 6,
                               file: StaticString = #filePath, line: UInt = #line) -> XCUIElement {
         var swipes = 0
-        while !(exists && isHittable) && swipes < maxSwipes {
+        while !isOnScreenAndHittable && swipes < maxSwipes {
             container.swipeUp(velocity: .slow)
             swipes += 1
         }
@@ -234,7 +258,7 @@ extension XCUIElement {
         for attempt in 1...max(attempts, 1) {
             if attempt > 1 {
                 if outcome.isMet { return true }
-                guard exists && isHittable else { break }
+                guard isOnScreenAndHittable else { break }
             }
             tap()
             if outcome.wait(timeout: resultTimeout) { return true }

@@ -135,7 +135,7 @@ struct ListDetailScreen {
     /// The retry decides on the list itself (its ⋯ gone), not on the screen below, so a slow
     /// Back is never tapped twice into the screen before (the Archive has a Back button too).
     func backFromMisfiredGesture(on element: XCUIElement) {
-        guard !element.isHittable, menuButton.exists, backButton.exists else { return }
+        guard !element.isOnScreenAndHittable, menuButton.exists, backButton.exists else { return }
         backButton.tap(until: .disappears(menuButton))
         element.waitToAppear()
     }
@@ -265,7 +265,7 @@ struct ListDetailScreen {
         let list = app.collectionViews.firstMatch
         for _ in 0..<maxSwipes {
             let limit = summary.exists ? summary.frame.minY : app.frame.maxY
-            if element.isHittable && element.frame.maxY <= limit { break }
+            if element.isOnScreenAndHittable && element.frame.maxY <= limit { break }
             list.swipeUp(velocity: .slow)
         }
         return element

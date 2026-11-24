@@ -118,8 +118,7 @@ final class KeyboardShortcutsUITests: XCTestCase {
         let editor = eva.openItem("Scooter")
         editor.mustHaveToggle.waitForValue("0")
 
-        press("m", [.command, .shift], in: app)
-        editor.mustHaveToggle.waitForValue("1")
+        press("m", [.command, .shift], in: app, untilValueOf: editor.mustHaveToggle, is: "1")
         editor.done()
         eva.mustHaveMarker("Scooter").waitToAppear()
     }
@@ -148,6 +147,29 @@ final class KeyboardShortcutsUITests: XCTestCase {
             if result.waitForExistence(timeout: 4) { return }
         }
         XCTFail("\(result) did not appear after 3 presses", file: file, line: line)
+    }
+
+    /// Presses the shortcut until `element`'s value is `expected`, for a shortcut that flips a
+    /// switch. CI run 45367661367 (iPad): ⇧⌘M was sent once after the Shift warm-up and the
+    /// recording shows the Must-Have switch still off 12 s later: the key was lost, not late.
+    /// A retry must not undo a press that did arrive, so the value is read before each press
+    /// and a press goes out only while the switch still shows the old value. Each press is a
+    /// named step in the test report, so a run that needed a retry shows it.
+    @MainActor
+    private func press(_ key: String, _ modifiers: XCUIElement.KeyModifierFlags, in app: XCUIApplication,
+                       untilValueOf element: XCUIElement, is expected: String,
+                       file: StaticString = #filePath, line: UInt = #line) {
+        let isExpected = NSPredicate(format: "value == %@", expected)
+        for attempt in 1...3 {
+            if element.value as? String == expected { return }
+            XCTContext.runActivity(named: "Press \(key) (attempt \(attempt))") { _ in
+                press(key, modifiers, in: app)
+            }
+            let changed = XCTNSPredicateExpectation(predicate: isExpected, object: element)
+            if XCTWaiter().wait(for: [changed], timeout: 5) == .completed { return }
+        }
+        XCTFail("\(element) value is '\(element.value as? String ?? "nil")', expected '\(expected)' "
+                + "after 3 presses", file: file, line: line)
     }
 
     /// ⌘N → the inline name field, with the keyboard focus.

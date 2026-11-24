@@ -23,12 +23,18 @@ final class ListDetailLayoutUITests: XCTestCase {
     /// Alex with 4 groups: Vacation (3 items), Birthday (3), Groceries and Home (empty).
     @MainActor
     private func alexWithFourGroups(_ app: XCUIApplication) -> ListDetailScreen {
+        openAlex(app, addingGroups: ["Groceries", "Home"])
+    }
+
+    /// Alex (Vacation, Birthday) with `groups` added after them. Each Add Group is ~8 UI round
+    /// trips, 5–10 s each on a slow CI runner: a test adds only the groups it looks at.
+    @MainActor
+    private func openAlex(_ app: XCUIApplication, addingGroups groups: [String]) -> ListDetailScreen {
         let home = HomeScreen(app: app).waitUntilShown()
         // At accessibility sizes pinned lists are rows, not tiles (HM-02).
         let alex = home.card("Alex").waitForExistence(timeout: 2)
             ? home.open(card: "Alex") : home.open(row: "Alex")
-        alex.addGroup(named: "Groceries")
-        alex.addGroup(named: "Home")
+        for group in groups { alex.addGroup(named: group) }
         return alex
     }
 
@@ -39,6 +45,15 @@ final class ListDetailLayoutUITests: XCTestCase {
         for _ in 0..<3 { list.swipeDown(velocity: .fast) }
     }
 
+    /// Scrolls the list up only until `element` is hittable (none on iPad, where Alex fits on
+    /// screen): for a test that needs the element, not the exact top of the list.
+    @MainActor
+    private func scrollBack(to element: XCUIElement, in app: XCUIApplication) -> XCUIElement {
+        let list = app.collectionViews.firstMatch
+        for _ in 0..<3 where !element.isOnScreenAndHittable { list.swipeDown(velocity: .fast) }
+        return element.waitToBeHittable()
+    }
+
     /// Drags the list up in short steps until `element` is on screen above the summary bar.
     /// Short drags, not swipes: the row above `element` must stay on screen too, and a lazy
     /// list doesn't have `element` at all until it is scrolled near it.
@@ -47,7 +62,7 @@ final class ListDetailLayoutUITests: XCTestCase {
                                     file: StaticString = #filePath, line: UInt = #line) {
         let list = screen.app.collectionViews.firstMatch
         for _ in 0..<12 {
-            if element.exists, element.isHittable, element.frame.maxY <= screen.summary.frame.minY { return }
+            if element.isOnScreenAndHittable, element.frame.maxY <= screen.summary.frame.minY { return }
             let start = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6))
             let end = start.withOffset(CGVector(dx: 0, dy: -150))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.3)
@@ -97,11 +112,12 @@ final class ListDetailLayoutUITests: XCTestCase {
     @MainActor
     func testHeaderAccessibilityLabelAndValue() {
         let app = Launch.app()
-        let alex = alexWithFourGroups(app)
+        // Only Groceries: Home isn't looked at, and on a slow runner (CI run 45367661367,
+        // 5–10 s a step) the second Add Group pushed the test past its 3-minute allowance.
+        let alex = openAlex(app, addingGroups: ["Groceries"])
         alex.addItem(named: "Milk", to: "Groceries")
-        scrollToTop(app)
 
-        let vacation = alex.groupHeader("Vacation").waitToBeHittable()
+        let vacation = scrollBack(to: alex.groupHeader("Vacation"), in: app)
         XCTAssertEqual(vacation.label, "Vacation, 3 items, $145.00")
         XCTAssertEqual(vacation.value as? String, "Expanded")
         XCTAssertGreaterThanOrEqual(vacation.frame.height, 44)
