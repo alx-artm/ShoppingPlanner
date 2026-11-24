@@ -35,6 +35,8 @@ jobs:
   # ICloudSyncUITests runs on iPad too: the DM-28 "Looking for your lists in iCloud…"
   # state replaces the empty Home in the sidebar there. It never touches CloudKit
   # (the account status comes from -UITestsICloudStatus), so the unsigned CI build is fine.
+  # ShareComposerUITests runs on iPad too: the Share Extension shows as a form sheet there
+  # (spec 06 SE-16). ~2.5 min per device locally, so no extra shard.
   # TipJarStoreKitUITests is deliberately in no shard: with Xcode 27.2 the pinned
   # iOS 26.5 runtime ignored local StoreKit configurations (checked locally), so
   # it would only skip. Run it locally on an iOS 27 simulator.
@@ -76,6 +78,7 @@ jobs:
               -only-testing:Project2UITests/ListInfoUITests
               -only-testing:Project2UITests/LinkPreviewUITests
               -only-testing:Project2UITests/LinkTileUITests
+              -only-testing:Project2UITests/ShareComposerUITests
             artifact: UITestResults-2
           - name: UI Tests (iPad)
             device: iPad Air 11-inch (M4)
@@ -87,6 +90,7 @@ jobs:
               -only-testing:Project2UITests/HomeUITests
               -only-testing:Project2UITests/ListDetailLayoutUITests
               -only-testing:Project2UITests/ICloudSyncUITests
+              -only-testing:Project2UITests/ShareComposerUITests
             artifact: UITestResults-iPad
     steps:
       - uses: actions/checkout@v7

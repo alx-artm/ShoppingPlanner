@@ -117,6 +117,16 @@ enum LaunchConfiguration {
         arguments.contains(uiTestsArgument) && arguments.contains(uiTestsRecordOpenedLinksArgument)
     }
 
+    /// Together with `-UITests`: `-UITestsShareComposer url` shows the Share Extension's compose
+    /// screen in the app, in a sheet over Home, on the same in-memory store (spec 06 B.5).
+    /// Scenarios: `ShareComposerScenario`. Add `-UITestsLinkPreview stub` for titles.
+    static let uiTestsShareComposerArgument = "-UITestsShareComposer"
+
+    /// The composer scenario asked for by a UI test, `nil` in a normal launch.
+    static var shareComposerScenario: String? {
+        value(after: uiTestsShareComposerArgument)
+    }
+
     /// Together with `-UITests`: `-UITestsLinkRows 200` adds the list "Links" with that many
     /// items, most of them with links and pictures (`SeedData.populateLinkRows`, LP-19).
     static let uiTestsLinkRowsArgument = "-UITestsLinkRows"
@@ -170,6 +180,17 @@ struct StoreLocation: Equatable, Sendable {
         // The same layout as SwiftData's own `groupContainer:` option.
         let directory = appGroupContainer.appending(path: "Library/Application Support", directoryHint: .isDirectory)
         return StoreLocation(directory: directory, usesCloudKit: isCloudKitEnabled)
+    }
+
+    /// The Share Extension's store (spec 06 B.4 p.1, SE-11a): the app's file in the App Group
+    /// folder, but never synced: only the app talks to CloudKit, otherwise two processes would
+    /// mirror one store and create duplicates. `nil` without the App Group (CI's unsigned
+    /// build): the extension then says it is unavailable instead of writing to its own
+    /// folder, where the app would never see the item.
+    static func forShareExtension(appGroupContainer: URL?) -> StoreLocation? {
+        guard let appGroupContainer else { return nil }
+        return resolve(appGroupContainer: appGroupContainer, applicationSupport: appGroupContainer,
+                       isCloudKitEnabled: false)
     }
 
     /// The location for a normal launch of this build.

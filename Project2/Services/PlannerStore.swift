@@ -443,6 +443,30 @@ final class PlannerStore: PlannerStoring {
         return item
     }
 
+    /// The item saved by the Share Extension (SE-09), at the end of the group, in one save:
+    /// quantity 1, the shared link (normalized, not the page's canonical URL), its host and the
+    /// cleaned page title as the link preview text. The picture is left to the app
+    /// (`linkFetchedAt == nil`, LP-01b). `nil` for a blank name or a failed save.
+    @discardableResult
+    func addSharedItem(name: String, to group: GroupModel, price: Decimal?, urlString: String,
+                       pageTitle: String?, isMustHave: Bool) -> ItemModel? {
+        guard let name = Self.normalizedName(name) else { return nil }
+        let link = ItemLink.normalized(urlString)
+        let item = ItemModel(
+            name: name,
+            price: Self.validPrice(price) ?? nil,
+            urlString: link,
+            isMustHave: isMustHave,
+            sortIndex: PlannerOrdering.indexAfter((group.items ?? []).map(\.sortIndex)),
+            createdAt: now()
+        )
+        item.linkHost = ItemLink.displayHost(of: link)
+        item.linkTitle = LinkPreview.storedTitle(pageTitle)
+        context.insert(item)
+        item.group = group
+        return save() ? item : nil
+    }
+
     func renameItem(_ item: ItemModel, to name: String) {
         item.name = Self.normalizedName(name) ?? String(localized: "Untitled item")
         save()
