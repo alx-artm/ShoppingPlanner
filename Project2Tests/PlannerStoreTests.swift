@@ -501,7 +501,7 @@ struct PlannerStoreTests {
         /// The UI tests depend on these numbers (SampleData.swift header table).
         @Test("Seed data totals match the documented table")
         func seedTotals() throws {
-            let container = try Persistence.makeContainer(inMemory: true)
+            let container = try Persistence.makeInMemoryContainer()
             let lists = try SeedData.populate(container.mainContext)
 
             let alex = lists.alex.summary

@@ -20,7 +20,7 @@ struct StoreFixture {
     var context: ModelContext { container.mainContext }
 
     init(currency: String = "USD") throws {
-        container = try Persistence.makeContainer(inMemory: true)
+        container = try Persistence.makeInMemoryContainer()
         let clock = TestClock()
         self.clock = clock
         store = PlannerStore(context: container.mainContext, defaultCurrencyCode: currency, now: { clock.now })

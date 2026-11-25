@@ -57,10 +57,10 @@ enum TipKind: String, CaseIterable, Sendable {
     case lunch
     case bigThanks = "bigthanks"
 
-    /// PLACEHOLDER: `<bundleID>.tip.<name>` with today's bundle id. The final bundle id is
-    /// chosen with the app name (M8); change it here AND in `TipJar.storekit` before the IAPs
-    /// are created in App Store Connect (a Product ID can't be changed there afterwards).
-    static let productIDPrefix = "com.aliakseiartsimuk.Project2.tip."
+    /// `<bundleID>.tip.<name>` with the permanent bundle id (DECISIONS Р-31). Final: these are
+    /// the Product IDs to create in App Store Connect, where they can't be changed afterwards.
+    /// Keep in sync with `TipJar.storekit`.
+    static let productIDPrefix = "com.aliakseiartsimuk.shoppingplanner.tip."
 
     var productID: String { Self.productIDPrefix + rawValue }
 

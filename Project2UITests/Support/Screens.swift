@@ -16,6 +16,8 @@ struct HomeScreen {
     var newListButton: XCUIElement { app.buttons["home.newListButton"] }
     var settingsButton: XCUIElement { app.buttons["home.settingsButton"] }
     var emptyState: XCUIElement { app.descendants(matching: .any)["home.emptyState"].firstMatch }
+    /// DM-28 "Looking for your lists in iCloud…" on an empty first launch.
+    var icloudLookingState: XCUIElement { app.descendants(matching: .any)["home.icloudLookingState"].firstMatch }
 
     /// Pinned lists are tiles ("cards"), the others are rows.
     func card(_ name: String) -> XCUIElement { app.buttons["home.listCard.\(name)"] }
@@ -431,7 +433,12 @@ struct SettingsScreen {
     /// Navigation row "Main Currency  Euro · EUR · €".
     var mainCurrency: XCUIElement { app.buttons["settings.mainCurrency"] }
     var appearancePicker: XCUIElement { app.descendants(matching: .any)["settings.appearancePicker"].firstMatch }
+    /// "iCloud Sync, On" / "iCloud Sync, Off" (SC-10).
     var icloudStatus: XCUIElement { app.descendants(matching: .any)["settings.icloudStatus"].firstMatch }
+    /// The explanation under the iCloud row.
+    var icloudFooter: XCUIElement { app.descendants(matching: .any)["settings.icloudFooter"].firstMatch }
+    /// Shown only when the account is the reason sync is off.
+    var icloudOpenSettings: XCUIElement { app.buttons["settings.icloudOpenSettings"] }
     var version: XCUIElement { app.descendants(matching: .any)["settings.version"].firstMatch }
     var doneButton: XCUIElement { app.buttons["settings.doneButton"] }
     /// "Support the Developer" row; exists only with the Tip Jar on (spec 12, TJ-01).

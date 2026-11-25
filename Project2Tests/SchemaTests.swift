@@ -55,6 +55,16 @@ struct SchemaTests {
         }
     }
 
+    @Test("DM-03 CloudKit: every stored attribute is optional or has a default in the schema itself")
+    func attributesOptionalOrDefaulted() {
+        let attributes = schema.entities.flatMap { entity in entity.attributes.map { (entity.name, $0) } }
+        #expect(!attributes.isEmpty)
+        for (entity, attribute) in attributes {
+            #expect(attribute.isOptional || attribute.defaultValue != nil,
+                    "\(entity).\(attribute.name) needs a default or must be optional for CloudKit")
+        }
+    }
+
     @Test("DM-08 parent → child relationships cascade")
     func cascadeRules() throws {
         func rule(_ entity: String, _ name: String) throws -> Schema.Relationship.DeleteRule {
@@ -92,12 +102,15 @@ struct SchemaTests {
     @Test("DM-05 an in-memory container opens without CloudKit; containers are isolated")
     @MainActor
     func inMemoryContainers() throws {
-        #expect(SyncConfig.isCloudKitEnabled == false, "CloudKit stays off until M6")
+        #expect(SyncConfig.isCloudKitEnabled, "M6: CloudKit is on (tests still never use it)")
 
-        let first = try Persistence.makeContainer(inMemory: true)
-        let second = try Persistence.makeContainer(inMemory: true)
+        let first = try Persistence.makeInMemoryContainer()
+        let second = try Persistence.makeInMemoryContainer()
         let inMemoryOnly = first.configurations.allSatisfy { $0.isStoredInMemoryOnly }
         #expect(inMemoryOnly)
+        // Tests never touch CloudKit, even with the flag on.
+        let local = first.configurations.allSatisfy { $0.cloudKitContainerIdentifier == nil }
+        #expect(local)
 
         first.mainContext.insert(ListModel(name: "Only in first"))
         try first.mainContext.save()
