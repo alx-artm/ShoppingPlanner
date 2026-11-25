@@ -308,22 +308,39 @@ final class ShareComposerModel {
         }
     }
 
-    /// SE-15: an item of the selected list with the shared link or the page's canonical URL
-    /// (`payload.duplicateCandidates`, owner decision (b)). Items of a new list can't match.
-    /// Stored links are normalized the same way. Only items with these exact links are fetched
-    /// (a handful at most), and their pictures stay on disk (`.externalStorage`). The list is
-    /// checked in memory: a predicate through `group?.list?.uuid` (two optional relationships)
-    /// threw an Objective-C exception in Core Data.
+    /// At most this many items with the same scheme + host + path are compared (SE-15).
+    static let duplicateFetchLimit = 200
+
+    /// SE-15: an item of the selected list that links to the same product as the shared link or
+    /// the page's canonical URL (owner decisions (b), (d)): equal `ItemLink.comparisonKey`, i.e.
+    /// equal once tracking parameters are removed on both sides. Items of a new list can't match.
+    ///
+    /// Stored links keep their tracking parameters, so an `IN` on raw strings can't find them.
+    /// Every link with the same comparison key starts with the same scheme + host + path, so the
+    /// fetch is a `starts(with:)` (SQL LIKE prefix) on `urlString` only (no
+    /// relationships), at most `duplicateFetchLimit` items; their pictures stay on disk
+    /// (`.externalStorage`). Keys and the list are compared in memory: a predicate through
+    /// `group?.list?.uuid` (two optional relationships) threw an Objective-C exception in Core Data.
     private func findDuplicate() {
         guard let list = selectedList else {
             duplicateGroupName = nil
             return
         }
         let listID = list.uuid
-        let links = payload.duplicateCandidates
-        let descriptor = FetchDescriptor<ItemModel>(predicate: #Predicate { links.contains($0.urlString) })
+        let candidates = payload.duplicateCandidates
+        let keys = Set(candidates.map(ItemLink.comparisonKey))
+        // One or two prefixes (shared, canonical); the second repeats the first when there is one.
+        let prefixes = candidates.map(ItemLink.comparisonPrefix)
+        let first = prefixes[0]
+        let second = prefixes.count > 1 ? prefixes[1] : first
+        var descriptor = FetchDescriptor<ItemModel>(
+            predicate: #Predicate { $0.urlString.starts(with: first) || $0.urlString.starts(with: second) })
+        descriptor.fetchLimit = Self.duplicateFetchLimit
         let matches = (try? store.context.fetch(descriptor)) ?? []
-        duplicateGroupName = matches.lazy.compactMap(\.group).first { $0.list?.uuid == listID }?.name
+        duplicateGroupName = matches.lazy
+            .filter { keys.contains(ItemLink.comparisonKey($0.urlString)) }
+            .compactMap(\.group)
+            .first { $0.list?.uuid == listID }?.name
     }
 
     private func loadGroups() {

@@ -112,6 +112,45 @@ enum ItemLink {
         return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// Query keys that only track where a visit came from (spec 06 SE-15, owner decision (d)),
+    /// compared case-insensitively. Everything else (variant, size, colour, `id`…) names the product.
+    /// - `utm_*`: Google Analytics campaign tags; `_su_rec*`: Shopify search & recommendations
+    ///   (Allbirds `?_su_rec=…&_su_rec_id=…`).
+    /// - Ad click ids: `fbclid` (Meta), `gclid` / `dclid` / `gbraid` / `wbraid` (Google),
+    ///   `msclkid` (Microsoft), `yclid` (Yandex); `igshid` (Instagram share).
+    /// - `mc_cid` / `mc_eid` (Mailchimp), `_ga` / `_gl` (Google cross-domain), `ref_src` (X/Twitter).
+    static let trackingKeys: Set<String> = [
+        "fbclid", "gclid", "dclid", "gbraid", "wbraid", "msclkid", "yclid",
+        "mc_cid", "mc_eid", "_ga", "_gl", "igshid", "ref_src",
+    ]
+    static let trackingKeyPrefixes = ["utm_", "_su_rec"]
+
+    static func isTrackingKey(_ name: String) -> Bool {
+        let key = name.lowercased()
+        return trackingKeys.contains(key) || trackingKeyPrefixes.contains { key.hasPrefix($0) }
+    }
+
+    /// The link as compared for "the same product" (SE-15): `normalized`, minus the tracking
+    /// query items above; the other items stay in their order, the fragment as `normalized` has it.
+    /// Comparison only — the stored link is never changed (SE-09).
+    /// "https://shop.com/p?_su_rec=1&size=M&utm_source=x" → "https://shop.com/p?size=M".
+    static func comparisonKey(_ text: String) -> String {
+        let link = normalized(text)
+        guard var components = URLComponents(string: link),
+              let items = components.percentEncodedQueryItems else { return link }
+        let kept = items.filter { !isTrackingKey($0.name) }
+        guard kept.count != items.count else { return link }
+        components.percentEncodedQueryItems = kept.isEmpty ? nil : kept
+        return components.string ?? link
+    }
+
+    /// Scheme, host and path of a link, without query and fragment: every link with the same
+    /// comparison key starts with it ("https://shop.com/p?x=1#a" → "https://shop.com/p").
+    static func comparisonPrefix(_ text: String) -> String {
+        let link = normalized(text)
+        return String(link.prefix { $0 != "?" && $0 != "#" })
+    }
+
     /// The host shown on the row's link chip: "www.ikea.com/…" → "ikea.com".
     static func displayHost(of text: String) -> String? {
         guard let host = url(from: text)?.host()?.lowercased() else { return nil }

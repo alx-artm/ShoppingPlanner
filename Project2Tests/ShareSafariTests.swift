@@ -130,6 +130,39 @@ struct SharePageTests {
     }
 }
 
+// MARK: - Comparison key
+
+@Suite("Share Extension: link comparison key", .tags(.shareExtension))
+struct LinkComparisonKeyTests {
+    @Test("SE-15 (d) tracking keys are removed, every other query item stays in order", arguments: [
+        ("https://www.allbirds.com/products/runner?_su_rec=111&_su_rec_id=a", "https://www.allbirds.com/products/runner"),
+        ("https://shop.com/p?_su_rec=1&size=M&utm_source=x&color=blue", "https://shop.com/p?size=M&color=blue"),
+        ("https://shop.com/p?variant=42&gclid=abc", "https://shop.com/p?variant=42"),
+        ("https://shop.com/p?UTM_Source=x&FBCLID=y&Size=L", "https://shop.com/p?Size=L"),
+        ("https://shop.com/p?fbclid=1&dclid=2&gbraid=3&wbraid=4&msclkid=5&yclid=6&mc_cid=7&mc_eid=8&_ga=9&_gl=10&igshid=11&ref_src=12",
+         "https://shop.com/p"),
+        ("https://shop.com/p?id=7&ref=homepage", "https://shop.com/p?id=7&ref=homepage"),
+        ("https://shop.com/p?q=a%20b&utm_medium=email", "https://shop.com/p?q=a%20b"),
+        ("https://shop.com/p?utm_source=x#reviews", "https://shop.com/p#reviews"),
+        ("https://shop.com/p", "https://shop.com/p"),
+        ("shop.com/p?utm_source=x", "https://shop.com/p"),
+        ("not a link", "not a link"),
+    ])
+    func comparisonKey(_ link: String, _ expected: String) {
+        #expect(ItemLink.comparisonKey(link) == expected)
+    }
+
+    @Test("SE-15 (d) the fetch prefix is scheme + host + path", arguments: [
+        ("https://shop.com/p?x=1#a", "https://shop.com/p"),
+        ("https://shop.com/p#a", "https://shop.com/p"),
+        ("shop.com", "https://shop.com"),
+    ])
+    func comparisonPrefix(_ link: String, _ expected: String) {
+        #expect(ItemLink.comparisonPrefix(link) == expected)
+        #expect(ItemLink.comparisonKey(link).hasPrefix(expected))
+    }
+}
+
 // MARK: - Price
 
 @Suite("Share Extension: page price", .tags(.shareExtension))
@@ -524,6 +557,28 @@ final class ShareSafariComposeTests {
         #expect(notSafari.duplicateCandidates == [shared])
         #expect(ShareTitle.registrableDomain(of: "shop.amazon.co.uk") == "amazon.co.uk")
         #expect(ShareTitle.registrableDomain(of: "WWW.IKEA.COM") == "ikea.com")
+    }
+
+    @Test("SE-15 (d) stored and shared links are compared without tracking parameters", arguments: [
+        // (stored link, shared link, hint expected)
+        ("https://www.allbirds.com/products/runner?_su_rec=111&_su_rec_id=a",
+         "https://www.allbirds.com/products/runner?_su_rec=222&_su_rec_id=b", true),
+        ("https://shop.example.com/p/lamp?utm_source=newsletter&utm_medium=email",
+         "https://shop.example.com/p/lamp?utm_campaign=bf&fbclid=XYZ", true),
+        ("https://shop.example.com/p/lamp", "https://shop.example.com/p/lamp?gclid=1", true),
+        ("https://shop.example.com/p/lamp?UTM_Source=x&Variant=7", "https://shop.example.com/p/lamp?Variant=7", true),
+        ("https://shop.example.com/p/shirt?variant=1", "https://shop.example.com/p/shirt?variant=2", false),
+        ("https://shop.example.com/p/shirt?variant=1&utm_source=x", "https://shop.example.com/p/shirt?utm_source=y&variant=2", false),
+        ("https://shop.example.com/p/lamp-xl", "https://shop.example.com/p/lamp", false),
+        ("https://shop.example.com/p/lamp", "https://shop.example.com/p/lamp", true),
+    ])
+    func duplicateWithoutTracking(stored: String, shared: String, expected: Bool) throws {
+        let group = fixture.store.createGroup(name: "Shoes", in: usd)
+        _ = try #require(fixture.store.addItem(name: "Stored", to: group, urlString: stored))
+        let composer = try ShareSafariFixture.model(fixture, page: nil, link: shared)
+        #expect((composer.duplicateGroupName == "Shoes") == expected)
+        #expect(fixture.store.lists(pinned: true).first?.sortedGroups.first?.sortedItems.first?.urlString == stored,
+                "the stored link is never rewritten (SE-09)")
     }
 
     // MARK: Retry
