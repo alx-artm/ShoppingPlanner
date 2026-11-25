@@ -36,7 +36,10 @@ final class ShareComposerUITests: XCTestCase {
         composer.mustHaveToggle.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
         composer.mustHaveToggle.waitForValue("1")
         composer.priceField.tap()
-        composer.priceField.typeText("449")
+        // iPad: the price is typed on the number pad popover, and the popover is closed before
+        // Save, or its dismiss region eats the tap and the sheet stays (CI, PR #26).
+        app.typeNumber("449", into: composer.priceField)
+        app.dismissNumberPadPopover()
         composer.save.waitAndTap()
         composer.nameField.waitToDisappear()
 
