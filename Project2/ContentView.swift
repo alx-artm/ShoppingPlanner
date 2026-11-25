@@ -37,6 +37,8 @@ struct ContentView: View {
             detail
         }
         .environment(navigation)
+        // `-UITests -UITestsShareComposer <scenario>` only (spec 06 B.5).
+        .modifier(ShareComposerTestHost())
         .safeAreaInset(edge: .top) {
             if let message = store.lastErrorMessage {
                 ErrorBanner(message: message) { store.clearError() }

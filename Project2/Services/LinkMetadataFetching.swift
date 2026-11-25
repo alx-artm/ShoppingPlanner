@@ -30,13 +30,19 @@ protocol LinkMetadataFetching: Sendable {
 struct LPLinkMetadataFetcher: LinkMetadataFetching {
     /// Shop pages are heavy; 10 s was too short, the system default 30 s too long (A.1 p.1).
     static let timeout: TimeInterval = 15
+    /// The Share Extension only waits this long for a title (spec 06 B.4 p.5, B2).
+    static let shareExtensionTimeout: TimeInterval = 5
+
+    var timeout: TimeInterval = Self.timeout
+    /// `false` in the Share Extension: title only, the app loads the picture later (B2, memory).
+    var loadsImage = true
 
     @concurrent
     func fetch(_ url: URL) async throws -> LinkPreview {
         // Not `Sendable`, but only touched by this call and its cancel handler;
         // `cancel()` is meant to be called while a fetch runs.
         nonisolated(unsafe) let provider = LPMetadataProvider()
-        provider.timeout = Self.timeout
+        provider.timeout = timeout
         let metadata = try await withTaskCancellationHandler {
             try await provider.startFetchingMetadata(for: url)
         } onCancel: {
@@ -45,6 +51,7 @@ struct LPLinkMetadataFetcher: LinkMetadataFetching {
         try Task.checkCancellation()
 
         let title = metadata.title
+        guard loadsImage else { return LinkPreview(title: title, imageData: nil) }
         // The page image, else its icon (favicon); none → placeholder in the UI.
         var imageData: Data?
         if let imageProvider = metadata.imageProvider ?? metadata.iconProvider {
@@ -78,6 +85,9 @@ struct StubLinkMetadataFetcher: LinkMetadataFetching {
     static let noImageHost = "noimage.example.com"
     /// How long `slow.example.com` takes, so a UI test can see the "loading" state.
     static let slowDelay: Duration = .seconds(2)
+    /// `veryslow.example.com`: long enough for a slow runner to type before the title comes (SE-02a).
+    static let verySlowHost = "veryslow.example.com"
+    static let verySlowDelay: Duration = .seconds(8)
 
     @concurrent
     func fetch(_ url: URL) async throws -> LinkPreview {
@@ -88,6 +98,9 @@ struct StubLinkMetadataFetcher: LinkMetadataFetching {
         case Self.slowHost:
             try await Task.sleep(for: Self.slowDelay)
             return LinkPreview(title: Self.title(for: host), imageData: Self.sampleImageData())
+        case Self.verySlowHost:
+            try await Task.sleep(for: Self.verySlowDelay)
+            return LinkPreview(title: Self.title(for: host), imageData: nil)
         case Self.noImageHost:
             return LinkPreview(title: Self.title(for: host), imageData: nil)
         default:

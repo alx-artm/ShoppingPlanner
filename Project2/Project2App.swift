@@ -13,6 +13,7 @@ import SwiftUI
 struct Project2App: App {
 
     @AppStorage("selectedTheme") private var selectedTheme: AppTheme = .system
+    @Environment(\.scenePhase) private var scenePhase
 
     /// Built once at launch. A failure shows an error screen instead of crashing (DM-17).
     private let environment: Result<AppEnvironment, any Error>
@@ -39,6 +40,11 @@ struct Project2App: App {
                         .environment(\.linkOpener, environment.linkOpener)
                         .environment(environment.tipJar)
                         .environment(environment.iCloudSync)
+                        // Items saved by the Share Extension (SE-10, SE-10a).
+                        .onAppear { environment.startShareInbox() }
+                        .onChange(of: scenePhase) { _, phase in
+                            if phase == .active { environment.pullSharedItems() }
+                        }
                 case .failure(let error):
                     StartupErrorView(error: error)
                 }
@@ -62,6 +68,8 @@ struct AppEnvironment {
     let tipJar: TipJar?
     /// iCloud account status and the first import (SC-10, DM-27, DM-28).
     let iCloudSync: ICloudSyncMonitor
+    /// Items saved by the Share Extension; `nil` in tests (in-memory store, no extension).
+    let shareInbox: ShareInbox?
 
     /// Normal launch: on-disk store in the App Group folder, synced with iCloud (M6).
     /// `-UITests`: in-memory store with `SeedData`. Unit test host: empty in-memory store.
@@ -86,7 +94,10 @@ struct AppEnvironment {
 
         let location = storeLocationAfterMigration()
         let container = try Persistence.makeContainer(at: location)
-        return make(container: container, uiState: LocalUIState(), settings: AppSettings(), location: location)
+        // The main currency is mirrored into the App Group for the Share Extension (SE-18).
+        return make(container: container, uiState: LocalUIState(),
+                    settings: AppSettings(sharedDefaults: SharedDefaults.appGroup), location: location,
+                    shareInbox: ShareInbox(context: container.mainContext))
     }
 
     /// The store location for this launch, after moving a store left in the app's own
@@ -109,7 +120,7 @@ struct AppEnvironment {
     }
 
     private static func make(container: ModelContainer, uiState: LocalUIState, settings: AppSettings,
-                             location: StoreLocation?) -> AppEnvironment {
+                             location: StoreLocation?, shareInbox: ShareInbox? = nil) -> AppEnvironment {
         let store = PlannerStore(
             context: container.mainContext,
             mainCurrencyCode: { [settings] in settings.mainCurrencyCode }
@@ -129,7 +140,26 @@ struct AppEnvironment {
         iCloudSync.start()
         return AppEnvironment(container: container, store: store, uiState: uiState, settings: settings,
                               linkPreviews: linkPreviews, linkOpener: linkOpener, tipJar: tipJar,
-                              iCloudSync: iCloudSync)
+                              iCloudSync: iCloudSync, shareInbox: shareInbox)
+    }
+
+    /// Listens for the extension's "saved" signal and picks up what it saved while the app
+    /// was not running.
+    func startShareInbox() {
+        guard shareInbox != nil else { return }
+        ShareSignal.observe { [self] in pullSharedItems() }
+        pullSharedItems()
+    }
+
+    /// Brings the extension's new items into the app and fetches their pictures right away
+    /// instead of waiting for their rows to appear (LP-01b).
+    func pullSharedItems() {
+        guard let shareInbox else { return }
+        for id in shareInbox.pull() {
+            if let item = store.item(withID: id) {
+                linkPreviews.fetchIfNeeded(for: item)
+            }
+        }
     }
 }
 
