@@ -37,6 +37,7 @@ struct Project2App: App {
                         .environment(environment.settings)
                         .environment(environment.linkPreviews)
                         .environment(\.linkOpener, environment.linkOpener)
+                        .environment(environment.tipJar)
                 case .failure(let error):
                     StartupErrorView(error: error)
                 }
@@ -56,6 +57,8 @@ struct AppEnvironment {
     let settings: AppSettings
     let linkPreviews: LinkPreviewService
     let linkOpener: LinkOpener
+    /// `nil` unless the Tip Jar is on (spec 12, `TipJarConfig`).
+    let tipJar: TipJar?
 
     /// Normal launch: on-disk store. `-UITests`: in-memory store with `SeedData`.
     static func make() throws -> AppEnvironment {
@@ -84,8 +87,15 @@ struct AppEnvironment {
         let linkPreviews = LinkPreviewService(fetcher: LinkFetcherKind.current.makeFetcher(), store: store)
         // `-UITests -UITestsRecordOpenedLinks` records links instead of opening Safari.
         let linkOpener = LinkOpener.forLaunch(arguments: ProcessInfo.processInfo.arguments)
+        // Flag off: no store, no `Transaction.updates` listener, no StoreKit call (TJ-02).
+        // UI tests get a fresh "has tipped" mark every launch.
+        let tipJar = TipJar.forLaunch(
+            isEnabled: TipJarConfig.isEnabled(),
+            defaults: LaunchConfiguration.isUITesting ? TipJar.volatileDefaults() : .standard,
+            makeStore: { TipJarConfig.makeStore() }
+        )
         return AppEnvironment(container: container, store: store, uiState: uiState, settings: settings,
-                              linkPreviews: linkPreviews, linkOpener: linkOpener)
+                              linkPreviews: linkPreviews, linkOpener: linkOpener, tipJar: tipJar)
     }
 }
 

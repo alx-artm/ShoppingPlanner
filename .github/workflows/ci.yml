@@ -32,6 +32,10 @@ jobs:
   # must close it first ("Select a List", spec 10 AR-12).
   # HomeUITests runs on iPad too: Home lives in the sidebar there (tile width,
   # split-view selection, search revealed by pulling down).
+  # TipJarStoreKitUITests is deliberately in no shard: with Xcode 27.2 the pinned
+  # iOS 26.5 runtime ignored local StoreKit configurations (checked locally), so
+  # it would only skip. Run it locally on an iOS 27 simulator.
+  # TipJarUITests (scripted store) and the unit tests cover the Tip Jar in CI.
   test:
     name: ${{ matrix.name }}
     runs-on: macos-26
@@ -55,6 +59,7 @@ jobs:
               -only-testing:Project2UITests/ListDetailUITests
               -only-testing:Project2UITests/HomeUITests
               -only-testing:Project2UITests/SettingsUITests
+              -only-testing:Project2UITests/TipJarUITests
               -only-testing:Project2UITests/ArchiveUITests
               -only-testing:Project2UITests/ListDetailLayoutUITests
             artifact: UITestResults-1

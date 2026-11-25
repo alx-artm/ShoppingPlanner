@@ -5,6 +5,7 @@
 //  Created by Alex on 1.09.25.
 //
 //  Spec 07 "Layout": General (main currency, appearance), iCloud, About.
+//  Spec 12: "Support the Developer" between iCloud and About, only with a Tip Jar.
 //
 
 import SwiftUI
@@ -12,6 +13,8 @@ import SwiftUI
 /// Presented as a sheet from Home's toolbar (spec 08: no tab bar).
 struct SettingsView: View {
     @Environment(AppSettings.self) private var settings
+    /// `nil` while the Tip Jar flag is off: no section at all (TJ-01).
+    @Environment(TipJar.self) private var tipJar: TipJar?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.locale) private var locale
     @AppStorage("selectedTheme") private var selectedTheme: AppTheme = .system
@@ -58,6 +61,10 @@ struct SettingsView: View {
                     Text("Data stays on this device.")
                 }
 
+                if let tipJar {
+                    TipJarSection(tipJar: tipJar)
+                }
+
                 Section("About") {
                     LabeledContent("Version") {
                         Text(verbatim: AppVersion.text(from: Bundle.main.infoDictionary ?? [:]))
@@ -74,6 +81,39 @@ struct SettingsView: View {
                     .accessibilityIdentifier("settings.doneButton")
                 }
             }
+        }
+    }
+}
+
+/// Spec 12 § Settings: one row to the Tip Jar; after a tip it says thank you (TJ-18).
+private struct TipJarSection: View {
+    let tipJar: TipJar
+
+    var body: some View {
+        Section {
+            NavigationLink {
+                TipJarView()
+            } label: {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Leave a Tip")
+                        if tipJar.hasTipped {
+                            Text("Thank you for your support!")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                } icon: {
+                    Image(systemName: tipJar.hasTipped ? "heart.fill" : "heart")
+                        .foregroundStyle(.pink)
+                        .accessibilityHidden(true)
+                }
+            }
+            .accessibilityIdentifier("settings.tipJar")
+        } header: {
+            Text("Support the Developer")
+        } footer: {
+            Text("Tips don't unlock anything — the app stays free.")
         }
     }
 }

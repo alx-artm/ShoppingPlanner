@@ -1,0 +1,77 @@
+{
+  "identifier" : "7C2E4A10",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "0.99",
+      "familyShareable" : false,
+      "internalID" : "6758000001",
+      "localizations" : [
+        {
+          "description" : "A small thank-you",
+          "displayName" : "Coffee",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "Небольшое спасибо",
+          "displayName" : "Кофе",
+          "locale" : "ru"
+        }
+      ],
+      "productID" : "com.aliakseiartsimuk.Project2.tip.coffee",
+      "referenceName" : "Tip Coffee",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "2.99",
+      "familyShareable" : false,
+      "internalID" : "6758000002",
+      "localizations" : [
+        {
+          "description" : "A bigger thank-you",
+          "displayName" : "Lunch",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "Спасибо побольше",
+          "displayName" : "Обед",
+          "locale" : "ru"
+        }
+      ],
+      "productID" : "com.aliakseiartsimuk.Project2.tip.lunch",
+      "referenceName" : "Tip Lunch",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "5.99",
+      "familyShareable" : false,
+      "internalID" : "6758000003",
+      "localizations" : [
+        {
+          "description" : "The biggest thank-you",
+          "displayName" : "Big Thanks",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "Самое большое спасибо",
+          "displayName" : "Большое спасибо",
+          "locale" : "ru"
+        }
+      ],
+      "productID" : "com.aliakseiartsimuk.Project2.tip.bigthanks",
+      "referenceName" : "Tip Big Thanks",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : []
+  },
+  "subscriptionGroups" : [],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
