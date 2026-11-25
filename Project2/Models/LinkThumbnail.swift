@@ -28,9 +28,22 @@ enum LinkThumbnail {
     static func jpegData(from data: Data) -> Data? {
         guard !data.isEmpty, data.count <= maxSourceByteCount else { return nil }
         let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
-        guard let source = CGImageSourceCreateWithData(data as CFData, sourceOptions),
-              CGImageSourceGetCount(source) > 0 else { return nil }
+        guard let source = CGImageSourceCreateWithData(data as CFData, sourceOptions) else { return nil }
+        return jpegData(from: source)
+    }
 
+    /// The same, read from a downloaded file (the Share Extension, spec 06 B.4 p.6): ImageIO
+    /// reads the file itself, so the source bytes never sit in memory as one `Data`.
+    static func jpegData(fromFileAt url: URL, maxSourceByteCount: Int = maxSourceByteCount) -> Data? {
+        guard let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+              size > 0, size <= maxSourceByteCount else { return nil }
+        let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, sourceOptions) else { return nil }
+        return jpegData(from: source)
+    }
+
+    private static func jpegData(from source: CGImageSource) -> Data? {
+        guard CGImageSourceGetCount(source) > 0 else { return nil }
         // Lighter steps until the result fits: 800 px at 0.7, 800 px at 0.5, 400 px at 0.5.
         let steps: [(pixelSize: Int, quality: Double)] = [
             (maxPixelSize, 0.7),

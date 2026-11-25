@@ -6,8 +6,7 @@
 //  sometimes, a short text from the sharing app. Pure values and rules, shared by the
 //  extension and the app (in-app composer for UI tests, unit tests).
 //
-//  PR 2 adds the data of Safari's JavaScript preprocessing (page title, og:title,
-//  og:image, prices) to this type.
+//  From Safari it also carries what the JavaScript preprocessing collected (`SharePage`).
 //
 
 import Foundation
@@ -19,6 +18,14 @@ struct SharePayload: Equatable, Sendable {
     /// Text the sharing app sent next to the link (often the page or product title),
     /// trimmed and at most `maxAppTextLength`; `nil` when there was none or it was the link itself.
     let appText: String?
+    /// What Safari's preprocessing script found on the page; `nil` from other apps (B2).
+    let page: SharePage?
+
+    init(url: URL, appText: String?, page: SharePage? = nil) {
+        self.url = url
+        self.appText = appText
+        self.page = page
+    }
 
     /// Longer texts are a description or a message, not a name (B.2).
     static let maxAppTextLength = 150
@@ -39,14 +46,17 @@ enum ShareInput: Equatable, Sendable {
     /// Not a web link (`mailto:`, `file://`, no host): "This link can't be added" (B.2).
     case unsupported
 
-    /// Reads the attachments of the share request (SE-01a, without Safari's JS in PR 1).
+    /// Reads the attachments of the share request (SE-01a).
     /// - Parameters:
     ///   - urls: `public.url` items, in the order they came. The activation rule allows only
     ///     one web URL, but a file URL can still come along; the first web link wins.
     ///   - texts: `public.plain-text` items. A text is a name candidate only when it is
     ///     not a link and not longer than `SharePayload.maxAppTextLength`.
-    static func from(urls: [URL], texts: [String]) -> ShareInput {
-        guard let shared = urls.lazy.compactMap({ ItemLink.url(from: $0.absoluteString) }).first,
+    ///   - page: Safari's preprocessing result. Its `document.URL` is the link only when
+    ///     the request has no `public.url` (the shared link wins, SE-09).
+    static func from(urls: [URL], texts: [String], page: SharePage? = nil) -> ShareInput {
+        let candidates = urls + [page?.url].compactMap { $0 }
+        guard let shared = candidates.lazy.compactMap({ ItemLink.url(from: $0.absoluteString) }).first,
               let url = URL(string: ItemLink.normalized(shared.absoluteString)) else {
             return .unsupported
         }
@@ -57,7 +67,7 @@ enum ShareInput: Equatable, Sendable {
                     && ItemLink.url(from: text) == nil
                     && !text.contains(url.absoluteString)
             }
-        return .link(SharePayload(url: url, appText: appText))
+        return .link(SharePayload(url: url, appText: appText, page: page))
     }
 }
 

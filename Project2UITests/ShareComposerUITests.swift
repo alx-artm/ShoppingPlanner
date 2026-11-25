@@ -2,7 +2,7 @@
 //  ShareComposerUITests.swift
 //  Project2UITests
 //
-//  Spec 06 Part B (M7, PR 1): the Share Extension's compose screen, shown in the app by
+//  Spec 06 Part B (M7, PR 1 + PR 2): the Share Extension's compose screen, shown in the app by
 //  `-UITestsShareComposer <scenario>` on the seeded in-memory store (B.5). The real share
 //  sheet and the extension process are checked by hand (SE-01, SE-10); this class checks
 //  the screen and what Save writes. Runs on iPhone and iPad (form sheet).
@@ -95,6 +95,40 @@ final class ShareComposerUITests: XCTestCase {
         let list = home.open(row: "Wishlist")
         list.groupHeader("Items").waitToAppear()
         list.itemRow("KIVIK 3-seat sofa").waitToAppear()
+    }
+
+    // MARK: - Safari page (PR 2)
+
+    /// SE-02 og:title, SE-02b picture on the card, SE-07 page price: a hint in the USD list,
+    /// prefilled in the EUR list; Save stores the price and the picture (B3, SE-09).
+    @MainActor
+    func testSafariPagePrefillsNamePictureAndPrice() {
+        let app = Self.launch(scenario: "safari")
+        let composer = ShareComposer(app: app).waitUntilShown()
+        XCTAssertEqual(composer.nameField.value as? String, "KIVIK 3-seat sofa")
+        let pictured = NSPredicate(format: "value == %@", "Picture")
+        XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: pictured, object: composer.linkCard)],
+                                        timeout: uiTimeout), .completed, "the og:image is on the card")
+        XCTAssertTrue(composer.listPicker.label.contains("Alex"), composer.listPicker.label)
+        XCTAssertEqual(composer.pagePriceHint.waitToAppear().label, "Page price: €449.00")
+        // Empty field: XCUITest reports the placeholder as its value.
+        XCTAssertTrue(["", "Price"].contains(composer.priceField.value as? String ?? ""), "USD list: the field stays empty")
+        attachScreenshot(of: app, named: "composer-safari-hint")
+
+        composer.listPicker.tap()
+        app.buttons["share.listRow.Victoria"].waitAndTap()
+        XCTAssertTrue(composer.listPicker.waitToAppear().label.contains("Victoria"))
+        XCTAssertEqual(composer.priceField.value as? String, "449.00", "EUR list: prefilled from the page")
+        XCTAssertFalse(composer.pagePriceHint.exists)
+        attachScreenshot(of: app, named: "composer-safari-prefill")
+        composer.save.waitAndTap()
+        composer.nameField.waitToDisappear()
+
+        let list = HomeScreen(app: app).waitUntilShown().open(row: "Victoria")
+        list.itemRow("KIVIK 3-seat sofa").waitToAppear()
+        XCTAssertEqual(list.itemTotal("KIVIK 3-seat sofa").waitToAppear().label, "€449.00")
+        let thumb = app.buttons["item.linkThumb.KIVIK 3-seat sofa"].waitToAppear()
+        XCTAssertEqual(thumb.value as? String, "Picture", "the picture was saved with the item")
     }
 
     // MARK: - Validation and Cancel
@@ -240,6 +274,7 @@ private struct ShareComposer {
     var priceField: XCUIElement { app.textFields["share.priceField"].firstMatch }
     var priceSymbol: XCUIElement { app.staticTexts["share.priceField.symbol"].firstMatch }
     var priceError: XCUIElement { app.staticTexts["share.priceError"].firstMatch }
+    var pagePriceHint: XCUIElement { app.staticTexts["share.pagePriceHint"].firstMatch }
     var mustHaveToggle: XCUIElement { app.switches["share.mustHaveToggle"].firstMatch }
     var linkCard: XCUIElement { app.descendants(matching: .any)["share.linkCard"].firstMatch }
     var save: XCUIElement { app.buttons["share.saveButton"].firstMatch }

@@ -19,6 +19,9 @@ enum ShareComposerScenario: String {
     case urlOnly
     /// Only `https://veryslow.example.com/x`: the title after 8 s, time to type first (SE-02a).
     case urlOnlyEdit
+    /// Safari: og:title "KIVIK 3-seat sofa - IKEA", an og:image (stub picture) and a
+    /// JSON-LD price of EUR 449.00 (SE-02, SE-02b, SE-07, B3).
+    case safari
     /// `mailto:`: "This link can't be added".
     case bad
     /// The store can't be opened: "isn't available right now".
@@ -33,10 +36,23 @@ enum ShareComposerScenario: String {
             ShareInput.from(urls: [URL(string: "https://slow.example.com/x")!], texts: [])
         case .urlOnlyEdit:
             ShareInput.from(urls: [URL(string: "https://veryslow.example.com/x")!], texts: [])
+        case .safari:
+            ShareInput.from(urls: [URL(string: "https://www.ikea.com/us/en/p/kivik-sofa-s39405")!],
+                            texts: ["KIVIK 3-seat sofa, Tresund light beige - IKEA"],
+                            page: Self.safariPage)
         case .bad, .unavailable:
             ShareInput.from(urls: [URL(string: "mailto:shop@example.com")!], texts: [])
         }
     }
+
+    /// What `SharePreprocessing.js` would collect on an IKEA product page.
+    private static let safariPage = SharePage(results: [
+        SharePage.Key.url: "https://www.ikea.com/us/en/p/kivik-sofa-s39405",
+        SharePage.Key.title: "KIVIK 3-seat sofa, Tresund light beige - IKEA",
+        SharePage.Key.ogTitle: "KIVIK 3-seat sofa - IKEA",
+        SharePage.Key.ogImage: "https://www.ikea.com/images/kivik.jpg",
+        SharePage.Key.jsonLD: [#"{"@context":"https://schema.org","@type":"Product","name":"KIVIK","offers":{"@type":"Offer","price":"449.00","priceCurrency":"EUR"}}"#],
+    ])
 
     /// Volatile "last used" list and group: every launch starts without them.
     @MainActor static let defaults: UserDefaults = {
@@ -79,6 +95,7 @@ struct ShareComposerTestHost: ViewModifier {
             titleFetcher: LinkFetcherKind.current.makeFetcher(),
             // Longer than the stub's 8 s `veryslow` host, so SE-02a can be checked unhurried;
             // the 5-second rule itself is a unit test (`ShareComposerTests.titleTimeout`).
-            titleTimeout: .seconds(30)))
+            titleTimeout: .seconds(30),
+            imageLoader: StubShareImageLoader()))
     }
 }

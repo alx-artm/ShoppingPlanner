@@ -29,9 +29,9 @@ final class ShareViewController: UIViewController {
     }
 
     private func load() async {
-        let (urls, texts) = await readAttachments()
+        let (urls, texts, page) = await readAttachments()
         let screen: ShareScreen
-        switch ShareInput.from(urls: urls, texts: texts) {
+        switch ShareInput.from(urls: urls, texts: texts, page: page) {
         case .unsupported:
             screen = .unsupported
         case .link(let payload):
@@ -66,7 +66,8 @@ final class ShareViewController: UIViewController {
                 payload: payload, store: store, shareDefaults: ShareDefaults(defaults: defaults),
                 mainCurrencyCode: mainCurrency,
                 titleFetcher: LPLinkMetadataFetcher(timeout: LPLinkMetadataFetcher.shareExtensionTimeout,
-                                                    loadsImage: false))
+                                                    loadsImage: false),
+                imageLoader: ShareImageDownloader())
         } catch {
             Self.logger.error("Opening the store failed: \(error.localizedDescription, privacy: .public)")
             return nil
@@ -98,14 +99,22 @@ final class ShareViewController: UIViewController {
         container = nil
     }
 
-    /// `public.url` and `public.plain-text` items of the request (SE-01a).
-    private func readAttachments() async -> (urls: [URL], texts: [String]) {
+    /// `public.url` and `public.plain-text` items of the request, and Safari's preprocessing
+    /// result (`com.apple.property-list`, SE-01a).
+    private func readAttachments() async -> (urls: [URL], texts: [String], page: SharePage?) {
         let items = extensionContext?.inputItems as? [NSExtensionItem] ?? []
         let providers = items.flatMap { $0.attachments ?? [] }
         var urls: [URL] = []
+        var page: SharePage?
         // Safari (and many apps) put the page title into the item itself.
         var texts = items.flatMap { [$0.attributedContentText?.string, $0.attributedTitle?.string] }.compactMap { $0 }
         for provider in providers {
+            // Safari with the JavaScript preprocessing: a dictionary, often next to the URL.
+            if page == nil, provider.hasItemConformingToTypeIdentifier(UTType.propertyList.identifier),
+               let item = try? await provider.loadItem(forTypeIdentifier: UTType.propertyList.identifier) as? NSDictionary,
+               let results = item[NSExtensionJavaScriptPreprocessingResultsKey] as? [String: Any] {
+                page = SharePage(results: results)
+            }
             if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier),
                let url = try? await provider.loadItem(forTypeIdentifier: UTType.url.identifier) as? URL {
                 urls.append(url)
@@ -114,6 +123,6 @@ final class ShareViewController: UIViewController {
                 texts.append(text)
             }
         }
-        return (urls, texts)
+        return (urls, texts, page)
     }
 }

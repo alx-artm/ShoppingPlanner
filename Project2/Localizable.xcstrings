@@ -3001,6 +3001,28 @@
           }
         }
       }
+    },
+    "Page price: %@" : {
+      "comment" : "Share Extension: under the price field when the page's price is in another currency.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Цена на сайте: %@"
+          }
+        }
+      }
+    },
+    "Already in this list · %@" : {
+      "comment" : "Share Extension: the selected list already has an item with this link; the group's name.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Уже есть в этом списке · %@"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

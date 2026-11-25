@@ -124,6 +124,10 @@
 		5FE720F1F4AC93DB00DD9B47 /* ShareComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FE7812A186093A9AEBA28C7 /* ShareComposerView.swift */; };
 		5FE70ED5D53E6812E3FD1E23 /* ShareComposerTestHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FE7A7B5CD6C0F7B2D490068 /* ShareComposerTestHost.swift */; };
 		5FE791792501F538242DEFEE /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 5FE7714C59ACE9AC11AF546F /* PrivacyInfo.xcprivacy */; };
+		5FE8A1000000000000000002 /* SharePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FE8A1000000000000000001 /* SharePage.swift */; };
+		5FE8A1000000000000000003 /* SharePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FE8A1000000000000000001 /* SharePage.swift */; };
+		5FE8A1000000000000000005 /* ShareImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FE8A1000000000000000004 /* ShareImageLoader.swift */; };
+		5FE8A1000000000000000006 /* ShareImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FE8A1000000000000000004 /* ShareImageLoader.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -255,6 +259,8 @@
 		5FE7812A186093A9AEBA28C7 /* ShareComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareComposerView.swift; sourceTree = "<group>"; };
 		5FE7A7B5CD6C0F7B2D490068 /* ShareComposerTestHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareComposerTestHost.swift; sourceTree = "<group>"; };
 		5FE7714C59ACE9AC11AF546F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		5FE8A1000000000000000001 /* SharePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharePage.swift; sourceTree = "<group>"; };
+		5FE8A1000000000000000004 /* ShareImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareImageLoader.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -363,6 +369,7 @@
 				5FE77BA850D07CBF5DCF003F /* ShareSignal.swift */,
 				5FE7ED2C38FEDBFA84E23EF6 /* ShareInbox.swift */,
 				5FE7095B89EB0AFAF1EC1049 /* ShareComposerModel.swift */,
+				5FE8A1000000000000000004 /* ShareImageLoader.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -399,6 +406,7 @@
 				5FC46C0DE2F0000100000001 /* GroupRhythm.swift */,
 				5FBAC0DE2F25000100000009 /* ItemLinkDisplay.swift */,
 				5FE7DB7380FBA2CC306B93FD /* SharePayload.swift */,
+				5FE8A1000000000000000001 /* SharePage.swift */,
 				5FE7641406EA222F931E3DDB /* ShareDefaults.swift */,
 			);
 			path = Models;
@@ -717,10 +725,12 @@
 				5FBAC0DE2F25000100000004 /* LinkThumbnail.swift in Sources */,
 				5FBAC0DE2F25000100000002 /* LinkPreview.swift in Sources */,
 				5FE70749D3A2658BFD050672 /* SharePayload.swift in Sources */,
+				5FE8A1000000000000000002 /* SharePage.swift in Sources */,
 				5FE7912F2A5A808E06ABBD3D /* ShareDefaults.swift in Sources */,
 				5FE730CB02E992EBDE823ED3 /* ShareSignal.swift in Sources */,
 				5FE7F6FBF2FD6CB6319BCCA6 /* ShareInbox.swift in Sources */,
 				5FE73D555B5545E699B85E7E /* ShareComposerModel.swift in Sources */,
+				5FE8A1000000000000000005 /* ShareImageLoader.swift in Sources */,
 				5FE78AECCFD98A6F80E44FE4 /* ShareComposerView.swift in Sources */,
 				5FE70ED5D53E6812E3FD1E23 /* ShareComposerTestHost.swift in Sources */,
 			);
@@ -769,10 +779,12 @@
 				5FE77FCD3201A5B21859BA9C /* ListStatusText.swift in Sources */,
 				5FE72D0C656ABE90C5FEA6AB /* ListTemplate.swift in Sources */,
 				5FE7C9CD94DB2B8446490936 /* SharePayload.swift in Sources */,
+				5FE8A1000000000000000003 /* SharePage.swift in Sources */,
 				5FE763D6CFD43E0331A51DB3 /* ShareDefaults.swift in Sources */,
 				5FE771517D5301220126343F /* ShareSignal.swift in Sources */,
 				5FE7887EFB5DC44D321DB695 /* ShareInbox.swift in Sources */,
 				5FE7ECC3FD95D832F0018B46 /* ShareComposerModel.swift in Sources */,
+				5FE8A1000000000000000006 /* ShareImageLoader.swift in Sources */,
 				5FE720F1F4AC93DB00DD9B47 /* ShareComposerView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

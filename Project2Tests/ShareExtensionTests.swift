@@ -258,7 +258,7 @@ final class ShareComposerTests {
         let composer = try model("https://www.ikea.com/p/kivik?color=blue")
         composer.titleArrived("KIVIK 3-seat sofa - IKEA")
         composer.editName("  Sofa for the living room ")
-        composer.priceText = "449.004"
+        composer.editPrice("449.004")
         composer.isMustHave = true
         let item = try #require(composer.save())
 
@@ -303,7 +303,7 @@ final class ShareComposerTests {
         #expect(composer.currencyCode == "GBP")
         #expect(composer.name == "Lamp")
         #expect(composer.pageTitle == "Lamp") // also the card and `linkTitle`
-        composer.priceText = "12.5"
+        composer.editPrice("12.5")
         let item = try #require(composer.save())
         let list = try #require(item.parentList)
         #expect(try fixture.count(ListModel.self) == 1)
@@ -338,17 +338,17 @@ final class ShareComposerTests {
         let lists = makeLists()
         let composer = try model(locale: "ru_RU")
         #expect(!composer.hasPriceError)
-        composer.priceText = "abc"
+        composer.editPrice("abc")
         #expect(composer.hasPriceError)
         #expect(!composer.canSave)
         #expect(composer.save() == nil)
-        composer.priceText = "-5"
+        composer.editPrice("-5")
         #expect(composer.hasPriceError)
-        composer.priceText = "1299,5"
+        composer.editPrice("1299,5")
         #expect(composer.parsedPrice == .amount(Decimal(string: "1299.5")!))
         composer.destination = .list(lists.second.uuid) // JPY: no fraction digits
         #expect(composer.parsedPrice == .amount(Decimal(1300)))
-        composer.priceText = ""
+        composer.editPrice("")
         #expect(composer.parsedPrice == .empty)
         #expect(composer.canSave)
     }

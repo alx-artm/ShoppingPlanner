@@ -445,11 +445,12 @@ final class PlannerStore: PlannerStoring {
 
     /// The item saved by the Share Extension (SE-09), at the end of the group, in one save:
     /// quantity 1, the shared link (normalized, not the page's canonical URL), its host and the
-    /// cleaned page title as the link preview text. The picture is left to the app
-    /// (`linkFetchedAt == nil`, LP-01b). `nil` for a blank name or a failed save.
+    /// cleaned page title as the link preview text. With Safari's picture (B3) the preview is
+    /// complete (`linkFetchedAt` set); without it the app fetches it later (`linkFetchedAt == nil`,
+    /// LP-01b). `nil` for a blank name or a failed save.
     @discardableResult
     func addSharedItem(name: String, to group: GroupModel, price: Decimal?, urlString: String,
-                       pageTitle: String?, isMustHave: Bool) -> ItemModel? {
+                       pageTitle: String?, isMustHave: Bool, imageData: Data? = nil) -> ItemModel? {
         guard let name = Self.normalizedName(name) else { return nil }
         let link = ItemLink.normalized(urlString)
         let item = ItemModel(
@@ -462,6 +463,11 @@ final class PlannerStore: PlannerStoring {
         )
         item.linkHost = ItemLink.displayHost(of: link)
         item.linkTitle = LinkPreview.storedTitle(pageTitle)
+        if let imageData {
+            // The picture is here already: the app doesn't fetch the preview again (LP-01b).
+            item.linkImageData = imageData
+            item.linkFetchedAt = now()
+        }
         context.insert(item)
         item.group = group
         return save() ? item : nil
