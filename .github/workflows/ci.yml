@@ -35,9 +35,12 @@ jobs:
   test:
     name: ${{ matrix.name }}
     runs-on: macos-26
-    # A guard against a hung simulator, not a target: jobs take 40–50 min on a hosted
-    # runner (run 44723434812: UI 1/2 was cancelled at 45 min while still passing).
-    timeout-minutes: 60
+    # A guard against a hung simulator, not a target: UI jobs take 50–60 min on a hosted
+    # runner (run 44723434812: UI 1/2 was cancelled at 45 min while still passing;
+    # runs 45175552695 and 45353610640: UI 2/2 and iPad were cancelled at 60 min while
+    # still passing). xcbeautify prints UI test results only when the whole run ends,
+    # so a slow job and a hung job look the same in the log until then.
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -143,6 +146,15 @@ jobs:
             | xcbeautify --renderer github-actions
 
       - name: Test (${{ matrix.name }})
+        # Below the job limit, so a run that is too slow fails this step and the
+        # xcresult is still uploaded (a job-level timeout cancels the upload too).
+        timeout-minutes: 80
+        # Slow hosted runners (PR #23, run 45415931941): each attempt failed a different UI test,
+        # always on time (a 220 s test over the old 180 s allowance, "Timed out while evaluating
+        # UI query", "Failed to terminate" the app), never on an assertion. So a failed test runs
+        # once more (-retry-tests-on-failure, -test-iterations 2): two failures in a row still
+        # fail CI, and every retry stays visible in the xcresult. The allowance (300 s) guards
+        # against a hung test, it isn't a target. The real fix is fewer, faster UI tests (M7.6).
         run: |
           set -o pipefail
           xcodebuild test-without-building \
@@ -153,11 +165,13 @@ jobs:
             ${{ matrix.only-testing }} \
             -resultBundlePath TestResults.xcresult \
             -test-timeouts-enabled YES \
-            -default-test-execution-time-allowance 180 \
+            -default-test-execution-time-allowance 300 \
+            -retry-tests-on-failure \
+            -test-iterations 2 \
             | xcbeautify --renderer github-actions
 
       - name: Upload test results
-        if: failure()
+        if: failure() || cancelled()
         uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}

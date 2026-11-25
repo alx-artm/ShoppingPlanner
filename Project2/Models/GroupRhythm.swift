@@ -23,6 +23,9 @@ enum GroupRhythm {
     private static let headerTopInset: CGFloat = 4
     /// Added above a header that follows an expanded group.
     private static let afterExpandedExtra: CGFloat = 12
+    /// How far the header's opaque background reaches past its content on each side, so a
+    /// pinned header covers the whole width of the row scrolling under it (M7.5).
+    static let headerBackgroundBleed: CGFloat = 64
 
     static func headerTopInset(followsExpandedGroup: Bool) -> CGFloat {
         headerTopInset + (followsExpandedGroup ? afterExpandedExtra : 0)

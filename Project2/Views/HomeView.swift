@@ -121,7 +121,8 @@ struct HomeView: View {
             }
         }
         .navigationTitle("Lists")
-        .searchable(text: $query, prompt: Text("Search Lists"))
+        // M7.5: nothing to search before the first list (HM-14 empty state).
+        .listSearch(text: $query, isEnabled: !lists.isEmpty)
         .toolbar { toolbar }
         // HM-35: a list deleted elsewhere (the detail column on iPad) can leave nothing to reorder.
         .onChange(of: canReorder) { _, canReorder in
@@ -501,5 +502,18 @@ private struct SelectedListRowBackground: View {
                     .strokeBorder(list.color.ink, lineWidth: 2)
                     .padding(2)
             }
+    }
+}
+
+private extension View {
+    /// `.searchable` only while there is something to search (M7.5): Home without lists
+    /// shows just its empty state. All lists count, archived ones too (search finds them, AR-20).
+    @ViewBuilder
+    func listSearch(text: Binding<String>, isEnabled: Bool) -> some View {
+        if isEnabled {
+            searchable(text: text, prompt: Text("Search Lists"))
+        } else {
+            self
+        }
     }
 }

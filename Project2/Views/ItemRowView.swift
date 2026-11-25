@@ -114,7 +114,9 @@ struct ItemRowView: View {
     private var content: some View {
         let style = ItemRowStyle(isComplete: item.isComplete)
         return VStack(alignment: .leading, spacing: ListRowGrid.detailsSpacing) {
-            HStack(alignment: .firstTextBaseline) {
+            // M7.5: at accessibility sizes the amount goes under the name, as in the group
+            // header (LD-32), so the name gets the whole width instead of hyphenating.
+            nameAndAmountLayout {
                 name(style)
                     .lineLimit(3)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -140,6 +142,13 @@ struct ItemRowView: View {
         }
         .foregroundStyle(style.isDimmed ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
         .padding(.vertical, ListRowGrid.rowVerticalPadding)
+    }
+
+    /// Name and amount side by side; under each other at accessibility sizes.
+    private var nameAndAmountLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: ListRowGrid.detailsSpacing))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
     }
 
     /// The name, with "★ " in front for a must-have (MH-07). The star is orange, or secondary

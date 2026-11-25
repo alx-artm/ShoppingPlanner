@@ -17,6 +17,20 @@ final class ListInfoUITests: XCTestCase {
         continueAfterFailure = false
     }
 
+    /// M7.5: List Info shows the 9 colors in one row on iPhone at the default text size.
+    @MainActor
+    func testColorPaletteIsOneRow() {
+        let app = Launch.app()
+        let home = HomeScreen(app: app).waitUntilShown()
+        let info = home.openNewList()
+        let first = info.color("gray").waitToAppear().frame
+        for color in ["red", "orange", "yellow", "green", "mint", "blue", "purple", "magenta"] {
+            let frame = info.color(color).waitToAppear().frame
+            XCTAssertEqual(frame.midY, first.midY, accuracy: 1, "M7.5: \(color) is on the first row")
+            XCTAssertTrue(frame.width >= 30, "\(color) is still a usable circle")
+        }
+    }
+
     /// LI-01, LI-03, LI-04, LI-05, LI-08, HM-03, HM-06.
     @MainActor
     func testCreateListWithColorSymbolAndBudget() {

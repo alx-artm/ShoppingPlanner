@@ -71,8 +71,14 @@ struct ListViewInside: View {
     /// Accessibility text sizes: the summary bar is one line until tapped (LD-33).
     @State private var showsFullSummary = false
     private var isSummaryCompact: Bool {
-        isTypingInline || (dynamicTypeSize.isAccessibilitySize && !showsFullSummary)
+        dynamicTypeSize.isAccessibilitySize && !showsFullSummary
     }
+
+    /// M7.5: no summary bar while inline add is open. With the keyboard up it floated
+    /// mid-list over the rows; the row being typed sits right above the accessory bar instead.
+    /// Keyed to the open inline row, not to the focus, so the bar doesn't flash while the
+    /// keyboard moves between the name, price and link fields.
+    private var showsSummaryBar: Bool { inline == nil }
 
     private var showsCompleted: Bool {
         uiState.showsCompleted(list.uuid)
@@ -297,11 +303,15 @@ struct ListViewInside: View {
                 UndoToast(deleted: deletedItem) { undoDelete(deletedItem) }
                     .transition(toastTransition)
             }
-            // Always visible, never scrolls away (LD-10); one line while typing (owner
-            // decision) and, until tapped, at accessibility text sizes (LD-33).
-            ListSummaryBar(list: list, isCompact: isSummaryCompact, onShowItem: reveal,
-                           onToggleForm: summaryToggle)
+            // Never scrolls away (LD-10); hidden during inline add (M7.5) and, until
+            // tapped, one line at accessibility text sizes (LD-33).
+            if showsSummaryBar {
+                ListSummaryBar(list: list, isCompact: isSummaryCompact, onShowItem: reveal,
+                               onToggleForm: summaryToggle)
+                    .transition(.opacity)
+            }
         }
+        .animation(reduceMotion ? nil : .snappy, value: showsSummaryBar)
         .animation(reduceMotion ? nil : .snappy, value: deletedItem)
         .animation(reduceMotion ? nil : .snappy, value: duplicateShownHere)
     }
@@ -403,6 +413,17 @@ struct ListViewInside: View {
                 onAddItem: { startInline(in: group) },
                 onDelete: { requestDelete(group) }
             )
+            // M7.5: a pinned header (plain list) had no background, so the row scrolling under
+            // it showed through. The screen's own background, out to the cell's edges.
+            .background {
+                Color(.systemBackground)
+                    .padding(EdgeInsets(
+                        top: -GroupRhythm.headerTopInset(followsExpandedGroup: followsExpandedGroup),
+                        leading: -GroupRhythm.headerBackgroundBleed,
+                        bottom: -GroupRhythm.headerBottomInset,
+                        trailing: -GroupRhythm.headerBackgroundBleed))
+                    .accessibilityHidden(true)
+            }
             .listRowInsets(.top, GroupRhythm.headerTopInset(followsExpandedGroup: followsExpandedGroup))
             .listRowInsets(.bottom, GroupRhythm.headerBottomInset)
         }
