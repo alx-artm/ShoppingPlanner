@@ -149,6 +149,12 @@ jobs:
         # Below the job limit, so a run that is too slow fails this step and the
         # xcresult is still uploaded (a job-level timeout cancels the upload too).
         timeout-minutes: 80
+        # Slow hosted runners (PR #23, run 45415931941): each attempt failed a different UI test,
+        # always on time (a 220 s test over the old 180 s allowance, "Timed out while evaluating
+        # UI query", "Failed to terminate" the app), never on an assertion. So a failed test runs
+        # once more (-retry-tests-on-failure, -test-iterations 2): two failures in a row still
+        # fail CI, and every retry stays visible in the xcresult. The allowance (300 s) guards
+        # against a hung test, it isn't a target. The real fix is fewer, faster UI tests (M7.6).
         run: |
           set -o pipefail
           xcodebuild test-without-building \
@@ -159,7 +165,9 @@ jobs:
             ${{ matrix.only-testing }} \
             -resultBundlePath TestResults.xcresult \
             -test-timeouts-enabled YES \
-            -default-test-execution-time-allowance 180 \
+            -default-test-execution-time-allowance 300 \
+            -retry-tests-on-failure \
+            -test-iterations 2 \
             | xcbeautify --renderer github-actions
 
       - name: Upload test results
