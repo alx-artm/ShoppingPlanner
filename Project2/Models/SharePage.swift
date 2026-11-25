@@ -22,8 +22,9 @@ struct SharePage: Equatable, Sendable {
     /// Shopify stores put an `http://` address into `og:image` (App Transport Security blocks
     /// it in the extension) and the `https://` one into `og:image:secure_url`.
     var imageURL: URL?
-    /// `<link rel="canonical">`. Collected, not stored: the item keeps the shared link,
-    /// which still has the variant parameters (SE-09).
+    /// `<link rel="canonical">`. Not stored: the item keeps the shared link, which still has the
+    /// variant parameters (SE-09). Used only to find a duplicate (SE-15, owner decision (b)):
+    /// shops add per-visit tracking parameters to the shared link (Allbirds `?_su_rec=…`).
     var canonicalURL: URL?
     /// `product:price:amount` / `product:price:currency` values, every one on the page.
     var productPrice = MetaPrice()

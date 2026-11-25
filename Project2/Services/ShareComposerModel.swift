@@ -308,19 +308,20 @@ final class ShareComposerModel {
         }
     }
 
-    /// SE-15: an item of the selected list with the same link. Items of a new list can't match.
-    /// The stored link is normalized like `payload.urlString`. Only items with this exact link
-    /// are fetched (a handful at most), and their pictures stay on disk (`.externalStorage`).
-    /// The list is checked in memory: a predicate through `group?.list?.uuid` (two optional
-    /// relationships) threw an Objective-C exception in Core Data.
+    /// SE-15: an item of the selected list with the shared link or the page's canonical URL
+    /// (`payload.duplicateCandidates`, owner decision (b)). Items of a new list can't match.
+    /// Stored links are normalized the same way. Only items with these exact links are fetched
+    /// (a handful at most), and their pictures stay on disk (`.externalStorage`). The list is
+    /// checked in memory: a predicate through `group?.list?.uuid` (two optional relationships)
+    /// threw an Objective-C exception in Core Data.
     private func findDuplicate() {
         guard let list = selectedList else {
             duplicateGroupName = nil
             return
         }
         let listID = list.uuid
-        let link = payload.urlString
-        let descriptor = FetchDescriptor<ItemModel>(predicate: #Predicate { $0.urlString == link })
+        let links = payload.duplicateCandidates
+        let descriptor = FetchDescriptor<ItemModel>(predicate: #Predicate { links.contains($0.urlString) })
         let matches = (try? store.context.fetch(descriptor)) ?? []
         duplicateGroupName = matches.lazy.compactMap(\.group).first { $0.list?.uuid == listID }?.name
     }

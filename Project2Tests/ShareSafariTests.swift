@@ -297,7 +297,8 @@ enum ShareSafariFixture {
         return page
     }
 
-    static func model(_ fixture: StoreFixture, page: SharePage?, text: String? = nil, mainCurrency: String = "EUR",
+    static func model(_ fixture: StoreFixture, page: SharePage?, link: String = link, text: String? = nil,
+                      mainCurrency: String = "EUR",
                       locale: String = "en_US", fetcher: (any LinkMetadataFetching)? = nil,
                       imageLoader: (any ShareImageLoading)? = nil,
                       defaults: UserDefaults = UserDefaults(suiteName: "ShareSafariTests.\(UUID().uuidString)")!)
@@ -480,6 +481,49 @@ final class ShareSafariComposeTests {
         _ = try #require(fixture.store.addItem(name: "Sofa", to: group, urlString: "https://www.ikea.com/p/kivik?color=red"))
         let composer = try model(ShareSafariFixture.page())
         #expect(composer.duplicateGroupName == nil)
+    }
+
+    @Test("SE-15 (b) Allbirds: a tracking parameter in the shared link, the stored item has the canonical link")
+    func duplicateByCanonical() throws {
+        let group = fixture.store.createGroup(name: "Shoes", in: usd)
+        let canonical = "https://www.allbirds.com/products/mens-wool-runner"
+        _ = try #require(fixture.store.addItem(name: "Runner", to: group, urlString: canonical))
+        let page = SharePage(ogTitle: "Wool Runner", canonicalURL: URL(string: canonical))
+        let composer = try ShareSafariFixture.model(fixture, page: page,
+                                                    link: canonical + "?_su_rec=DW1cJggm&_su_rec_id=efe2d6f0")
+        #expect(composer.payload.duplicateCandidates == [canonical + "?_su_rec=DW1cJggm&_su_rec_id=efe2d6f0", canonical])
+        #expect(composer.duplicateGroupName == "Shoes")
+        composer.destination = .list(eur.uuid)
+        #expect(composer.duplicateGroupName == nil, "only the selected list counts")
+    }
+
+    @Test("SE-15 (b) a canonical URL on a foreign host, or not http(s), is ignored", arguments: [
+        "https://cdn.example.net/products/mens-wool-runner", "ftp://www.allbirds.com/products/mens-wool-runner",
+    ])
+    func foreignCanonicalIgnored(_ canonical: String) throws {
+        let group = fixture.store.createGroup(name: "Shoes", in: usd)
+        _ = try #require(fixture.store.addItem(name: "Runner", to: group, urlString: canonical))
+        let page = SharePage(ogTitle: "Wool Runner", canonicalURL: URL(string: canonical))
+        let composer = try ShareSafariFixture.model(fixture, page: page,
+                                                    link: "https://www.allbirds.com/products/mens-wool-runner?_su_rec=x")
+        #expect(composer.payload.duplicateCandidates == ["https://www.allbirds.com/products/mens-wool-runner?_su_rec=x"])
+        #expect(composer.duplicateGroupName == nil)
+    }
+
+    @Test("SE-15 (b) a subdomain of the same shop counts; no canonical: only the shared link")
+    func canonicalHostRules() throws {
+        let shared = "https://m.ikea.com/de/p/kallax?utm_source=x"
+        let sameShop = SharePage(canonicalURL: URL(string: "https://www.ikea.com/de/p/kallax"))
+        guard case .link(let withCanonical) = ShareInput.from(urls: [URL(string: shared)!], texts: [], page: sameShop),
+              case .link(let without) = ShareInput.from(urls: [URL(string: shared)!], texts: [], page: SharePage()),
+              case .link(let notSafari) = ShareInput.from(urls: [URL(string: shared)!], texts: []) else {
+            Issue.record("expected links"); return
+        }
+        #expect(withCanonical.duplicateCandidates == [shared, "https://www.ikea.com/de/p/kallax"])
+        #expect(without.duplicateCandidates == [shared])
+        #expect(notSafari.duplicateCandidates == [shared])
+        #expect(ShareTitle.registrableDomain(of: "shop.amazon.co.uk") == "amazon.co.uk")
+        #expect(ShareTitle.registrableDomain(of: "WWW.IKEA.COM") == "ikea.com")
     }
 
     // MARK: Retry

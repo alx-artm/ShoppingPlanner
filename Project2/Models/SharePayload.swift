@@ -33,6 +33,22 @@ struct SharePayload: Equatable, Sendable {
     /// The address stored in `urlString`.
     var urlString: String { url.absoluteString }
 
+    /// The links an existing item of the same product may have (SE-15, owner decision (b)):
+    /// the shared link, and the page's canonical URL when it is http(s) on the same registrable
+    /// domain ("www.ikea.com" and "m.ikea.com" match, "cdn.example.net" doesn't). Both normalized
+    /// like `urlString` (`ItemLink.normalized`).
+    var duplicateCandidates: [String] {
+        var links = [urlString]
+        if let canonical = page?.canonicalURL,
+           let canonicalURL = ItemLink.url(from: canonical.absoluteString),
+           let canonicalHost = canonicalURL.host(), let sharedHost = url.host(),
+           ShareTitle.registrableDomain(of: canonicalHost) == ShareTitle.registrableDomain(of: sharedHost) {
+            let link = ItemLink.normalized(canonicalURL.absoluteString)
+            if !links.contains(link) { links.append(link) }
+        }
+        return links
+    }
+
     /// "ikea.com": shown on the card and the last-resort name.
     var host: String {
         ItemLink.displayHost(of: urlString) ?? url.host() ?? urlString
@@ -109,16 +125,26 @@ enum ShareTitle {
         return limited.isEmpty ? nil : limited
     }
 
+    /// Second-level public suffixes like co.uk, com.au: the site label is the one before them.
+    private static let secondLevelSuffixes: Set<String> = ["co", "com", "net", "org", "gov", "ac", "edu"]
+
     /// "www.ikea.com" → "ikea", "amazon.co.uk" → "amazon", "m.ozon.ru" → "ozon".
     static func siteLabel(of host: String) -> String {
         let labels = host.lowercased().split(separator: ".").map(String.init)
         guard labels.count >= 2 else { return labels.first ?? "" }
-        // Second-level public suffixes like co.uk, com.au: the label before them.
-        let secondLevel: Set<String> = ["co", "com", "net", "org", "gov", "ac", "edu"]
-        if labels.count >= 3, secondLevel.contains(labels[labels.count - 2]) {
+        if labels.count >= 3, secondLevelSuffixes.contains(labels[labels.count - 2]) {
             return labels[labels.count - 3]
         }
         return labels[labels.count - 2]
+    }
+
+    /// The registrable domain: "www.ikea.com" → "ikea.com", "shop.amazon.co.uk" → "amazon.co.uk".
+    /// A simplified public-suffix rule (same as `siteLabel`), enough to tell a shop's own
+    /// subdomains from a foreign host.
+    static func registrableDomain(of host: String) -> String {
+        let labels = host.lowercased().split(separator: ".").map(String.init)
+        let count = labels.count >= 3 && secondLevelSuffixes.contains(labels[labels.count - 2]) ? 3 : 2
+        return labels.suffix(count).joined(separator: ".")
     }
 
     /// "IKEA", "Amazon.com", "ikea.com" match the label "ikea"/"amazon"; "Shop" does not.
