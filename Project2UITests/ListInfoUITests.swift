@@ -159,6 +159,29 @@ final class ListInfoUITests: XCTestCase {
         }
     }
 
+    /// LI-20, LI-21: a list with prices and a budget → Currency → USD → "Prices won't be
+    /// converted" → Change → ✓. The budget field, Home and the list show the same numbers in dollars.
+    @MainActor
+    func testChangeListCurrencyRelabels() {
+        let app = Launch.app()
+        var home = HomeScreen(app: app).waitUntilShown()
+        home.rowToBuy("Victoria").waitForLabel(containing: "€")
+
+        let info = home.editWithSwipe(row: "Victoria")
+        info.openCurrencyPicker().search("USD").pick("USD")
+
+        // Victoria has priced items and a budget, so the change is confirmed first (LI-21).
+        app.alerts["Prices won't be converted"].waitToAppear()
+        info.currencyChangeButton.waitAndTap()
+        info.currencyRow.waitForLabel(containing: "USD")
+        info.budgetField.waitForValue("$300.00") // the same number, new symbol
+        home = info.done()
+
+        home.rowToBuy("Victoria").waitForLabel(containing: "$")
+        let victoria = home.open(row: "Victoria")
+        victoria.groupTotal("Vacation").waitForLabel("$145.00") // 60 + 55 + 30: the numbers stay
+    }
+
     /// HM-14: "New List" in the empty state opens List Info.
     @MainActor
     func testEmptyStateNewList() {

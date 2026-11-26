@@ -226,13 +226,14 @@ struct ListDraftTests {
         #expect(list.iconKind == .symbol)
     }
 
-    @Test("Currency is read-only in v1: updateList keeps the list currency")
-    func updateKeepsCurrency() {
-        let list = f.store.createList(name: "Trip", currencyCode: "EUR")
+    @Test("LI-20 updateList relabels the currency; the budget keeps its number")
+    func updateRelabelsCurrency() {
+        let list = f.store.createList(name: "Trip", budget: dec("300"), currencyCode: "EUR")
         var draft = ListDraft(list: list)
         draft.currencyCode = "JPY"
         f.store.updateList(list, with: draft)
-        #expect(list.currencyCode == "EUR")
+        #expect(list.currencyCode == "JPY")
+        #expect(list.budget == dec("300"))
     }
 
     @Test("LI-09 'Pin to Home' on ✓ moves the list to the end of Pinned; unpinning puts it first in All Lists (HM-26)",

@@ -35,6 +35,7 @@ protocol PlannerStoring: AnyObject {
     func setIcon(_ iconName: String, kind: ListIconKind, for list: ListModel)
     func setColor(_ color: FavoriteColor, for list: ListModel)
     @discardableResult func setBudget(_ budget: Decimal?, for list: ListModel) -> Bool
+    @discardableResult func setCurrency(_ currencyCode: String, for list: ListModel) -> Bool
     func togglePin(_ list: ListModel)
     func moveList(in section: [ListModel], fromOffsets source: IndexSet, toOffset destination: Int)
     @discardableResult func duplicateList(_ list: ListModel) -> ListModel
@@ -196,7 +197,7 @@ final class PlannerStore: PlannerStoring {
     }
 
     /// Applies List Info's ✓ to an existing list in one save (LI-02).
-    /// The currency is not changed (v1.1); a negative budget keeps the old one.
+    /// A negative budget keeps the old one; a new currency relabels the list (LI-20).
     func updateList(_ list: ListModel, with draft: ListDraft) {
         list.name = Self.normalizedName(draft.name) ?? String(localized: "Untitled list")
         if draft.iconName.isEmpty {
@@ -210,6 +211,7 @@ final class PlannerStore: PlannerStoring {
         if let budget = Self.validBudget(draft.budget) {
             list.budget = budget
         }
+        applyCurrency(draft.currencyCode, to: list)
         // An archived list is never pinned (AR-02); List Info hides the toggle for it.
         if list.isPinned != draft.isPinned && !list.isArchived {
             movePin(of: list, to: draft.isPinned)
@@ -244,6 +246,28 @@ final class PlannerStore: PlannerStoring {
         guard let valid = Self.validBudget(budget) else { return false }
         list.budget = valid
         save()
+        return true
+    }
+
+    /// Relabels the list in another currency (LI-20): only `currencyCode` changes; item
+    /// prices, the budget and the totals keep their numbers (no conversion). Every money
+    /// view reads `list.currencyCode`, so it shows the new code at once; it syncs like any
+    /// other list edit (LI-22). An unknown code is rejected and the old currency stays.
+    @discardableResult
+    func setCurrency(_ currencyCode: String, for list: ListModel) -> Bool {
+        guard applyCurrency(currencyCode, to: list) else { return false }
+        save()
+        return true
+    }
+
+    /// Sets a valid code without saving; `false` for an unknown code. The same code is a
+    /// no-op, so an unchanged List Info doesn't mark the list as edited.
+    @discardableResult
+    private func applyCurrency(_ currencyCode: String, to list: ListModel) -> Bool {
+        guard let code = ListCurrencyChange.validCode(currencyCode) else { return false }
+        if list.currencyCode != code {
+            list.currencyCode = code
+        }
         return true
     }
 

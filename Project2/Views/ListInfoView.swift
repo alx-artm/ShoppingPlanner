@@ -3,7 +3,8 @@
 //  Project2
 //
 //  List Info (spec 03, UX_REVIEW §13C): create or edit a list. Name, color,
-//  icon (SF Symbols or emoji), budget, "Pin to Home", and Delete in edit mode.
+//  icon (SF Symbols or emoji), budget, currency (LI-20), "Pin to Home", and Delete
+//  in edit mode.
 //
 //  The screen edits a `ListDraft` (a value copy), so ✕ discards everything
 //  (LI-02) and a new list is inserted only on ✓ (LI-01).
@@ -29,6 +30,8 @@ struct ListInfoView: View {
     @State private var iconTab: ListIconKind
     @State private var customEmoji = ""
     @State private var showsDeleteConfirmation = false
+    /// The currency picked in the picker while "Prices won't be converted" is asked (LI-21).
+    @State private var pendingCurrencyCode: String?
     /// Set when the user confirmed deletion; the list is deleted after the sheet is gone (LI-10).
     @State private var isPendingDeletion = false
     @FocusState private var isNameFocused: Bool
@@ -120,6 +123,23 @@ struct ListInfoView: View {
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("All groups and items will be deleted.")
+            }
+            .alert(
+                Text("Prices won't be converted"),
+                isPresented: Binding(
+                    get: { pendingCurrencyCode != nil },
+                    set: { if !$0 { pendingCurrencyCode = nil } }
+                ),
+                presenting: pendingCurrencyCode
+            ) { code in
+                Button("Change") {
+                    draft.currencyCode = code
+                }
+                .accessibilityIdentifier("listEdit.currencyAlert.changeButton")
+                Button("Cancel", role: .cancel) {}
+                    .accessibilityIdentifier("listEdit.currencyAlert.cancelButton")
+            } message: { code in
+                Text("Prices and the budget keep the same numbers. Only the currency changes to \(CurrencyCatalog.displayName(of: code, locale: locale)).")
             }
         }
         // Don't lose edits to an accidental swipe down.
@@ -301,7 +321,7 @@ struct ListInfoView: View {
         }
     }
 
-    /// Optional budget in the list currency; the currency itself is read-only in v1 (LI-08).
+    /// Optional budget in the list currency (LI-08), and the currency itself (LI-20).
     private var budgetSection: some View {
         Section {
             LabeledContent("Budget") {
@@ -312,8 +332,13 @@ struct ListInfoView: View {
                     .multilineTextAlignment(.trailing)
                     .accessibilityIdentifier("listEdit.budgetField")
             }
-            LabeledContent("Currency") {
-                Text(verbatim: CurrencyCatalog.rowTitle(of: draft.currencyCode, locale: locale))
+            // The same picker as Settings (spec 07); picking relabels the list, no conversion.
+            NavigationLink {
+                CurrencyPickerView(selection: currencySelection, title: "Currency")
+            } label: {
+                LabeledContent("Currency") {
+                    Text(verbatim: CurrencyCatalog.rowTitle(of: draft.currencyCode, locale: locale))
+                }
             }
             .accessibilityIdentifier("listEdit.currency")
         } footer: {
@@ -324,6 +349,28 @@ struct ListInfoView: View {
                     .foregroundStyle(.red)
             }
         }
+    }
+
+    // MARK: - Currency (LI-20, LI-21)
+
+    /// The picker's selection: an empty or unpriced list without a budget takes the new code
+    /// at once; otherwise the code waits for "Prices won't be converted" → Change.
+    private var currencySelection: Binding<String> {
+        Binding {
+            draft.currencyCode
+        } set: { code in
+            guard code != draft.currencyCode else { return }
+            if ListCurrencyChange.needsConfirmation(hasPricedItems: hasPricedItems, budget: draft.budget) {
+                pendingCurrencyCode = code
+            } else {
+                draft.currencyCode = code
+            }
+        }
+    }
+
+    /// Items with a price in the saved list; a new list has no items yet.
+    private var hasPricedItems: Bool {
+        if case .edit(let list) = mode { list.hasPricedItems } else { false }
     }
 
     // MARK: - Commit
