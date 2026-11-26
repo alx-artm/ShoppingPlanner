@@ -769,6 +769,17 @@
         }
       }
     },
+    "Change" : {
+      "comment" : "List Info: confirms changing the list's currency (relabel, no conversion).",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сменить"
+          }
+        }
+      }
+    },
     "Checking…" : {
       "comment" : "Settings, iCloud row: the account status hasn't arrived yet.",
       "localizations" : {
@@ -2191,6 +2202,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Цена за штуку"
+          }
+        }
+      }
+    },
+    "Prices and the budget keep the same numbers. Only the currency changes to %@." : {
+      "comment" : "List Info: message of the currency change confirmation. The argument is the new currency name, e.g. Euro.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Цены и бюджет останутся теми же числами. Сменится только валюта: %@."
+          }
+        }
+      }
+    },
+    "Prices won't be converted" : {
+      "comment" : "List Info: title of the confirmation shown before changing the currency of a list with prices or a budget.",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Цены не будут пересчитаны"
           }
         }
       }

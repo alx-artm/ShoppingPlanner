@@ -24,6 +24,7 @@
 		5FB3C0DE2ED5000100000002 /* IconCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000001 /* IconCatalog.swift */; };
 		5FB3C0DE2ED5000100000004 /* ListTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000003 /* ListTemplate.swift */; };
 		5FB3C0DE2ED5000100000006 /* ListDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000005 /* ListDraft.swift */; };
+		5FC77C0DE300000100000002 /* ListCurrencyChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FC77C0DE300000100000001 /* ListCurrencyChange.swift */; };
 		5FB3C0DE2ED5000100000008 /* HomeSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000007 /* HomeSections.swift */; };
 		5FB3C0DE2ED500010000000A /* ListStatusText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000009 /* ListStatusText.swift */; };
 		5FB3C0DE2ED500010000000C /* ListShareText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED500010000000B /* ListShareText.swift */; };
@@ -94,6 +95,7 @@
 		5FE79C605579614783F9C067 /* NewItemTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB7C0DE2F15000100000001 /* NewItemTarget.swift */; };
 		5FE7B6D4AD37C18E407B7B6A /* ItemDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB5C0DE2EF5000100000005 /* ItemDraft.swift */; };
 		5FE7310EAF13AC1298F63896 /* ListDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB3C0DE2ED5000100000005 /* ListDraft.swift */; };
+		5FC77C0DE300000100000003 /* ListCurrencyChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FC77C0DE300000100000001 /* ListCurrencyChange.swift */; };
 		5FE7813D26612803C21384FD /* LinkPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FBAC0DE2F25000100000001 /* LinkPreview.swift */; };
 		5FE7F52E85FA883CD320F10C /* LinkThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FBAC0DE2F25000100000003 /* LinkThumbnail.swift */; };
 		5FE78A740B0711729724DB0F /* MoneyInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB5C0DE2EF5000100000001 /* MoneyInput.swift */; };
@@ -189,6 +191,7 @@
 		5FB3C0DE2ED5000100000001 /* IconCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconCatalog.swift; sourceTree = "<group>"; };
 		5FB3C0DE2ED5000100000003 /* ListTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListTemplate.swift; sourceTree = "<group>"; };
 		5FB3C0DE2ED5000100000005 /* ListDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListDraft.swift; sourceTree = "<group>"; };
+		5FC77C0DE300000100000001 /* ListCurrencyChange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListCurrencyChange.swift; sourceTree = "<group>"; };
 		5FB3C0DE2ED5000100000007 /* HomeSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSections.swift; sourceTree = "<group>"; };
 		5FB3C0DE2ED5000100000009 /* ListStatusText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListStatusText.swift; sourceTree = "<group>"; };
 		5FB3C0DE2ED500010000000B /* ListShareText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListShareText.swift; sourceTree = "<group>"; };
@@ -391,6 +394,7 @@
 				5FB3C0DE2ED5000100000001 /* IconCatalog.swift */,
 				5FB3C0DE2ED5000100000003 /* ListTemplate.swift */,
 				5FB3C0DE2ED5000100000005 /* ListDraft.swift */,
+				5FC77C0DE300000100000001 /* ListCurrencyChange.swift */,
 				5FB4C0DE2EE5000100000001 /* DecimalInput.swift */,
 				5FB3C0DE2ED5000100000007 /* HomeSections.swift */,
 				5FBAC0DE2F25000100000001 /* LinkPreview.swift */,
@@ -679,6 +683,7 @@
 				5FB3C0DE2ED5000100000002 /* IconCatalog.swift in Sources */,
 				5FB3C0DE2ED5000100000004 /* ListTemplate.swift in Sources */,
 				5FB3C0DE2ED5000100000006 /* ListDraft.swift in Sources */,
+				5FC77C0DE300000100000002 /* ListCurrencyChange.swift in Sources */,
 				5FB4C0DE2EE5000100000002 /* DecimalInput.swift in Sources */,
 				5FB3C0DE2ED5000100000008 /* HomeSections.swift in Sources */,
 				5FB3C0DE2ED500010000000A /* ListStatusText.swift in Sources */,
@@ -764,6 +769,7 @@
 				5FE79C605579614783F9C067 /* NewItemTarget.swift in Sources */,
 				5FE7B6D4AD37C18E407B7B6A /* ItemDraft.swift in Sources */,
 				5FE7310EAF13AC1298F63896 /* ListDraft.swift in Sources */,
+				5FC77C0DE300000100000003 /* ListCurrencyChange.swift in Sources */,
 				5FE7813D26612803C21384FD /* LinkPreview.swift in Sources */,
 				5FE7F52E85FA883CD320F10C /* LinkThumbnail.swift in Sources */,
 				5FE78A740B0711729724DB0F /* MoneyInput.swift in Sources */,

@@ -17,7 +17,7 @@ struct ListDraft: Equatable, Sendable {
     /// `nil` = no budget; 0 is a real budget (LI-08).
     var budget: Decimal?
     var isPinned: Bool = false
-    /// Read-only on the screen in v1 (changing a list's currency is v1.1).
+    /// Picked on List Info; for an existing list a change is a relabel, not a conversion (LI-20).
     var currencyCode: String
     /// Empty groups created together with a new list (templates, LI-12).
     var groupNames: [String] = []

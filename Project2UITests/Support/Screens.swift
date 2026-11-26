@@ -533,6 +533,12 @@ struct CurrencyPickerScreen {
         row(code).waitToDisappear()
         return SettingsScreen(app: app).waitUntilShown()
     }
+
+    /// Taps a currency in List Info's picker (LI-20); the picker pops back to List Info.
+    func pick(_ code: String) {
+        row(code).waitAndTap()
+        row(code).waitToDisappear()
+    }
 }
 
 // MARK: - Home actions of M3 (spec 02): swipe, context menu, search, templates
@@ -689,6 +695,13 @@ struct ListInfoScreen {
     var doneButton: XCUIElement { app.buttons["listEdit.doneButton"] }
     var cancelButton: XCUIElement { app.buttons["listEdit.cancelButton"] }
     var deleteButton: XCUIElement { app.buttons["listEdit.deleteButton"] }
+    /// The Currency row: opens the Settings currency picker (LI-20).
+    var currencyRow: XCUIElement { app.buttons["listEdit.currency"] }
+    /// "Prices won't be converted" → Change (LI-21). The alert reports the button twice
+    /// (the button and its label), so take the first.
+    var currencyChangeButton: XCUIElement {
+        app.alerts.buttons.matching(identifier: "listEdit.currencyAlert.changeButton").firstMatch
+    }
 
     func color(_ raw: String) -> XCUIElement { app.buttons["listEdit.color.\(raw)"] }
     func symbol(_ name: String) -> XCUIElement { app.buttons["listEdit.symbol.\(name)"] }
@@ -731,6 +744,13 @@ struct ListInfoScreen {
         budgetField.scrollIntoViewLazily(within: form, maxSwipes: 8).tap()
         app.typeNumber(amount, into: budgetField)
         return self
+    }
+
+    /// Currency row → the currency picker (LI-20).
+    func openCurrencyPicker() -> CurrencyPickerScreen {
+        app.dismissNumberPadPopover()
+        currencyRow.scrollIntoViewLazily(within: form, maxSwipes: 8).tap()
+        return CurrencyPickerScreen(app: app).waitUntilShown()
     }
 
     /// ✓ → the sheet closes.
